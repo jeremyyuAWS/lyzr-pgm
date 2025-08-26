@@ -1,0 +1,6 @@
+httpx
+PyYAML
+python-dotenv
+pytest
+pytz
+tzlocal

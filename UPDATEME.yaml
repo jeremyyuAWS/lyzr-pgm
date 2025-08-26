@@ -1,0 +1,24 @@
+actions:
+  # Create agents from YAML files
+  create_agents:
+    enabled: true
+    files:
+      # Manager agents you want created
+      - agents/managers/ARCHITECT_MANAGER_v1.yaml
+      # You can add more manager YAMLs here
+      # - agents/managers/KYC_Manager.yaml
+
+  # Update existing agents (disabled by default)
+  update_agents:
+    enabled: false
+    files: []
+
+  # Create workflows (disabled by default)
+  create_workflows:
+    enabled: false
+    files: []
+
+  # Execute workflows (disabled by default)
+  execute_workflows:
+    enabled: false
+    files: []
