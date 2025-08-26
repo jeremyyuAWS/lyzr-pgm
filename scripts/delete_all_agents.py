@@ -1,11 +1,15 @@
 import argparse
 from src.services.agent_manager import AgentManager
+from src.api.client import LyzrAPIClient
+
 
 def main(dry_run: bool):
-    manager = AgentManager(debug=True)
+    # Initialize client with debug=True
+    client = LyzrAPIClient(debug=True)
+    manager = AgentManager(client=client)
 
     print("📋 Fetching all agents from Lyzr...")
-    resp = manager.list_agents()
+    resp = client.get("/v3/agents/")
 
     # Handle both possible response formats
     if isinstance(resp, dict) and "data" in resp:
@@ -29,18 +33,12 @@ def main(dry_run: bool):
             print(f"🟡 DRY RUN → Would delete {name} ({agent_id})")
         else:
             print(f"🗑️ Deleting {name} ({agent_id}) ...")
-            result = manager.delete_agent(agent_id)
-
-            # ✅ Handle different response formats
-            if isinstance(result, dict):
-                if result.get("message") == "Agent deleted successfully":
-                    print(f"✅ Deleted {name} ({agent_id})")
-                elif result.get("ok") and result.get("status") == 200:
-                    print(f"✅ Deleted {name} ({agent_id})")
-                else:
-                    print(f"❌ Failed to delete {name} ({agent_id}) → {result}")
+            result = client.delete(f"/v3/agents/{agent_id}")
+            if isinstance(result, dict) and result.get("ok"):
+                print(f"✅ Deleted {name} ({agent_id})")
             else:
-                print(f"❌ Unexpected delete response for {name} ({agent_id}): {result}")
+                print(f"❌ Failed to delete {name} ({agent_id}) → {result}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Delete all Lyzr agents")

@@ -38,7 +38,7 @@ It ensures consistent payload formatting for the Lyzr API and provides automatio
 1. **Clone repo & install dependencies**
 
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/jeremyyuAWS/lyzr-pgm
    cd lyzr-pgm
    pip install -r requirements.txt
    ```
