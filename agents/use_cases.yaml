@@ -1,10 +1,10 @@
 # agents/use_cases.yaml
 # ~15 HR Use Cases for YAML Agent Testing
 use_cases:
-  - name: "Employee_Onboarding"
-    description: >
-      Automate employee onboarding by collecting personal information,
-      provisioning accounts, assigning training modules, and setting up equipment.
+  # - name: "Employee_Onboarding"
+  #   description: >
+  #     Automate employee onboarding by collecting personal information,
+  #     provisioning accounts, assigning training modules, and setting up equipment.
 
   # - name: "Employee_Offboarding"
   #   description: >
@@ -51,10 +51,10 @@ use_cases:
   #     Manage employee enrollment in health, dental, and retirement
   #     benefits, including eligibility checks and policy updates.
 
-  # - name: "Employee_Data_Change_Requests"
-  #   description: >
-  #     Automate changes in employee records (address, bank info,
-  #     emergency contacts), with approval and audit trails.
+  - name: "Employee_Data_Change_Requests"
+    description: >
+      Automate changes in employee records (address, bank info,
+      emergency contacts), with approval and audit trails.
 
   # - name: "Employee_Engagement_Survey"
   #   description: >

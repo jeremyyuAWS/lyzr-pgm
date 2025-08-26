@@ -35,11 +35,12 @@ class AgentManager:
         return system_prompt.strip()
 
     def _stamp_name(self, base_name: str, agent_id: str) -> str:
-        """Append agent_id and local date+timezone to make the name more informative."""
+        """Append agent_id and local datetime with timezone in human-readable format."""
         now_local = datetime.now(self.local_tz)
-        date_str = now_local.strftime("%Y%m%d")
-        tz_abbr = now_local.strftime("%Z")  # e.g., PST, EDT
-        return f"{base_name} [{agent_id} | {date_str}-{tz_abbr}]"
+        # Example: 2025-08-26 08:26 PM PST
+        timestamp_str = now_local.strftime("%Y-%m-%d %I:%M %p %Z")
+        return f"{base_name} [{agent_id} | {timestamp_str}]"
+
 
     def create_manager_with_roles(self, manager_yaml_path: str):
         """Create role agents defined in Manager YAML, then create Manager, then assign roles."""
