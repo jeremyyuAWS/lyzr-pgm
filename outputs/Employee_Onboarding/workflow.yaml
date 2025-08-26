@@ -1,0 +1,41 @@
+workflow_name: Employee_Onboarding_Workflow
+workflow_yaml: 'flow_name: Employee_Onboarding flow_description: Comprehensive automated
+  process for new employee integration flow_stages: - information_collection - account_provisioning
+  - training_assignment - equipment_setup'
+agents:
+- name: OnboardingManager
+  type: manager
+  yaml: 'name: OnboardingManager description: Orchestrates the entire employee onboarding
+    process agent_role: workflow_coordinator agent_goal: Ensure smooth and comprehensive
+    onboarding of new employees agent_instructions: - Coordinate information collection
+    from new hire - Trigger account provisioning workflows - Assign and track mandatory
+    training modules - Manage equipment requisition and setup features: - process_tracking
+    - inter_department_communication - compliance_verification response_format: -
+    structured_report - status_updates'
+- name: InformationCollector
+  type: role
+  yaml: 'name: InformationCollector description: Collects and validates new employee
+    personal and professional information agent_role: data_gatherer agent_goal: Compile
+    comprehensive and accurate employee onboarding details agent_instructions: - Send
+    digital onboarding forms - Validate submitted personal information - Cross-reference
+    data with HR systems - Flag any incomplete or inconsistent submissions features:
+    - form_generation - data_validation - secure_information_handling response_format:
+    - structured_employee_profile - validation_report'
+- name: ITProvisioningAgent
+  type: role
+  yaml: 'name: ITProvisioningAgent description: Automates digital account and system
+    access for new employees agent_role: system_configurator agent_goal: Create and
+    configure necessary digital workplace accounts agent_instructions: - Generate
+    corporate email account - Create user credentials for internal systems - Set up
+    multi-factor authentication - Provision appropriate software licenses features:
+    - account_creation - security_configuration - license_management response_format:
+    - access_credentials - system_configuration_report'
+- name: TrainingCoordinator
+  type: role
+  yaml: 'name: TrainingCoordinator description: Assigns and tracks mandatory onboarding
+    training modules agent_role: learning_manager agent_goal: Ensure new employees
+    complete required training efficiently agent_instructions: - Identify role-specific
+    training requirements - Assign digital learning modules - Track training progress
+    - Generate completion certificates features: - adaptive_training_assignment -
+    progress_tracking - compliance_reporting response_format: - training_assignment_log
+    - completion_status_report'
