@@ -113,3 +113,10 @@ class LyzrAPIClient:
     def delete_agent(self, agent_id: str):
         """Delete agent by id"""
         return self.delete(f"/v3/agents/{agent_id}")
+
+    def call_agent(self, agent_id_or_name: str, payload: dict):
+        """Call an existing Lyzr agent by ID or name."""
+        url = f"{self.base_url}/v3/agents/{agent_id_or_name}/invoke"
+        resp = httpx.post(url, headers=self.headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        return resp.json()

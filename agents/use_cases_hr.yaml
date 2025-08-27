@@ -1,0 +1,264 @@
+use_cases:
+  - id: "HR001"
+    name: "HR_Helpdesk_Agent"
+    category: "HR Process Automation"
+    description: >
+      Provides employees instant, accurate answers on HR policies, payroll,
+      and benefits with seamless HRMS integration and responsible AI guardrails.
+    objectives:
+      - Answer HR questions in real time
+      - Integrate with HRMS and payroll systems
+      - Enforce compliance guardrails
+    benefits:
+      - Cuts HR support workload
+      - Ensures compliance with internal policies
+      - Improves employee self-service and satisfaction
+    complexity: "medium"
+    expected_roles: 1
+    status: "active"
+
+  - id: "HR002"
+    name: "Performance_Review_Agent"
+    category: "HR Process Automation"
+    description: >
+      Conducts conversational self-assessments, collects manager feedback,
+      applies organizational guidelines, and generates performance reports automatically.
+    objectives:
+      - Run self-assessments
+      - Collect 360° feedback
+      - Apply org guidelines
+      - Generate performance report
+    benefits:
+      - Reduces HR follow-ups
+      - Ensures comprehensive feedback
+      - Makes review process conversational
+    complexity: "medium"
+    expected_roles: 3
+    status: "active"
+
+  - id: "HR003"
+    name: "Learning_Development_Assistant"
+    category: "Employee Experience"
+    description: >
+      Delivers self-paced training in tutor mode, quizzes employees,
+      corrects mistakes, scores performance, and enables role-play learning.
+    objectives:
+      - Deliver training interactively
+      - Assess performance via quizzes
+      - Provide corrective feedback
+      - Enable role-play simulations
+    benefits:
+      - Makes training engaging and effective
+      - Improves knowledge retention
+      - Increases employee development outcomes
+    complexity: "medium"
+    expected_roles: 2
+    status: "active"
+
+  - id: "HR004"
+    name: "Employee_Onboarding_Agent"
+    category: "Employee Experience"
+    description: >
+      Welcomes new hires, offers a 90-day interactive chat buddy,
+      and proactively checks employee well-being.
+    objectives:
+      - Send personalized onboarding emails
+      - Provide interactive chat support
+      - Monitor well-being for 90 days
+    benefits:
+      - Smooth onboarding experience
+      - Reduces attrition
+      - Ensures new hires integrate effectively
+    complexity: "medium"
+    expected_roles: 2
+    status: "active"
+
+  - id: "HR005"
+    name: "Employee_Satisfaction_Survey_Agent"
+    category: "Employee Experience"
+    description: >
+      Conducts conversational employee surveys, follows up on non-responses,
+      and probes deeper when answers are incomplete.
+    objectives:
+      - Run conversational surveys
+      - Improve response rates
+      - Capture actionable insights
+    benefits:
+      - Generates detailed feedback
+      - Improves accuracy of survey results
+      - Supports HR culture improvements
+    complexity: "low"
+    expected_roles: 2
+    status: "active"
+
+  - id: "HR006"
+    name: "Exit_Interview_Agent"
+    category: "Employee Experience"
+    description: >
+      Conducts unbiased exit interviews via chat or voice,
+      encouraging departing employees to share open feedback securely.
+    objectives:
+      - Automate exit interviews
+      - Collect unfiltered feedback
+      - Provide insights to HR leadership
+    benefits:
+      - Reveals organizational issues
+      - Reduces attrition
+      - Strengthens company culture
+    complexity: "medium"
+    expected_roles: 2
+    status: "active"
+
+  - id: "HR007"
+    name: "People_SelfServe_Analytics"
+    category: "HR Productivity"
+    description: >
+      Enables HR teams to query employee data, sentiment, and workforce insights
+      in natural language without technical expertise.
+    objectives:
+      - Natural language queries on HR data
+      - Provide workforce insights quickly
+    benefits:
+      - Removes dependency on IT/developers
+      - Speeds analytics for HR
+      - Empowers HR decision-making
+    complexity: "high"
+    expected_roles: 3
+    status: "active"
+
+  - id: "HR008"
+    name: "Policy_Generator_Agent"
+    category: "HR Productivity"
+    description: >
+      Generates and updates HR policies using company handbooks,
+      employment laws, and guidelines.
+    objectives:
+      - Draft policy documents
+      - Validate compliance with laws
+      - Update policies automatically
+    benefits:
+      - Ensures compliance
+      - Reduces manual drafting errors
+      - Accelerates HR policy updates
+    complexity: "high"
+    expected_roles: 2
+    status: "active"
+
+  - id: "HR009"
+    name: "Intelligent_Knowledge_Search"
+    category: "HR Productivity"
+    description: >
+      Searches HR knowledge bases, retrieving agreements, policies,
+      and documents with verified accuracy.
+    objectives:
+      - Retrieve documents instantly
+      - Provide citations for trust
+    benefits:
+      - Saves HR time
+      - Improves accuracy of decisions
+      - Ensures trustworthiness of retrieved content
+    complexity: "medium"
+    expected_roles: 2
+    status: "active"
+
+  - id: "HR010"
+    name: "Background_Verification_Agent"
+    category: "HR Productivity"
+    description: >
+      Automates background verification by collecting candidate details,
+      coordinating with verification partners, and delivering reports.
+    objectives:
+      - Collect candidate details
+      - Manage partner verification requests
+      - Deliver verified reports
+    benefits:
+      - Eliminates follow-ups
+      - Speeds verification turnaround
+      - Improves reliability
+    complexity: "high"
+    expected_roles: 3
+    status: "active"
+
+  - id: "HR011"
+    name: "Candidate_Sourcing_Agent"
+    category: "Recruitment Assistance"
+    description: >
+      Sources candidates by scanning LinkedIn, Indeed, and internal databases,
+      aligning profiles with job descriptions automatically.
+    objectives:
+      - Search external and internal databases
+      - Match candidates with job specs
+    benefits:
+      - Saves recruiters time
+      - Improves quality of shortlist
+    complexity: "medium"
+    expected_roles: 3
+    status: "active"
+
+  - id: "HR012"
+    name: "Candidate_Matching_Agent"
+    category: "Recruitment Assistance"
+    description: >
+      Matches applicants against job descriptions, scoring candidates objectively.
+    objectives:
+      - Compare resumes vs job requirements
+      - Provide candidate match scoring
+    benefits:
+      - Improves fairness
+      - Accelerates shortlisting
+    complexity: "medium"
+    expected_roles: 2
+    status: "active"
+
+  - id: "HR013"
+    name: "Interview_Scheduler_Agent"
+    category: "Recruitment Assistance"
+    description: >
+      Coordinates interview slots between candidates and hiring managers,
+      automating follow-ups until completion.
+    objectives:
+      - Manage interview scheduling
+      - Send reminders
+      - Confirm completion
+    benefits:
+      - Reduces recruiter workload
+      - Prevents delays
+      - Improves candidate experience
+    complexity: "low"
+    expected_roles: 2
+    status: "active"
+
+  - id: "HR014"
+    name: "Interview_Analysis_Agent"
+    category: "Recruitment Assistance"
+    description: >
+      Analyzes interview transcripts, collects manager feedback,
+      and generates unbiased reports.
+    objectives:
+      - Parse transcripts
+      - Collect 360° evaluations
+      - Generate structured reports
+    benefits:
+      - Removes bias
+      - Improves consistency
+      - Strengthens hiring decisions
+    complexity: "high"
+    expected_roles: 3
+    status: "active"
+
+  - id: "HR015"
+    name: "Compensation_Negotiation_Agent"
+    category: "Recruitment Assistance"
+    description: >
+      Negotiates salaries for junior and mid-level roles,
+      balancing budget limits with candidate expectations.
+    objectives:
+      - Balance candidate expectations
+      - Stay within organizational budgets
+    benefits:
+      - Speeds offer negotiation
+      - Improves fairness
+      - Strengthens employer reputation
+    complexity: "high"
+    expected_roles: 2
+    status: "active"
