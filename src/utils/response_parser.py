@@ -108,3 +108,28 @@ def classify_and_normalize(raw: Any) -> Tuple[str, Dict[str, Any], Dict[str, Any
                 "workflow_yaml": val["workflow_yaml"],
                 "agents": val.get("agents", []),
             }, diag
+
+import os
+from pathlib import Path
+
+def save_structured(payload: Dict[str, Any], outdir: str = "outputs") -> None:
+    """
+    Save normalized workflow + agents into files.
+    - workflow.yaml
+    - agents/<name>.yaml
+    """
+    Path(outdir, "agents").mkdir(parents=True, exist_ok=True)
+
+    # Save workflow.yaml
+    wf_name = payload.get("workflow_name", "unnamed_workflow")
+    wf_yaml = payload.get("workflow_yaml", "")
+    with open(Path(outdir, "workflow.yaml"), "w") as f:
+        f.write(wf_yaml if isinstance(wf_yaml, str) else str(wf_yaml))
+
+    # Save each agent
+    for agent in payload.get("agents", []):
+        name = agent.get("name", "unnamed_agent")
+        # Some agents may have inline "yaml" string
+        agent_yaml = agent.get("yaml") or yaml.dump(agent, sort_keys=False)
+        with open(Path(outdir, "agents", f"{name}.yaml"), "w") as f:
+            f.write(agent_yaml)

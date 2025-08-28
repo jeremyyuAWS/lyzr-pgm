@@ -1,37 +1,36 @@
-import json, yaml, time
-from typing import Any, Tuple
+# src/utils/response_validator.py
+import json
+import yaml
 
-def is_valid_response(resp: str | dict) -> Tuple[bool, dict | None, str | None]:
-    try:
-        if isinstance(resp, str):
-            data = json.loads(resp)
-        else:
-            data = resp
+def is_valid_response(raw):
+    """
+    Try to validate and parse the response.
+    Returns (ok: bool, parsed: dict|None, error: str|None)
+    """
+    if raw is None:
+        return False, None, "Empty response"
 
-        if not all(k in data for k in ("workflow_name", "workflow_yaml", "agents")):
-            return False, None, "Missing required keys"
+    # If already a dict
+    if isinstance(raw, dict):
+        # Must contain minimal expected keys
+        if any(k in raw for k in ["workflow_name", "workflow_yaml", "agents", "description"]):
+            return True, raw, None
+        return False, None, "Dict response missing expected keys"
 
-        yaml.safe_load(data["workflow_yaml"])  # validate workflow_yaml
+    # If string, try JSON first
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                return True, parsed, None
+        except Exception:
+            pass
+        try:
+            parsed = yaml.safe_load(raw)
+            if isinstance(parsed, dict):
+                return True, parsed, None
+        except Exception:
+            pass
+        return False, None, "Unrecognized string format"
 
-        for agent in data.get("agents", []):
-            yaml.safe_load(agent.get("yaml", ""))  # validate each agent yaml
-
-        return True, data, None
-    except Exception as e:
-        return False, None, str(e)
-
-def run_with_retries(request_fn, max_retries=5, backoff=3):
-    for attempt in range(1, max_retries + 1):
-        resp = request_fn()
-        ok, parsed, err = is_valid_response(resp)
-
-        if ok:
-            print(f"✅ Success on attempt {attempt}")
-            return parsed
-
-        print(f"❌ Attempt {attempt} failed: {err}")
-        if attempt < max_retries:
-            time.sleep(backoff * attempt)
-            print("🔄 Retrying...")
-
-    raise RuntimeError(f"Failed after {max_retries} retries")
+    return False, None, f"Unsupported type: {type(raw)}"

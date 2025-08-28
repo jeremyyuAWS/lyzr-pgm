@@ -1,0 +1,12 @@
+{
+  "agent_id": "68b0c2d0669ddd64a86f23b6",
+  "name": "YAML_COMPOSER_MANAGER_v1.1 [68b0c2d0669ddd64a86f23b6 | 2025-08-28 01:57 PM PDT]",
+  "roles": [
+    {
+      "id": "68b0c2cf8115ca4e43a41644",
+      "name": "YAML_COMPOSER_ROLE_v1.1 [68b0c2cf8115ca4e43a41644 | 2025-08-28 01:57 PM PDT]",
+      "usage_description": "Drafts complete Manager + Role YAML definitions based on a user\u2019s business use case.\n"
+    }
+  ],
+  "timestamp": "2025-08-28 13:57 PDT"
+}

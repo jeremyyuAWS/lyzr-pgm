@@ -13,7 +13,7 @@ requirements:
     - candidate_resume: Free-text resume
     - job_description: Free-text job description
   outputs:
-    - fit_score: Number (0–100)
+    - fit_score: Number (0-100)
     - strengths: Array of strings
     - gaps: Array of strings
 
