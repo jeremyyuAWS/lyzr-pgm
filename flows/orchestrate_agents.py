@@ -8,106 +8,104 @@ from pathlib import Path
 from datetime import datetime
 import pytz
 
-# === Replace with your real implementations ===
-def fake_create_manager_with_roles(file_path: str):
-    # Pretend this also spawns roles and returns metadata
-    return {
-        "manager": Path(file_path).stem,
-        "version": "v1.3",
-        "id": "68af37f66c80197869654710",
-        "linked_roles": [
-            {"name": "YAML_COMPOSER_ROLE_v1.2", "id": "68af37f599e8c20dd8f25305"}
-        ],
-    }
+# Import your real Lyzr client
+from src.api.client import LyzrAPIClient
 
-def fake_create_agent(file_path: str):
-    return {
-        "role": Path(file_path).stem,
-        "version": "v1.2",
-        "id": "68af37f599e8c20dd8f25305",
-    }
+client = LyzrAPIClient()
 
-def pst_now_str():
+
+def pst_now_str() -> str:
+    """Return current time in PST for consistent logging."""
     pst = pytz.timezone("America/Los_Angeles")
     return datetime.now(pst).strftime("%Y-%m-%d %I:%M %p %Z")
 
 
+# ---------------------------
+# Tasks
+# ---------------------------
+
 @task
 def load_config(path: str = "UPDATEME.yaml") -> dict:
+    """Load orchestration config from YAML file."""
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
-from prefect import task, get_run_logger
-from pathlib import Path
-import datetime
-import pytz
 
 @task
-def create_agent_task(fpath: str):
-    """
-    Creates an agent from a YAML file. 
-    Auto-detects manager vs role and logs clear messages.
-    """
+def create_agent_task(fpath: str) -> dict:
+    """Create an agent on Lyzr from a YAML file."""
     logger = get_run_logger()
     fname = Path(fpath).name
+    yaml_text = Path(fpath).read_text()
 
-    # Detect type
-    if "manager" in fpath.lower():
-        agent_type = "manager"
-    else:
-        agent_type = "role"
+    logger.info(f"⚡ Creating agent from {fname}")
 
-    logger.info(f"⚡ Treating {fpath} as a {agent_type} file")
+    # Call Lyzr API
+    agent_info = client.create_agent_from_yaml(yaml_text, is_path=False)
 
-    # Simulate API response (replace with real API calls)
-    fake_id = "68af37f66c80197869654710"
-    pst = pytz.timezone("America/Los_Angeles")
-    now_str = datetime.datetime.now(pst).strftime("%Y-%m-%d %I:%M %p %Z")
 
-    if agent_type == "role":
-        msg = f"🧩 Created role agent {fname} [{fake_id} | {now_str}]"
-    else:
-        msg = f"🤖 Created manager agent {fname} [{fake_id} | {now_str}] with 1 linked roles"
-
-    # This will show up in Prefect UI/logs
+    now_str = pst_now_str()
+    msg = f"✅ Created agent {agent_info.get('name')} [{agent_info.get('_id')}] at {now_str}"
     logger.info(msg)
 
     return {
         "file": fpath,
-        "agent_type": agent_type,
-        "agent_id": fake_id,
-        "message": msg,
+        "agent_info": agent_info,
         "timestamp": now_str,
     }
 
+
 @task
-def update_agent_task(file_path: str):
+def update_agent_task(file_path: str) -> dict:
+    """Update an existing agent on Lyzr from a YAML file."""
     logger = get_run_logger()
-    msg = f"🔄 Updated agent from {file_path} [{pst_now_str()}]"
+    yaml_text = Path(file_path).read_text()
+
+    logger.info(f"🔄 Updating agent from {file_path}")
+    agent_info = client.update_agent_from_yaml(yaml_text)
+
+    msg = f"✅ Updated agent {agent_info.get('name')} [{agent_info.get('_id')}] at {pst_now_str()}"
     logger.info(msg)
+
     task_run.set_task_run_name(msg)
-    return {"file": file_path, "status": "updated"}
+    return {"file": file_path, "agent_info": agent_info}
 
 
 @task
-def create_workflow_task(file_path: str):
+def create_workflow_task(file_path: str) -> dict:
+    """Create a workflow on Lyzr from a YAML file."""
     logger = get_run_logger()
-    msg = f"🛠 Created workflow from {file_path} [{pst_now_str()}]"
+    yaml_text = Path(file_path).read_text()
+
+    logger.info(f"🛠 Creating workflow from {file_path}")
+    wf_info = client.create_workflow_from_yaml(yaml_text)
+
+    msg = f"✅ Created workflow {wf_info.get('flow_name')} [{wf_info.get('flow_id')}] at {pst_now_str()}"
     logger.info(msg)
+
     task_run.set_task_run_name(msg)
-    return {"file": file_path, "status": "workflow_created"}
+    return {"file": file_path, "workflow_info": wf_info}
 
 
 @task
-def execute_workflow_task(file_path: str):
+def execute_workflow_task(file_path: str) -> dict:
+    """Execute a workflow on Lyzr from a YAML file."""
     logger = get_run_logger()
-    msg = f"▶️ Executed workflow from {file_path} [{pst_now_str()}]"
+    yaml_text = Path(file_path).read_text()
+
+    logger.info(f"▶️ Executing workflow from {file_path}")
+    run_info = client.execute_workflow_from_yaml(yaml_text)
+
+    msg = f"✅ Executed workflow run {run_info.get('flow_name')} [{run_info.get('flow_id')}] at {pst_now_str()}"
     logger.info(msg)
+
     task_run.set_task_run_name(msg)
-    return {"file": file_path, "status": "workflow_executed"}
+    return {"file": file_path, "run_info": run_info}
+
 
 @task
-def dispatch_actions(cfg: dict):
+def dispatch_actions(cfg: dict) -> list:
+    """Dispatch actions defined in config YAML."""
     logger = get_run_logger()
     actions = cfg.get("actions", {})
 
@@ -158,8 +156,13 @@ def dispatch_actions(cfg: dict):
     return results
 
 
+# ---------------------------
+# Flow
+# ---------------------------
+
 @flow(name="Agent Orchestration")
 def orchestrate_agents(config_path: str = "UPDATEME.yaml"):
+    """Main orchestration flow."""
     cfg = load_config(config_path)
     dispatch_actions(cfg)
 

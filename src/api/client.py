@@ -4,6 +4,8 @@ import time
 import yaml
 import httpx
 
+from src.utils.payload_normalizer import normalize_payload
+
 
 class LyzrAPIClient:
     def __init__(self, debug: bool = None, timeout: int = 60, retries: int = 3):
@@ -86,19 +88,24 @@ class LyzrAPIClient:
     # High-level helpers
     # -----------------
     def create_agent(self, payload: dict):
-        """Create agent from dict"""
+        """Create agent from dict payload (already normalized)."""
         return self.post("/v3/agents/", payload)
 
-    def create_agent_from_yaml(self, yaml_path: str):
-        """Load YAML agent definition and create agent"""
-        with open(yaml_path, "r") as f:
-            agent_def = yaml.safe_load(f)
-        resp = self.create_agent(agent_def)
-        if resp["ok"]:
-            agent_id = resp["data"].get("_id")
-            self._log(f"✅ Created agent {agent_def['name']} with id {agent_id}")
-            return agent_id
-        return None
+    def create_agent_from_yaml(self, yaml_input: str, is_path: bool = True):
+        """
+        Create agent directly from a YAML definition.
+        - yaml_input: path to a YAML file, or raw YAML string if is_path=False
+        """
+        if is_path:
+            with open(yaml_input, "r") as f:
+                yaml_def = yaml.safe_load(f)
+        else:
+            yaml_def = yaml.safe_load(yaml_input)
+
+        # Normalize into correct JSON payload
+        payload = normalize_payload(yaml_def)
+
+        return self.create_agent(payload)
 
     def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
         """Run inference for a given agent_id"""
@@ -117,6 +124,6 @@ class LyzrAPIClient:
     def call_agent(self, agent_id_or_name: str, payload: dict):
         """Call an existing Lyzr agent by ID or name."""
         url = f"{self.base_url}/v3/agents/{agent_id_or_name}/invoke"
-        resp = httpx.post(url, headers=self.headers, json=payload, timeout=30)
-        resp.raise_for_status()
-        return resp.json()
+        r = httpx.post(url, headers=self.headers, json=payload, timeout=self.timeout)
+        r.raise_for_status()
+        return r.json()

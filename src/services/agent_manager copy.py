@@ -1,5 +1,7 @@
 import sys
+import json
 import yaml
+from pathlib import Path
 from datetime import datetime
 import pytz
 from tzlocal import get_localzone
@@ -39,6 +41,7 @@ class AgentManager:
     def _stamp_name(self, base_name: str, agent_id: str) -> str:
         """Append agent_id and local datetime with timezone in human-readable format."""
         now_local = datetime.now(self.local_tz)
+        # Example: 2025-08-26 08:26 PM PST
         timestamp_str = now_local.strftime("%Y-%m-%d %I:%M %p %Z")
         return f"{base_name} [{agent_id} | {timestamp_str}]"
 
@@ -49,7 +52,7 @@ class AgentManager:
     def create_manager_with_roles(self, manager_yaml_path: str) -> dict:
         """
         Create all role agents defined in Manager YAML, then the Manager itself,
-        then assign roles, then rename manager with stamped name.
+        then assign roles.
 
         Returns:
             {
@@ -59,6 +62,7 @@ class AgentManager:
               "timestamp": <timestamp_str>
             }
         """
+
         with open(manager_yaml_path, "r") as f:
             manager_yaml = yaml.safe_load(f)
 
@@ -82,7 +86,7 @@ class AgentManager:
                     role_id = res["data"].get("_id") or res["data"].get("agent_id")
                     stamped_name = self._stamp_name(role_yaml.get("name"), role_id)
 
-                    # Update role with stamped name
+                    # Update role name
                     update_payload = role_payload.copy()
                     update_payload["name"] = stamped_name
                     self.client.put(f"/v3/agents/{role_id}", update_payload)
@@ -97,6 +101,7 @@ class AgentManager:
                     print(f"❌ Failed to create role agent from {role_path}: {res}")
                     sys.exit(1)
             else:
+                # Role already provided inline (id or config)
                 resolved_agents.append(entry)
 
         # ---------------------------------------------------------------------
@@ -112,11 +117,9 @@ class AgentManager:
             return None
 
         mgr_id = res["data"].get("_id") or res["data"].get("agent_id")
-
-        # ---------------------------------------------------------------------
-        # 3. Stamp manager name and update with roles
-        # ---------------------------------------------------------------------
         stamped_mgr_name = self._stamp_name(manager_yaml.get("name"), mgr_id)
+
+        # Update manager name + attach roles
         update_payload = manager_payload.copy()
         update_payload["name"] = stamped_mgr_name
         update_payload["managed_agents"] = resolved_agents
@@ -127,8 +130,10 @@ class AgentManager:
         else:
             print(f"⚠️ Manager created but failed to link roles → {update_res}")
 
+        # ---------------------------------------------------------------------
+        # 3. Return manager metadata
+        # ---------------------------------------------------------------------
         ts = datetime.now(self.local_tz).strftime("%Y-%m-%d %I:%M %p %Z")
-
         return {
             "agent_id": mgr_id,
             "name": stamped_mgr_name,

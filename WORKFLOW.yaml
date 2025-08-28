@@ -1,0 +1,8 @@
+workflows:
+  - name: Architect Workflow
+    manager: agents/managers/ARCHITECT_MANAGER_v1.yaml
+    description: >
+      Orchestrates the creation of agents and workflows based on user-defined
+      business use cases. Utilizes the ARCHITECT_MANAGER to delegate YAML
+      generation to the YAML_COMPOSER_ROLE, ensuring all outputs are valid and
+      machine-readable.  
