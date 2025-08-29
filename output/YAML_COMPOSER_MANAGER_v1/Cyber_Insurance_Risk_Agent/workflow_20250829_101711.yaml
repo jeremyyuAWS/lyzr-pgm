@@ -1,0 +1,9 @@
+flow_name: Enterprise_Cybersecurity_Risk_Assessment
+flow_data:
+  tasks:
+    - name: risk_analysis
+      function: call_agent
+      agent: CyberSecurity_Risk_Analyst_v1
+    - name: coverage_recommendations
+      function: call_agent
+      agent: CyberSecurity_Recommendations_Generator_v1

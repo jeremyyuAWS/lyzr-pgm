@@ -1,0 +1,6 @@
+flow_name: Derivative_Trade_Monitoring_Flow
+flow_data:
+  tasks:
+    - name: trade_surveillance
+      function: call_agent
+      agent: TRADE_MONITOR_Analyzer_v1

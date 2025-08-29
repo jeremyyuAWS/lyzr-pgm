@@ -1,0 +1,9 @@
+flow_name: Reinsurance_Claim_Settlement_Flow
+flow_data:
+  tasks:
+    - name: claim_processing
+      function: call_agent
+      agent: Reinsurance_Claim_Processor_Agent
+    - name: settlement_reporting
+      function: call_agent
+      agent: Reinsurance_Settlement_Reporting_Agent

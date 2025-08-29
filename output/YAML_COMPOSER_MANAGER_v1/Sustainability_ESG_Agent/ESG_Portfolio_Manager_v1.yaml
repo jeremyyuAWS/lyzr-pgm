@@ -1,0 +1,35 @@
+template_type: single_task
+name: ESG_Portfolio_Manager_v1
+description: Oversees ESG metrics evaluation for investment portfolios
+agent_role: ESG Investment Portfolio Manager
+agent_goal: Coordinate comprehensive ESG performance analysis and investment decision-making
+agent_instructions: '1. Receive investment portfolio details
+
+  2. Delegate ESG data collection and analysis
+
+  3. Aggregate ESG performance metrics
+
+  4. Provide investment recommendations based on ESG scores
+
+  '
+features:
+- type: strategic_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/ESG_Data_Collector_v1.yaml
+  usage_description: Collects and aggregates ESG metrics from multiple sources
+- file: agents/roles/ESG_Analyst_v1.yaml
+  usage_description: Analyzes and interprets ESG performance metrics

@@ -1,0 +1,33 @@
+template_type: single_task
+name: Document_Verification_Agent
+description: Collects and verifies required onboarding documents
+agent_role: Document Compliance Specialist
+agent_goal: Ensure complete and accurate document submission
+agent_instructions: '1. Request necessary onboarding documents
+
+  2. Validate document authenticity
+
+  3. Check for completeness and compliance
+
+  4. Perform OCR and digital verification
+
+  '
+features:
+- type: document_processing
+  config:
+    accepted_formats:
+    - pdf
+    - jpg
+    - png
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

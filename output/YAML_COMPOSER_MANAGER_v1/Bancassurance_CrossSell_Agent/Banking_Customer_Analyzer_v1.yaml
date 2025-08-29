@@ -1,0 +1,38 @@
+template_type: single_task
+name: Banking_Customer_Analyzer_v1
+description: Performs detailed analysis of banking customer profiles for insurance
+  cross-selling
+agent_role: Customer Insights Specialist
+agent_goal: Extract comprehensive customer insights to identify insurance product
+  opportunities
+agent_instructions: '1. Analyze customer banking transaction history
+
+  2. Assess financial profile and risk indicators
+
+  3. Identify potential insurance product gaps
+
+  4. Generate detailed customer segment profile
+
+  '
+features:
+- type: data_analysis
+  config:
+    data_sources:
+    - banking_transactions
+    - customer_profile
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    customer_segment: string
+    risk_profile: string
+    recommended_analysis_actions: array
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

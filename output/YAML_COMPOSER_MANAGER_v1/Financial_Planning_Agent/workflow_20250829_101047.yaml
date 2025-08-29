@@ -1,0 +1,15 @@
+flow_name: Financial_Planning_Workflow
+flow_data:
+  tasks:
+    - name: assess_financial_goals
+      function: call_agent
+      agent: Financial_Planner_Manager_v1
+    - name: retirement_planning
+      function: call_agent
+      agent: Retirement_Planning_Agent_v1
+    - name: education_savings
+      function: call_agent
+      agent: Education_Savings_Agent_v1
+    - name: general_savings_strategy
+      function: call_agent
+      agent: Savings_Strategy_Agent_v1

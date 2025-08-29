@@ -1,0 +1,9 @@
+flow_name: Loan_Collections_Workflow
+flow_data:
+  tasks:
+    - name: repayment_reminder
+      function: call_agent
+      agent: Loan_Collections_Reminder_Agent
+    - name: delinquency_handling
+      function: call_agent
+      agent: Loan_Delinquency_Management_Agent

@@ -1,0 +1,12 @@
+flow_name: Personalized_Wealth_Management_Flow
+flow_data:
+  tasks:
+    - name: asset_analysis
+      function: call_agent
+      agent: Wealth_Strategist_Analyzer_v1
+    - name: liability_assessment
+      function: call_agent
+      agent: Financial_Liability_Manager_v1
+    - name: portfolio_optimization
+      function: call_agent
+      agent: Investment_Portfolio_Optimizer_v1

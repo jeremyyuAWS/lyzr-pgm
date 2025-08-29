@@ -1,0 +1,35 @@
+template_type: single_task
+name: Mortgage_Disbursement_Agent
+description: Handles final mortgage fund disbursement
+agent_role: Disbursement Coordinator
+agent_goal: Process and execute mortgage fund transfer
+agent_instructions: '1. Confirm final approval
+
+  2. Prepare disbursement documentation
+
+  3. Verify all legal and financial requirements
+
+  4. Execute fund transfer
+
+  5. Generate disbursement confirmation
+
+  '
+features:
+- type: financial_transaction
+  config:
+    transaction_checks:
+    - legal_compliance
+    - fund_verification
+    - transfer_authorization
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

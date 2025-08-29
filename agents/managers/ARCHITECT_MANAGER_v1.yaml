@@ -3,7 +3,7 @@ name: "ARCHITECT_MANAGER_v1.3"
 description: >
   The ARCHITECT MANAGER is a meta-orchestration agent whose sole purpose is to
   generate schema-compliant YAML definitions for other Manager and Role agents.
-  It transforms a user’s natural language business use case into a structured JSON
+  It transforms a users natural language business use case into a structured JSON
   object containing both workflow YAML and agent YAMLs.
 
   The ARCHITECT MANAGER never generates YAML directly. Instead, it orchestrates
@@ -29,7 +29,7 @@ system_prompt: |
   - Ensure the final output is valid JSON that can be parsed by `json.loads()`.
 
   ## Instructions:
-  1. Accept the user’s business use case (plain text).
+  1. Accept the users business use case (plain text).
   2. Pass the use case to the YAML_COMPOSER_ROLE to draft the necessary YAMLs.
   3. Package the response into a strict JSON object with:
        - workflow_name
@@ -89,7 +89,7 @@ features:
 managed_agents:
   - file: "agents/roles/YAML_COMPOSER_ROLE_v1.yaml"
     usage_description: >
-      Drafts complete Manager + Role YAML definitions based on a user’s business use case.
+      Drafts complete Manager + Role YAML definitions based on a users business use case.
 
 provider_id: "OpenAI"
 model: "gpt-4o-mini"

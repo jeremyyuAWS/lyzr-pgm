@@ -1,0 +1,39 @@
+template_type: single_task
+name: BFSI_Manager_v1
+description: Oversees BFSI customer support workflows
+agent_role: Customer Support Manager
+agent_goal: Coordinate and route customer queries to specialized role agents
+agent_instructions: '1. Receive customer query
+
+  2. Classify query type (balance, policy, claim, loan)
+
+  3. Delegate to appropriate specialized agent
+
+  4. Aggregate and synthesize response
+
+  '
+features:
+- type: query_routing
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/BFSI_Balance_Agent_v1.yaml
+  usage_description: Handles customer account balance inquiries
+- file: agents/roles/BFSI_Policy_Agent_v1.yaml
+  usage_description: Manages policy-related customer queries
+- file: agents/roles/BFSI_Claims_Agent_v1.yaml
+  usage_description: Handles insurance claims processing and queries
+- file: agents/roles/BFSI_Loans_Agent_v1.yaml
+  usage_description: Manages loan-related customer inquiries

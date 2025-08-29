@@ -1,0 +1,12 @@
+flow_name: Comprehensive_Onboarding_Flow
+flow_data:
+  tasks:
+    - name: kyc_verification
+      function: call_agent
+      agent: KYC_Verification_Agent
+    - name: document_collection
+      function: call_agent
+      agent: Document_Verification_Agent
+    - name: account_setup
+      function: call_agent
+      agent: Account_Setup_Agent

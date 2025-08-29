@@ -1,0 +1,37 @@
+template_type: single_task
+name: CARD_DISPUTE_RESOLUTION_MANAGER_v1
+description: Oversees the entire card dispute resolution process
+agent_role: Dispute Resolution Manager
+agent_goal: Coordinate and manage the end-to-end card dispute handling workflow
+agent_instructions: '1. Receive initial dispute details from intake agent
+
+  2. Coordinate between intake, verification, and resolution teams
+
+  3. Ensure comprehensive investigation of disputed charges
+
+  4. Make final determination on dispute resolution
+
+  5. Communicate outcome to cardholder
+
+  '
+features:
+- type: workflow_orchestration
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/CARD_DISPUTE_INTAKE_ROLE_v1.yaml
+  usage_description: Handles initial collection of cardholder dispute information
+- file: agents/roles/CARD_CHARGE_VERIFICATION_ROLE_v1.yaml
+  usage_description: Investigates and verifies the details of disputed charges

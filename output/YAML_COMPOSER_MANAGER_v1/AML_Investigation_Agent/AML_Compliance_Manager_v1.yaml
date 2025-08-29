@@ -1,0 +1,36 @@
+template_type: single_task
+name: AML_Compliance_Manager_v1
+description: Oversees Anti-Money Laundering transaction investigations
+agent_role: AML Compliance Manager
+agent_goal: Coordinate and manage the investigation of flagged suspicious transactions
+agent_instructions: '1. Receive list of flagged transactions
+
+  2. Assign investigations to specialized AML investigator
+
+  3. Review investigation reports
+
+  4. Escalate high-risk cases to senior compliance team
+
+  5. Ensure comprehensive documentation and regulatory compliance
+
+  '
+features:
+- type: compliance_oversight
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/AML_Investigator_Role_v1.yaml
+  usage_description: Specialized agent for in-depth investigation of suspicious financial
+    transactions

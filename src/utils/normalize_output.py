@@ -15,15 +15,13 @@ DEFAULT_LLM_CONFIG = {
     "response_format": {"type": "json"},
 }
 
-
-def canonicalize_name(raw_name: str) -> str:
-    """
-    Force a name into Title_Case_Underscore format.
-    Example: "fraud_detection_agent" → "Fraud_Detection_Agent"
-             "customer-onboarding"   → "Customer_Onboarding"
-             "Claims Manager"        → "Claims_Manager"
-    """
-    return "_".join(word.capitalize() for word in re.split(r"[_\-\s]+", raw_name) if word)
+def canonicalize_name(name: str) -> str:
+    """Preserve input casing, only make it filesystem-safe."""
+    return (
+        name.strip()
+            .replace(" ", "_")
+            .replace("-", "_")
+    )
 
 
 def canonicalize_agent_yaml(agent: dict) -> dict:

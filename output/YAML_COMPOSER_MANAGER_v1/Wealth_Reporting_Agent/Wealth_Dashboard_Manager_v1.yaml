@@ -1,0 +1,37 @@
+template_type: single_task
+name: Wealth_Dashboard_Manager_v1
+description: Oversees the consolidation and visualization of wealth across multiple
+  accounts
+agent_role: Wealth Dashboard Coordinator
+agent_goal: Orchestrate the collection and presentation of financial data from various
+  sources
+agent_instructions: '1. Receive account connection details
+
+  2. Coordinate data aggregation across different financial platforms
+
+  3. Supervise dashboard generation
+
+  4. Ensure comprehensive and secure financial overview
+
+  '
+features:
+- type: financial_orchestration
+  config:
+    security_level: high
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Wealth_Aggregator_Role_v1.yaml
+  usage_description: Collects and consolidates financial data from multiple accounts
+    and sources

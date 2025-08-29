@@ -1,0 +1,35 @@
+template_type: single_task
+name: Insurance_Product_Recommender_v1
+description: Generates personalized insurance product recommendations based on customer
+  analysis
+agent_role: Insurance Product Matching Specialist
+agent_goal: Create tailored insurance product recommendations matching customer needs
+agent_instructions: '1. Receive customer analysis from Banking_Customer_Analyzer_v1
+
+  2. Match customer profile with appropriate insurance products
+
+  3. Calculate potential value and fit of recommendations
+
+  4. Generate prioritized product suggestions
+
+  '
+features:
+- type: recommendation_engine
+  config:
+    matching_algorithm: contextual_similarity
+  priority: 2
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    recommended_products: array
+    recommendation_confidence: number
+    personalization_score: number
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

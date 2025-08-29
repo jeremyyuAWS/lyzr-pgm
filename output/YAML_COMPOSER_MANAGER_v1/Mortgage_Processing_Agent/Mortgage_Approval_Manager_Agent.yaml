@@ -1,0 +1,43 @@
+template_type: single_task
+name: Mortgage_Approval_Manager_Agent
+description: Manages the mortgage approval decision process
+agent_role: Approval Specialist
+agent_goal: Make informed decisions on mortgage applications
+agent_instructions: '1. Review credit analyst report
+
+  2. Verify all documentation
+
+  3. Apply lending criteria
+
+  4. Make approval or rejection recommendation
+
+  5. Prepare detailed decision rationale
+
+  '
+features:
+- type: decision_making
+  config:
+    approval_criteria:
+    - minimum_credit_score
+    - maximum_debt_ratio
+    - income_verification
+  priority: 1
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Mortgage_Doc_Collector_Agent.yaml
+  usage_description: Collects and verifies mortgage application documents
+- file: agents/roles/Mortgage_Credit_Analyst_Agent.yaml
+  usage_description: Performs comprehensive credit and financial assessment
+- file: agents/roles/Mortgage_Disbursement_Agent.yaml
+  usage_description: Handles final mortgage fund disbursement

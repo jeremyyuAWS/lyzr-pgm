@@ -1,0 +1,9 @@
+flow_name: Wealth_Dashboard_Consolidation
+flow_data:
+  tasks:
+    - name: aggregate_accounts
+      function: call_agent
+      agent: Wealth_Aggregator_Role_v1
+    - name: generate_dashboard
+      function: call_agent
+      agent: Wealth_Dashboard_Manager_v1

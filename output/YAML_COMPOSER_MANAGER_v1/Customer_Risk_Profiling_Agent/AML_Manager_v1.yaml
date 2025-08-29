@@ -1,0 +1,41 @@
+template_type: single_task
+name: AML_Manager_v1
+description: Oversees Anti-Money Laundering and Know Your Customer risk profiling
+  processes
+agent_role: AML Compliance Manager
+agent_goal: Coordinate comprehensive customer risk assessment and compliance verification
+agent_instructions: '1. Initiate customer risk profiling process
+
+  2. Gather initial customer financial information
+
+  3. Delegate detailed risk analysis to specialized risk analyzer
+
+  4. Review and validate risk assessment reports
+
+  5. Escalate high-risk cases for further investigation
+
+  '
+features:
+- type: compliance_management
+  config:
+    risk_thresholds:
+    - low_risk: 0-20
+    - medium_risk: 21-50
+    - high_risk: 51-100
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/KYC_Risk_Analyzer_v1.yaml
+  usage_description: Conducts in-depth financial history and behavior analysis for
+    customer risk profiling

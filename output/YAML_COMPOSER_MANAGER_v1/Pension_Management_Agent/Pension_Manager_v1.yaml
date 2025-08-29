@@ -1,0 +1,38 @@
+template_type: single_task
+name: Pension_Manager_v1
+description: Oversees comprehensive pension management workflow
+agent_role: Pension Management Supervisor
+agent_goal: Coordinate and monitor pension tracking, returns analysis, and withdrawal
+  planning
+agent_instructions: '1. Receive customer pension account details
+
+  2. Delegate tasks to specialized role agents
+
+  3. Aggregate and review pension management insights
+
+  4. Provide consolidated recommendations to customer
+
+  '
+features:
+- type: orchestration
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Pension_ROLE_Contributions_v1.yaml
+  usage_description: Tracks and analyzes pension fund contributions
+- file: agents/roles/Pension_ROLE_Returns_v1.yaml
+  usage_description: Analyzes pension fund investment returns
+- file: agents/roles/Pension_ROLE_Withdrawals_v1.yaml
+  usage_description: Assists with pension withdrawal planning

@@ -1,0 +1,38 @@
+template_type: single_task
+name: FRAUD_Detector_Role_v1
+description: Real-time transaction monitoring and anomaly detection
+agent_role: Fraud Detection Specialist
+agent_goal: Analyze transactions in real-time and identify potential fraudulent activities
+agent_instructions: '1. Continuously monitor incoming transactions
+
+  2. Apply machine learning models for risk scoring
+
+  3. Flag transactions exceeding risk thresholds
+
+  4. Generate detailed anomaly reports
+
+  '
+features:
+- type: machine_learning
+  config:
+    ml_model: anomaly_detection
+    risk_calculation_method: weighted_scoring
+  priority: 2
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    transaction_analysis:
+    - transaction_id: string
+    - risk_score: number
+    - anomaly_indicators:
+      - string
+    - confidence_level: number
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,37 @@
+template_type: single_task
+name: Insurance_Premium_Manager
+description: Oversees entire insurance premium management workflow
+agent_role: Workflow Coordinator
+agent_goal: Ensure smooth premium payment processes and customer experience
+agent_instructions: '1. Coordinate between reminder, transaction, and failure handling
+  agents
+
+  2. Monitor workflow performance
+
+  3. Generate comprehensive reports
+
+  4. Identify and implement process improvements
+
+  '
+features:
+- type: workflow_orchestration
+- type: performance_monitoring
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Premium_Reminder_Agent.yaml
+  usage_description: Generates and sends insurance premium payment reminders
+- file: agents/roles/Transaction_Processing_Agent.yaml
+  usage_description: Handles insurance premium payment transactions
+- file: agents/roles/Payment_Failure_Handler.yaml
+  usage_description: Manages failed insurance premium payments

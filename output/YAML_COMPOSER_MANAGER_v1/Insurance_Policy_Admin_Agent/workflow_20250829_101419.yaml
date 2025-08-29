@@ -1,0 +1,9 @@
+flow_name: Insurance_Policy_Management_Flow
+flow_data:
+  tasks:
+    - name: policy_review
+      function: call_agent
+      agent: Insurance_Policy_Manager_v1
+    - name: policy_transaction
+      function: call_agent
+      agent: Insurance_Policy_Processor_v1

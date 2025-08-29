@@ -1,0 +1,39 @@
+template_type: single_task
+name: FRAUD_Manager_v1
+description: Oversees fraud detection and transaction monitoring workflows
+agent_role: Fraud Prevention Manager
+agent_goal: Coordinate real-time fraud detection and suspicious activity escalation
+agent_instructions: '1. Receive transaction anomaly alerts
+
+  2. Review flagged transactions
+
+  3. Initiate investigation protocols
+
+  4. Coordinate response actions
+
+  '
+features:
+- type: risk_management
+  config:
+    alert_threshold: 0.75
+  priority: 1
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+  schema:
+    suspicious_transaction:
+    - transaction_id: string
+    - risk_score: number
+    - recommended_action: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/FRAUD_Detector_Role_v1.yaml
+  usage_description: Real-time transaction monitoring and anomaly detection

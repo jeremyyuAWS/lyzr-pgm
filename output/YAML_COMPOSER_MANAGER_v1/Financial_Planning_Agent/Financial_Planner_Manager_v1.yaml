@@ -1,0 +1,38 @@
+template_type: single_task
+name: Financial_Planner_Manager_v1
+description: Oversees comprehensive financial planning process
+agent_role: Financial Planning Manager
+agent_goal: Coordinate and integrate financial planning across retirement, education,
+  and savings goals
+agent_instructions: '1. Gather comprehensive financial information from client
+
+  2. Coordinate between specialized financial planning agents
+
+  3. Synthesize recommendations from different planning domains
+
+  4. Provide holistic financial planning guidance
+
+  '
+features:
+- type: orchestration
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Retirement_Planning_Agent_v1.yaml
+  usage_description: Specialized in retirement savings and investment strategies
+- file: agents/roles/Education_Savings_Agent_v1.yaml
+  usage_description: Focuses on education funding and savings strategies
+- file: agents/roles/Savings_Strategy_Agent_v1.yaml
+  usage_description: Develops general savings and emergency fund strategies

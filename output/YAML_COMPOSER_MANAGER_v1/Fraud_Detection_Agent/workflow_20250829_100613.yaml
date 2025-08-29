@@ -1,0 +1,9 @@
+flow_name: Fraud_Detection_Flow
+flow_data:
+  tasks:
+    - name: monitor_transactions
+      function: call_agent
+      agent: FRAUD_DETECTOR_ROLE_v1
+    - name: escalate_suspicious
+      function: call_agent
+      agent: FRAUD_MANAGER_v1

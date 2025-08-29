@@ -1,0 +1,33 @@
+template_type: single_task
+name: Compliance_Manager_v1
+description: Oversees derivative trade monitoring and regulatory compliance
+agent_role: Compliance Oversight Manager
+agent_goal: Coordinate trade surveillance and investigate potential market abuse
+agent_instructions: '1. Receive trade monitoring alerts from surveillance agent
+
+  2. Evaluate potential regulatory breaches
+
+  3. Escalate serious violations to appropriate authorities
+
+  4. Maintain comprehensive audit trail of investigations
+
+  '
+features:
+- type: risk_management
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/TRADE_MONITOR_Analyzer_v1.yaml
+  usage_description: Advanced AI-powered derivative trade surveillance system

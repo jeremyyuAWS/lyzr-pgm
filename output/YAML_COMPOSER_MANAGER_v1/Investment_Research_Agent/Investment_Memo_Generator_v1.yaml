@@ -1,0 +1,27 @@
+template_type: single_task
+name: Investment_Memo_Generator_v1
+description: Generates comprehensive investment memos based on research
+agent_role: Investment Memo Writer
+agent_goal: Create structured, insightful investment recommendation documents
+agent_instructions: "1. Receive market research summaries\n2. Synthesize key findings\n\
+  3. Develop investment recommendations\n4. Generate formal investment memo\n5. Include:\n\
+  \   - Market overview\n   - Key trends\n   - Potential opportunities\n   - Risk\
+  \ assessment\n"
+features:
+- type: document_generation
+  config:
+    output_format:
+    - pdf
+    - markdown
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

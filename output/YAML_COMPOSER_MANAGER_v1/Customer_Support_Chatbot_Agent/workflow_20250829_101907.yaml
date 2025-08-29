@@ -1,0 +1,6 @@
+flow_name: BFSI_Customer_Support_Flow
+flow_data:
+  tasks:
+    - name: handle_customer_query
+      function: call_agent
+      agent: BFSI_Manager_v1

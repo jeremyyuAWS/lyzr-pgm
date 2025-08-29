@@ -1,0 +1,29 @@
+template_type: single_task
+name: BFSI_Loans_Agent_v1
+description: Manages loan-related customer inquiries
+agent_role: Loan Information Specialist
+agent_goal: Provide loan details, status, and guidance
+agent_instructions: '1. Identify loan type and status
+
+  2. Retrieve loan information
+
+  3. Explain loan terms
+
+  4. Assist with loan-related queries
+
+  '
+features:
+- type: loan_information
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

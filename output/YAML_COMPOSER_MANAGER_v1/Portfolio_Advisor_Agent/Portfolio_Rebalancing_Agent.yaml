@@ -1,0 +1,31 @@
+template_type: single_task
+name: Portfolio_Rebalancing_Agent
+description: Generates strategic recommendations for portfolio rebalancing
+agent_role: Investment Strategist
+agent_goal: Develop optimized rebalancing recommendations based on analysis
+agent_instructions: '1. Review portfolio analysis results
+
+  2. Assess current market conditions
+
+  3. Recommend asset allocation adjustments
+
+  4. Calculate optimal trade suggestions
+
+  5. Provide risk-adjusted rebalancing strategy
+
+  '
+features:
+- type: investment_optimization
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

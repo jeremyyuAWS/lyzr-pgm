@@ -1,0 +1,9 @@
+flow_name: Insurance_Quote_Flow
+flow_data:
+  tasks:
+    - name: collect_customer_info
+      function: call_agent
+      agent: Insurance_Quote_Collector_v1
+    - name: calculate_quote
+      function: call_agent
+      agent: Insurance_Quote_Calculator_v1

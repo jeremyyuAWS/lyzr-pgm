@@ -1,0 +1,28 @@
+template_type: single_task
+name: Transaction_Processing_Agent
+description: Handles insurance premium payment transactions
+agent_role: Payment Processor
+agent_goal: Efficiently process and record insurance premium payments
+agent_instructions: '1. Validate payment details
+
+  2. Process incoming payments
+
+  3. Update customer payment records
+
+  4. Generate payment confirmations
+
+  '
+features:
+- type: financial_processing
+- type: record_keeping
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

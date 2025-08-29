@@ -1,0 +1,9 @@
+flow_name: Insurance_Cross_Selling_Flow
+flow_data:
+  tasks:
+    - name: customer_analysis
+      function: call_agent
+      agent: Banking_Customer_Analyzer_v1
+    - name: product_recommendation
+      function: call_agent
+      agent: Insurance_Product_Recommender_v1

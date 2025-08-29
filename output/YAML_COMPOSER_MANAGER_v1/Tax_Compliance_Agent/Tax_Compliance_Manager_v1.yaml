@@ -1,0 +1,40 @@
+template_type: single_task
+name: Tax_Compliance_Manager_v1
+description: Oversees comprehensive tax compliance and filing processes
+agent_role: Tax Compliance Manager
+agent_goal: Coordinate end-to-end tax compliance workflow, ensuring accurate filings
+  and regulatory adherence
+agent_instructions: '1. Receive and aggregate tax-related documentation
+
+  2. Monitor changing tax regulations
+
+  3. Delegate specific tax compliance tasks to specialized role agents
+
+  4. Ensure comprehensive review of tax filing processes
+
+  5. Maintain audit trail and compliance documentation
+
+  '
+features:
+- type: compliance_orchestration
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/TAX_ROLE_DocumentCollector_v1.yaml
+  usage_description: Collects and organizes tax-related documentation
+- file: agents/roles/TAX_ROLE_RegulationAnalyst_v1.yaml
+  usage_description: Monitors and analyzes changing tax regulations
+- file: agents/roles/TAX_ROLE_FilingPreparation_v1.yaml
+  usage_description: Prepares and submits tax filings

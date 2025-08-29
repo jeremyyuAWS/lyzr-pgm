@@ -1,0 +1,29 @@
+template_type: single_task
+name: BFSI_Policy_Agent_v1
+description: Manages policy-related customer queries
+agent_role: Policy Information Specialist
+agent_goal: Provide comprehensive policy details and explanations
+agent_instructions: '1. Identify specific policy type
+
+  2. Retrieve policy details
+
+  3. Explain policy terms and conditions
+
+  4. Address customer concerns
+
+  '
+features:
+- type: policy_information
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,35 @@
+template_type: single_task
+name: Loan_Collections_Manager_v1
+description: Oversees loan collections and delinquency management process
+agent_role: Collections Manager
+agent_goal: Coordinate loan repayment strategies and manage delinquency resolution
+agent_instructions: '1. Monitor loan repayment status
+
+  2. Delegate reminder and collection tasks
+
+  3. Escalate critical delinquency cases
+
+  4. Generate comprehensive collection reports
+
+  '
+features:
+- type: strategic_oversight
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Loan_Collections_Reminder_Agent.yaml
+  usage_description: Handles proactive loan repayment reminders
+- file: agents/roles/Loan_Delinquency_Management_Agent.yaml
+  usage_description: Manages loan accounts with payment defaults

@@ -1,0 +1,9 @@
+flow_name: Compliance_Audit_Workflow
+flow_data:
+  tasks:
+    - name: run_compliance_checks
+      function: call_agent
+      agent: Compliance_Manager_v1
+    - name: generate_audit_report
+      function: call_agent
+      agent: Audit_Report_Generator_v1

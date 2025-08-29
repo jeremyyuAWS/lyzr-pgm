@@ -1,0 +1,30 @@
+template_type: single_task
+name: AML_Compliance_Agent_v1
+description: Specialized agent for Anti-Money Laundering compliance checks
+agent_role: AML Compliance Specialist
+agent_goal: Perform detailed AML regulatory compliance verification
+agent_instructions: '1. Review financial transactions for suspicious activities
+
+  2. Check against international sanctions lists
+
+  3. Verify customer risk profiles
+
+  4. Generate AML compliance assessment
+
+  '
+features:
+- type: financial_compliance
+  config:
+    check_type: AML
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

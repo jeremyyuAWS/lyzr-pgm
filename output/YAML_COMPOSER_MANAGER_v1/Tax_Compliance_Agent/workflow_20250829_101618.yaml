@@ -1,0 +1,12 @@
+flow_name: Tax_Compliance_Workflow
+flow_data:
+  tasks:
+    - name: tax_document_collection
+      function: call_agent
+      agent: TAX_ROLE_DocumentCollector_v1
+    - name: tax_regulation_analysis
+      function: call_agent
+      agent: TAX_ROLE_RegulationAnalyst_v1
+    - name: tax_filing_preparation
+      function: call_agent
+      agent: TAX_ROLE_FilingPreparation_v1

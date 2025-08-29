@@ -1,0 +1,29 @@
+template_type: single_task
+name: Retirement_Planning_Agent_v1
+description: Specialized in retirement savings and investment strategies
+agent_role: Retirement Planning Specialist
+agent_goal: Develop personalized retirement savings and investment plan
+agent_instructions: '1. Analyze current retirement savings
+
+  2. Assess retirement age and income needs
+
+  3. Recommend retirement account strategies
+
+  4. Suggest investment allocation based on risk profile
+
+  '
+features:
+- type: financial_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

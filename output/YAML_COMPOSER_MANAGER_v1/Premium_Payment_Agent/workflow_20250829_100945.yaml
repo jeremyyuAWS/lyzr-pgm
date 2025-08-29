@@ -1,0 +1,6 @@
+flow_name: Insurance_Premium_Management
+flow_description: Comprehensive workflow for managing insurance premium reminders, transactions, and payment failures
+flow_stages:
+  - stage: Premium_Reminder_Generation
+  - stage: Transaction_Processing
+  - stage: Payment_Failure_Handling

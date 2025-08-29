@@ -1,0 +1,31 @@
+template_type: single_task
+name: Pension_ROLE_Withdrawals_v1
+description: Assists with pension withdrawal planning
+agent_role: Withdrawal Planner
+agent_goal: Develop personalized withdrawal strategies
+agent_instructions: '1. Assess customer''s retirement timeline
+
+  2. Analyze current pension fund status
+
+  3. Recommend optimal withdrawal strategies
+
+  4. Calculate potential tax implications
+
+  5. Create personalized withdrawal projection
+
+  '
+features:
+- type: financial_planning
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

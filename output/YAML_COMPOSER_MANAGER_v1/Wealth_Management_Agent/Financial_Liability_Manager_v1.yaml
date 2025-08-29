@@ -1,0 +1,38 @@
+template_type: single_task
+name: Financial_Liability_Manager_v1
+description: Analyzes and optimizes client's existing liabilities and debt structures
+agent_role: Liability Strategist
+agent_goal: Comprehensive assessment and optimization of financial liabilities
+agent_instructions: '1. Review all existing debt and liability structures
+
+  2. Analyze interest rates and repayment strategies
+
+  3. Identify potential debt consolidation or refinancing opportunities
+
+  4. Provide liability optimization recommendations
+
+  '
+features:
+- type: liability_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Wealth_Management_Director_v1.yaml
+  usage_description: Oversees comprehensive wealth management strategy
+- file: agents/roles/Wealth_Strategist_Analyzer_v1.yaml
+  usage_description: Performs in-depth analysis of client's assets and investment
+    potential
+- file: agents/roles/Investment_Portfolio_Optimizer_v1.yaml
+  usage_description: Develops optimized investment portfolio strategy

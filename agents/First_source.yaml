@@ -1,0 +1,140 @@
+use_cases:
+  - name: Lead_Scoring_Agent
+    description: |
+      Evaluate inbound leads from multiple channels (web, social, email) and assign priority scores.
+
+      Example expected output:
+      {
+        "workflow_name": "Lead_Scoring_Flow",
+        "workflow_yaml": "flow_name: Lead_Scoring_Flow\nflow_data:\n  tasks:\n    - name: score_leads\n      function: call_agent\n      agent: LeadScore_Role_v1",
+        "agents": [
+          { "name": "LeadScore_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "LeadScore_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Campaign_Optimization_Agent
+    description: |
+      Analyze ad spend across platforms (Google, Meta, LinkedIn) and recommend budget reallocation.
+
+      Example expected output:
+      {
+        "workflow_name": "Campaign_Optimization_Flow",
+        "workflow_yaml": "flow_name: Campaign_Optimization_Flow\nflow_data:\n  tasks:\n    - name: optimize_campaigns\n      function: call_agent\n      agent: Campaign_Role_v1",
+        "agents": [
+          { "name": "Campaign_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Campaign_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Customer_Segmentation_Agent
+    description: |
+      Segment customers based on behavior, demographics, and purchase history.
+
+      Example expected output:
+      {
+        "workflow_name": "Customer_Segmentation_Flow",
+        "workflow_yaml": "flow_name: Customer_Segmentation_Flow\nflow_data:\n  tasks:\n    - name: segment_customers\n      function: call_agent\n      agent: Segment_Role_v1",
+        "agents": [
+          { "name": "Segment_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Segment_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Churn_Prediction_Agent
+    description: |
+      Identify customers at risk of churn using behavioral and engagement data.
+
+      Example expected output:
+      {
+        "workflow_name": "Churn_Prediction_Flow",
+        "workflow_yaml": "flow_name: Churn_Prediction_Flow\nflow_data:\n  tasks:\n    - name: predict_churn\n      function: call_agent\n      agent: Churn_Role_v1",
+        "agents": [
+          { "name": "Churn_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Churn_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Content_Personalization_Agent
+    description: |
+      Deliver personalized email, ad, and landing page recommendations based on audience profiles.
+
+      Example expected output:
+      {
+        "workflow_name": "Content_Personalization_Flow",
+        "workflow_yaml": "flow_name: Content_Personalization_Flow\nflow_data:\n  tasks:\n    - name: personalize_content\n      function: call_agent\n      agent: Content_Role_v1",
+        "agents": [
+          { "name": "Content_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Content_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Attribution_Modeling_Agent
+    description: |
+      Analyze multi-touch attribution across campaigns to determine ROI by channel.
+
+      Example expected output:
+      {
+        "workflow_name": "Attribution_Modeling_Flow",
+        "workflow_yaml": "flow_name: Attribution_Modeling_Flow\nflow_data:\n  tasks:\n    - name: model_attribution\n      function: call_agent\n      agent: Attribution_Role_v1",
+        "agents": [
+          { "name": "Attribution_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Attribution_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Sales_Enablement_Agent
+    description: |
+      Provide real-time battlecards, competitor intel, and recommended sales plays.
+
+      Example expected output:
+      {
+        "workflow_name": "Sales_Enablement_Flow",
+        "workflow_yaml": "flow_name: Sales_Enablement_Flow\nflow_data:\n  tasks:\n    - name: enable_sales\n      function: call_agent\n      agent: Sales_Role_v1",
+        "agents": [
+          { "name": "Sales_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Sales_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Customer_Insights_Agent
+    description: |
+      Generate dashboards with customer satisfaction, NPS, and sentiment analysis.
+
+      Example expected output:
+      {
+        "workflow_name": "Customer_Insights_Flow",
+        "workflow_yaml": "flow_name: Customer_Insights_Flow\nflow_data:\n  tasks:\n    - name: analyze_customer_feedback\n      function: call_agent\n      agent: Insights_Role_v1",
+        "agents": [
+          { "name": "Insights_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Insights_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Pricing_Optimization_Agent
+    description: |
+      Recommend dynamic pricing strategies based on demand, competition, and margins.
+
+      Example expected output:
+      {
+        "workflow_name": "Pricing_Optimization_Flow",
+        "workflow_yaml": "flow_name: Pricing_Optimization_Flow\nflow_data:\n  tasks:\n    - name: optimize_pricing\n      function: call_agent\n      agent: Pricing_Role_v1",
+        "agents": [
+          { "name": "Pricing_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Pricing_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Demand_Forecasting_Agent
+    description: |
+      Predict future demand for products/services to inform marketing and supply chain.
+
+      Example expected output:
+      {
+        "workflow_name": "Demand_Forecasting_Flow",
+        "workflow_yaml": "flow_name: Demand_Forecasting_Flow\nflow_data:\n  tasks:\n    - name: forecast_demand\n      function: call_agent\n      agent: Forecast_Role_v1",
+        "agents": [
+          { "name": "Forecast_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Forecast_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }

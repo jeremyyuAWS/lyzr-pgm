@@ -1,0 +1,37 @@
+template_type: single_task
+name: Onboarding_Manager_v1
+description: Orchestrates the entire onboarding process
+agent_role: Onboarding Coordinator
+agent_goal: Manage and coordinate comprehensive onboarding workflow
+agent_instructions: '1. Initiate and oversee the entire onboarding process
+
+  2. Coordinate between KYC, document verification, and account setup agents
+
+  3. Ensure smooth progression through each onboarding stage
+
+  4. Consolidate and validate final onboarding results
+
+  '
+features:
+- type: workflow_orchestration
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/KYC_Verification_Agent.yaml
+  usage_description: Handles Know Your Customer (KYC) verification process
+- file: agents/roles/Document_Verification_Agent.yaml
+  usage_description: Collects and verifies required onboarding documents
+- file: agents/roles/Account_Setup_Agent.yaml
+  usage_description: Handles final account creation and access provisioning

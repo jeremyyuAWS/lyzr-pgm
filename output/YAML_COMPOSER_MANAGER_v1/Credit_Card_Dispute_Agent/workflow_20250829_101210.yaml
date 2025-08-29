@@ -1,0 +1,12 @@
+flow_name: Card_Dispute_Resolution_Flow
+flow_data:
+  tasks:
+    - name: initial_dispute_intake
+      function: call_agent
+      agent: CARD_DISPUTE_INTAKE_ROLE_v1
+    - name: charge_verification
+      function: call_agent
+      agent: CARD_CHARGE_VERIFICATION_ROLE_v1
+    - name: dispute_resolution
+      function: call_agent
+      agent: CARD_DISPUTE_RESOLUTION_MANAGER_v1

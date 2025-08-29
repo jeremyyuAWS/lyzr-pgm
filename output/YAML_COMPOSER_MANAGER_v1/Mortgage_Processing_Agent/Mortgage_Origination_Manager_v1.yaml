@@ -1,0 +1,44 @@
+template_type: single_task
+name: Mortgage_Origination_Manager_v1
+description: Oversees the entire mortgage origination process
+agent_role: Mortgage Origination Manager
+agent_goal: Coordinate and manage the end-to-end mortgage application workflow
+agent_instructions: '1. Receive initial mortgage application
+
+  2. Delegate tasks to specialized role agents
+
+  3. Monitor progress of each stage
+
+  4. Ensure compliance and completeness
+
+  5. Coordinate final approval and disbursement
+
+  '
+features:
+- type: workflow_orchestration
+  config:
+    stages:
+    - document_collection
+    - credit_assessment
+    - approval
+    - disbursement
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Mortgage_Doc_Collector_Agent.yaml
+  usage_description: Collects and verifies mortgage application documents
+- file: agents/roles/Mortgage_Credit_Analyst_Agent.yaml
+  usage_description: Performs comprehensive credit and financial assessment
+- file: agents/roles/Mortgage_Disbursement_Agent.yaml
+  usage_description: Handles final mortgage fund disbursement

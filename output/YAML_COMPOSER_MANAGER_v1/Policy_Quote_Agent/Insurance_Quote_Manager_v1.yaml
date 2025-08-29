@@ -1,0 +1,41 @@
+template_type: single_task
+name: Insurance_Quote_Manager_v1
+description: Orchestrates the end-to-end insurance quote generation process
+agent_role: Insurance Quote Workflow Manager
+agent_goal: Coordinate and manage the entire insurance quoting workflow
+agent_instructions: '1. Receive initial customer information
+
+  2. Delegate data collection and verification to Quote Collector agent
+
+  3. Forward verified customer data to Quote Calculator agent
+
+  4. Aggregate and present final insurance quote
+
+  5. Handle any exceptions or additional information requests
+
+  '
+features:
+- type: workflow_orchestration
+  config:
+    max_retries: 2
+    error_handling: escalate
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+  schema:
+    quote_id: string
+    total_quote: number
+    coverage_details: object
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Insurance_Quote_Collector_v1.yaml
+  usage_description: Collects and validates customer information for insurance quote

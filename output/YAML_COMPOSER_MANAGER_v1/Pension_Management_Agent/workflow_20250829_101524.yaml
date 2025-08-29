@@ -1,0 +1,12 @@
+flow_name: Pension_Management_Flow
+flow_data:
+  tasks:
+    - name: track_contributions
+      function: call_agent
+      agent: Pension_ROLE_Contributions_v1
+    - name: analyze_returns
+      function: call_agent
+      agent: Pension_ROLE_Returns_v1
+    - name: plan_withdrawals
+      function: call_agent
+      agent: Pension_ROLE_Withdrawals_v1

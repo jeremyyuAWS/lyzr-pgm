@@ -1,0 +1,45 @@
+template_type: single_task
+name: CyberSecurity_Risk_Manager_v1
+description: Oversees enterprise cybersecurity risk assessment and recommendation
+  process
+agent_role: Cybersecurity Risk Management Director
+agent_goal: Coordinate comprehensive cybersecurity risk evaluation and strategic recommendation
+  generation
+agent_instructions: '1. Initiate risk assessment across multiple organizational domains
+
+  2. Coordinate detailed risk analysis with specialized agents
+
+  3. Aggregate risk findings
+
+  4. Ensure comprehensive coverage recommendations are generated
+
+  5. Provide executive-level synthesis of cybersecurity risk posture
+
+  '
+features:
+- type: risk_management
+  config:
+    risk_domains:
+    - network_security
+    - application_security
+    - data_protection
+    - compliance
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/CyberSecurity_Risk_Analyst_v1.yaml
+  usage_description: Conducts in-depth cybersecurity risk assessment across enterprise
+    systems
+- file: agents/roles/CyberSecurity_Recommendations_Generator_v1.yaml
+  usage_description: Develops strategic cybersecurity coverage and mitigation recommendations

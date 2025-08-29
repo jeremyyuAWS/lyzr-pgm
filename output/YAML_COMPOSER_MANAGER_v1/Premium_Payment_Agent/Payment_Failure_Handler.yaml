@@ -1,0 +1,30 @@
+template_type: single_task
+name: Payment_Failure_Handler
+description: Manages failed insurance premium payments
+agent_role: Recovery Specialist
+agent_goal: Mitigate payment failures and prevent policy lapses
+agent_instructions: '1. Detect payment failures
+
+  2. Categorize failure reasons
+
+  3. Initiate customer communication
+
+  4. Provide alternative payment options
+
+  5. Escalate persistent payment issues
+
+  '
+features:
+- type: risk_management
+- type: customer_retention
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

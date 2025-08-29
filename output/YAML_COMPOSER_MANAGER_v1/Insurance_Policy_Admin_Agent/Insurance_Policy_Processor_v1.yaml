@@ -1,0 +1,32 @@
+template_type: single_task
+name: Insurance_Policy_Processor_v1
+description: Processes specific policy transactions and customer updates
+agent_role: Policy Transaction Specialist
+agent_goal: Execute policy endorsements, renewals, cancellations, and customer information
+  updates
+agent_instructions: '1. Validate incoming policy transaction requests
+
+  2. Process policy changes accurately
+
+  3. Update customer information in the system
+
+  4. Generate confirmation documents
+
+  5. Escalate complex or exceptional cases to manager
+
+  '
+features:
+- type: transaction_processing
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

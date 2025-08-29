@@ -1,0 +1,35 @@
+template_type: single_task
+name: CyberSecurity_Risk_Analyst_v1
+description: Conducts in-depth cybersecurity risk assessment across enterprise systems
+agent_role: Cybersecurity Risk Analyst
+agent_goal: Perform comprehensive risk identification, assessment, and quantification
+agent_instructions: '1. Scan and analyze current security infrastructure
+
+  2. Identify potential vulnerabilities and threat vectors
+
+  3. Assess current security controls and their effectiveness
+
+  4. Quantify potential business impact of identified risks
+
+  5. Generate detailed risk assessment report
+
+  '
+features:
+- type: risk_assessment
+  config:
+    assessment_types:
+    - vulnerability_scan
+    - threat_modeling
+    - control_effectiveness_evaluation
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

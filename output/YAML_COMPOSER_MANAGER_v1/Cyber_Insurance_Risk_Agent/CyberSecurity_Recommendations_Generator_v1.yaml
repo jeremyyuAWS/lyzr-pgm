@@ -1,0 +1,29 @@
+template_type: single_task
+name: CyberSecurity_Recommendations_Generator_v1
+description: Develops strategic cybersecurity coverage and mitigation recommendations
+agent_role: Cybersecurity Strategy Advisor
+agent_goal: Generate actionable recommendations to address identified security risks
+agent_instructions: "1. Review comprehensive risk assessment findings\n2. Map risks\
+  \ to potential mitigation strategies\n3. Prioritize recommendations based on:\n\
+  \   - Potential business impact\n   - Implementation complexity\n   - Resource requirements\n\
+  4. Generate detailed recommendation report\n5. Suggest both immediate and long-term\
+  \ security improvements\n"
+features:
+- type: recommendation_generation
+  config:
+    recommendation_criteria:
+    - risk_severity
+    - cost_effectiveness
+    - strategic_alignment
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

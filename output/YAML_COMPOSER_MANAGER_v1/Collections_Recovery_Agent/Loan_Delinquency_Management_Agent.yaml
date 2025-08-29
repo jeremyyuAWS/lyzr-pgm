@@ -1,0 +1,31 @@
+template_type: single_task
+name: Loan_Delinquency_Management_Agent
+description: Manages loan accounts with payment defaults
+agent_role: Delinquency Specialist
+agent_goal: Implement structured approach to resolve loan delinquencies
+agent_instructions: '1. Identify and categorize delinquent accounts
+
+  2. Develop personalized repayment strategies
+
+  3. Negotiate payment plans
+
+  4. Initiate appropriate collection procedures
+
+  5. Recommend legal actions for severe cases
+
+  '
+features:
+- type: debt_resolution
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

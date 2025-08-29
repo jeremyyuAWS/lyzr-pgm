@@ -1,0 +1,9 @@
+flow_name: ESG_Investment_Evaluation
+flow_data:
+  tasks:
+    - name: collect_esg_data
+      function: call_agent
+      agent: ESG_Data_Collector_v1
+    - name: analyze_esg_metrics
+      function: call_agent
+      agent: ESG_Analyst_v1
