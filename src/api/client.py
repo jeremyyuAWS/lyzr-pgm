@@ -4,7 +4,10 @@ import time
 import yaml
 import httpx
 
+from pathlib import Path
+from datetime import datetime
 from src.utils.payload_normalizer import normalize_payload
+from src.utils.normalize_output import normalize_inference_output, canonicalize_name
 
 
 class LyzrAPIClient:
@@ -31,10 +34,7 @@ class LyzrAPIClient:
             print(*args, flush=True)
 
     def _request(self, method: str, endpoint: str, payload=None, stream=False):
-        """
-        Core request handler with retries and debug logging.
-        Returns dict: { "ok": bool, "status": int, "data": parsed or text }
-        """
+        """Core request handler with retries and debug logging."""
         url = f"{self.base_url}{endpoint}"
 
         for attempt in range(self.retries):
@@ -92,19 +92,28 @@ class LyzrAPIClient:
     # High-level helpers
     # -----------------
     def create_agent(self, payload: dict):
-        """Create agent from dict payload (already normalized)."""
         return self.post("/v3/agents/", payload)
 
     def create_agent_from_yaml(self, yaml_input: str, is_path: bool = True):
-        """Create agent directly from a YAML definition."""
+        """Create agent directly from YAML."""
         if is_path:
             with open(yaml_input, "r") as f:
                 yaml_def = yaml.safe_load(f)
         else:
             yaml_def = yaml.safe_load(yaml_input)
-
         payload = normalize_payload(yaml_def)
         return self.create_agent(payload)
+
+    def create_manager_with_roles(self, yaml_input: str, is_path: bool = True):
+        """Deploy a Manager agent and linked Roles from YAML."""
+        if is_path and Path(yaml_input).exists():
+            with open(yaml_input, "r") as f:
+                manager_yaml = yaml.safe_load(f)
+        else:
+            manager_yaml = yaml.safe_load(yaml_input)
+
+        payload = {"manager_yaml": manager_yaml}
+        return self.post("/v3/agents/manager/create", payload)
 
     def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
         """Run inference for a given agent_id"""
@@ -117,26 +126,21 @@ class LyzrAPIClient:
         return self.post("/v3/inference/chat/", payload)
 
     def delete_agent(self, agent_id: str):
-        """Delete agent by id"""
         return self.delete(f"/v3/agents/{agent_id}")
 
     def call_agent(self, agent_id_or_name: str, payload: dict):
-        """Call an existing Lyzr agent by ID or name."""
         url = f"{self.base_url}/v3/agents/{agent_id_or_name}/invoke"
         r = httpx.post(url, headers=self.headers, json=payload, timeout=self.timeout)
         r.raise_for_status()
         return r.json()
 
     def list_agents(self):
-        """List all agents (GET /v3/agents/)."""
         return self.get("/v3/agents/")
 
     def delete_all_agents(self):
-        """Delete all agents by iterating over list."""
         agents_resp = self.list_agents()
         if not agents_resp.get("ok"):
             return {"ok": False, "deleted": [], "error": agents_resp.get("data")}
-
         data = agents_resp.get("data", [])
         deleted = []
         for agent in data:
@@ -144,5 +148,72 @@ class LyzrAPIClient:
             if agent_id:
                 self.delete_agent(agent_id)
                 deleted.append(agent_id)
-
         return {"ok": True, "deleted": deleted}
+
+    # -----------------
+    # New: Run Manager with Use Cases (like run_list_iterate.py)
+    # -----------------
+    def run_manager_with_usecases(self, manager_yaml: str, usecases_yaml: str, save_outputs=True, max_retries=3):
+        """
+        Deploy a Manager from YAML, then loop over use-cases YAML and run inference.
+        Save raw + normalized outputs under ./output/{ManagerName}/{UseCaseName}.
+        """
+        # 1. Create Manager + Roles
+        mgr_resp = self.create_manager_with_roles(manager_yaml, is_path=True)
+        if not mgr_resp.get("ok"):
+            return {"ok": False, "error": mgr_resp.get("data")}
+
+        manager_id = mgr_resp["data"]["_id"] if "data" in mgr_resp else None
+        manager_name = mgr_resp["data"].get("name") if "data" in mgr_resp else "Manager"
+        out_root = Path("output") / manager_name
+        out_root.mkdir(parents=True, exist_ok=True)
+
+        # 2. Load use cases
+        with open(usecases_yaml, "r") as f:
+            usecases = yaml.safe_load(f)
+
+        results = []
+        for uc in usecases.get("use_cases", []):
+            raw_name = uc.get("name", "unnamed_usecase")
+            usecase_name = canonicalize_name(raw_name)
+            usecase_text = uc.get("description", "")
+
+            out_dir = out_root / usecase_name
+            out_dir.mkdir(parents=True, exist_ok=True)
+
+            success = False
+            for attempt in range(1, max_retries + 1):
+                payload = {
+                    "agent_id": manager_id,
+                    "user_id": "demo-user",
+                    "session_id": f"{manager_id}-{os.urandom(4).hex()}",
+                    "message": usecase_text,
+                }
+
+                resp = self.post("/v3/inference/chat/", payload)
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+                if save_outputs:
+                    raw_file = out_dir / f"inference_raw_{ts}_attempt{attempt}.json"
+                    with open(raw_file, "w") as f:
+                        json.dump(resp, f, indent=2)
+
+                if resp.get("ok") and "data" in resp and "response" in resp["data"]:
+                    try:
+                        norm = normalize_inference_output(resp["data"]["response"], out_dir)
+                        if save_outputs:
+                            norm_file = out_dir / f"inference_normalized_{ts}_attempt{attempt}.json"
+                            with open(norm_file, "w") as f:
+                                json.dump(norm, f, indent=2)
+                        success = True
+                        results.append({"usecase": usecase_name, "normalized": norm})
+                        break
+                    except Exception as e:
+                        self._log(f"⚠️ Normalization failed: {e}")
+
+                time.sleep(2 ** (attempt - 1))  # backoff
+
+            if not success:
+                results.append({"usecase": usecase_name, "error": "Failed after retries"})
+
+        return {"ok": True, "manager_id": manager_id, "results": results}
