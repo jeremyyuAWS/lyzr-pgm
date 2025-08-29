@@ -52,7 +52,6 @@ class LyzrAPIClient:
                         return {"ok": True, "status": r.status_code, "data": r.text}
 
             except httpx.HTTPStatusError:
-                # Retry on transient errors
                 if r.status_code in [429, 500, 502, 503] and attempt < self.retries - 1:
                     wait = 2 ** attempt
                     self._log(f"⚠️ Transient error {r.status_code}, retrying in {wait}s...")
@@ -97,19 +96,14 @@ class LyzrAPIClient:
         return self.post("/v3/agents/", payload)
 
     def create_agent_from_yaml(self, yaml_input: str, is_path: bool = True):
-        """
-        Create agent directly from a YAML definition.
-        - yaml_input: path to a YAML file, or raw YAML string if is_path=False
-        """
+        """Create agent directly from a YAML definition."""
         if is_path:
             with open(yaml_input, "r") as f:
                 yaml_def = yaml.safe_load(f)
         else:
             yaml_def = yaml.safe_load(yaml_input)
 
-        # Normalize into correct JSON payload
         payload = normalize_payload(yaml_def)
-
         return self.create_agent(payload)
 
     def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
@@ -134,20 +128,21 @@ class LyzrAPIClient:
         return r.json()
 
     def list_agents(self):
-        """List all agents (Lyzr API uses POST to /v3/agents/list).JY"""
-        return self.post("/v3/agents/list", {})
+        """List all agents (GET /v3/agents/)."""
+        return self.get("/v3/agents/")
 
     def delete_all_agents(self):
         """Delete all agents by iterating over list."""
         agents_resp = self.list_agents()
         if not agents_resp.get("ok"):
             return {"ok": False, "deleted": [], "error": agents_resp.get("data")}
-        
-        agents = agents_resp.get("data", [])
+
+        data = agents_resp.get("data", [])
         deleted = []
-        for agent in agents:
-            agent_id = agent.get("agent_id")
+        for agent in data:
+            agent_id = agent.get("_id") or agent.get("agent_id")
             if agent_id:
                 self.delete_agent(agent_id)
                 deleted.append(agent_id)
+
         return {"ok": True, "deleted": deleted}
