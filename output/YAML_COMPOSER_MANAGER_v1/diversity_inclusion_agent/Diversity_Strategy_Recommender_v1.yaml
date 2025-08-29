@@ -1,0 +1,37 @@
+template_type: single_task
+name: Diversity_Strategy_Recommender_v1
+description: Develops strategic recommendations for improving workforce diversity
+agent_role: Diversity Strategy Consultant
+agent_goal: Generate actionable recommendations to enhance organizational diversity
+  and inclusion
+agent_instructions: '1. Review diversity metrics analysis
+
+  2. Identify potential areas for improvement
+
+  3. Develop targeted strategies for enhancing diversity
+
+  4. Create prioritized recommendation framework
+
+  '
+features:
+- type: strategic_planning
+  config:
+    recommendation_focus:
+    - recruitment
+    - retention
+    - career_development
+    - inclusive_culture
+  priority: 0
+tools:
+- strategic_recommendation
+- benchmarking
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,36 @@
+template_type: single_task
+name: HR_Document_Collector
+description: Collects and validates new employee documentation
+agent_role: Document Verification Specialist
+agent_goal: Gather and verify all required onboarding documents
+agent_instructions: '1. Request necessary HR documents from new employee
+
+  2. Validate document completeness and accuracy
+
+  3. Store documents in secure system
+
+  4. Generate document collection report
+
+  '
+features:
+- type: document_processing
+  config:
+    required_docs:
+    - offer_letter
+    - id_proof
+    - tax_forms
+    - bank_details
+  priority: 1
+tools:
+- document_validation
+- secure_storage
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

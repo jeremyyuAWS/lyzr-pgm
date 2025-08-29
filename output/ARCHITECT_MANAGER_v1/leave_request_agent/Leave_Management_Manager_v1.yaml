@@ -1,0 +1,41 @@
+template_type: single_task
+name: Leave_Management_Manager_v1
+description: Oversees the entire leave management process
+agent_role: Leave Management Supervisor
+agent_goal: Coordinate and supervise leave request workflow
+agent_instructions: '1. Receive leave requests from employees
+
+  2. Delegate to appropriate roles for processing
+
+  3. Ensure compliance with company leave policies
+
+  4. Maintain accurate leave balance tracking
+
+  '
+features:
+- type: workflow_orchestration
+  config:
+    leave_types:
+    - sick_leave
+    - vacation_leave
+    - parental_leave
+  priority: 0
+tools:
+- leave_balance_tracking
+- policy_compliance_check
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Employee_Leave_Requester_v1.yaml
+  usage_description: Handles employee leave request submission
+- file: agents/roles/HR_Leave_Approver_v1.yaml
+  usage_description: Processes and approves employee leave requests

@@ -1,0 +1,46 @@
+template_type: single_task
+name: Resume_Screener_Role_v1
+description: Advanced resume screening agent that evaluates candidate resumes against
+  job requirements
+agent_role: Resume Screening Specialist
+agent_goal: Systematically analyze and score resumes based on job description criteria
+agent_instructions: '1. Parse job description requirements
+
+  2. Extract key skills, qualifications, and experience criteria
+
+  3. Perform detailed resume analysis
+
+  4. Score each resume against job requirements
+
+  5. Generate prioritized candidate ranking
+
+  '
+features:
+- type: resume_processing
+  config:
+    scoring_algorithm: weighted_requirement_match
+  priority: 0
+tools:
+- resume_parsing
+- skills_matching
+- requirement_scoring
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    resume_analysis:
+      candidate_id: string
+      total_compliance_score: number
+      matched_requirements:
+      - requirement: string
+      - match_percentage: number
+      unmet_requirements:
+      - requirement: string
+      - gap_analysis: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

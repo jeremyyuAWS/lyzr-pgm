@@ -1,0 +1,40 @@
+template_type: single_task
+name: Benefits_Enrollment_Analyst_v1
+description: Provides detailed analysis of employee benefits plans, comparing costs
+  and coverage options
+agent_role: Benefits Enrollment Specialist
+agent_goal: Conduct comprehensive comparison of available benefits plans to support
+  informed employee decision-making
+agent_instructions: '1. Retrieve all available benefits plans
+
+  2. Generate detailed comparison matrix
+
+  3. Calculate personalized cost projections
+
+  4. Highlight key differences between plans
+
+  5. Prepare recommendation based on individual employee needs
+
+  '
+features:
+- type: data_analysis
+  config:
+    comparison_metrics:
+    - monthly_premium
+    - annual_deductible
+    - coverage_scope
+  priority: 0
+tools:
+- cost_calculator
+- plan_comparison_engine
+- recommendation_generator
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

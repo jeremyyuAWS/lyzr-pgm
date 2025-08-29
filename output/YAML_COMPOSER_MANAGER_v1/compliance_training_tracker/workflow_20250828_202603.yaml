@@ -1,0 +1,9 @@
+flow_name: Compliance_Training_Tracking
+flow_data:
+  tasks:
+    - name: track_training
+      function: call_agent
+      agent: Compliance_Training_Manager_v1
+    - name: send_reminders
+      function: call_agent
+      agent: Compliance_Reminder_Agent_v1

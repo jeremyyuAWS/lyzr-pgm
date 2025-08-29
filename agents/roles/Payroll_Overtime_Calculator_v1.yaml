@@ -1,0 +1,33 @@
+template_type: single_task
+name: Payroll_Overtime_Calculator_v1
+description: Specialized agent for calculating and verifying overtime compensation
+agent_role: Overtime Compensation Analyst
+agent_goal: Accurately compute overtime pay and resolve related inquiries
+agent_instructions: '1. Retrieve employee work logs and time tracking records
+
+  2. Apply company overtime calculation rules
+
+  3. Verify overtime hours and rate calculations
+
+  4. Provide detailed breakdown of overtime compensation
+
+  5. Resolve discrepancies in overtime calculations
+
+  '
+features:
+- type: computational_analysis
+  config:
+    calculation_precision: high
+tools:
+- time_tracking_lookup
+- overtime_calculation_engine
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

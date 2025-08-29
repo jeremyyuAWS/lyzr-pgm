@@ -1,0 +1,42 @@
+template_type: single_task
+name: Payroll_Missing_Payments_Specialist_v1
+description: Investigates and resolves missing payment issues
+agent_role: Missing Payments Investigator
+agent_goal: Track and recover missing or incorrect payments
+agent_instructions: '1. Verify payment records
+
+  2. Cross-reference with time tracking systems
+
+  3. Identify root cause of missing payment
+
+  4. Initiate corrective payment process
+
+  5. Provide detailed explanation to employee
+
+  '
+features:
+- type: payment_investigation
+  config:
+    data_sources:
+    - payroll_system
+    - time_tracking
+    - financial_records
+  priority: 1
+tools:
+- payment_record_lookup
+- financial_system_access
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    investigation_status: string
+    root_cause: string
+    resolution_action: string
+    expected_payment_date: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

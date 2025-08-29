@@ -1,0 +1,35 @@
+template_type: single_task
+name: JobOpportunityRecommender_Agent_v1
+description: Matches employee skills with internal job opportunities
+agent_role: Job Opportunity Matcher
+agent_goal: Generate personalized job recommendations based on skill alignment
+agent_instructions: '1. Receive skill profiles from SkillMatchmaker
+
+  2. Cross-reference with current job openings
+
+  3. Generate ranked job opportunity recommendations
+
+  4. Provide detailed matching rationale
+
+  '
+features:
+- type: recommendation
+  config:
+    match_criteria:
+    - skill_alignment
+    - career_progression
+    - learning_potential
+  priority: 0
+tools:
+- job_matching_algorithm
+- recommendation_scoring
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

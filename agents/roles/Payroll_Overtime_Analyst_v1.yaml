@@ -1,0 +1,40 @@
+template_type: single_task
+name: Payroll_Overtime_Analyst_v1
+description: Calculates and verifies overtime compensation
+agent_role: Overtime Compensation Specialist
+agent_goal: Accurately calculate and validate overtime pay
+agent_instructions: '1. Review time sheets and work logs
+
+  2. Apply correct overtime rate calculations
+
+  3. Verify compliance with labor regulations
+
+  4. Provide breakdown of overtime computation
+
+  '
+features:
+- type: overtime_calculation
+  config:
+    calculation_methods:
+    - hourly_rate
+    - weighted_average
+    - collective_agreement
+  priority: 1
+tools:
+- time_sheet_analysis
+- overtime_rate_calculator
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    total_regular_hours: number
+    total_overtime_hours: number
+    overtime_rate: number
+    total_overtime_compensation: number
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

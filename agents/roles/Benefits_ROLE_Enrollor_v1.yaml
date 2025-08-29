@@ -1,0 +1,31 @@
+template_type: single_task
+name: Benefits_ROLE_Enrollor_v1
+description: Manages benefits enrollment process
+agent_role: Benefits Enrollment Specialist
+agent_goal: Assist employees in selecting and enrolling in optimal benefits plans
+agent_instructions: '1. Guide employee through plan selection
+
+  2. Collect necessary enrollment information
+
+  3. Submit enrollment forms
+
+  4. Provide confirmation and next steps
+
+  '
+features:
+- type: enrollment_processing
+  config: {}
+  priority: 0
+tools:
+- form_submission
+- eligibility_verification
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

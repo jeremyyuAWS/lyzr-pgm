@@ -1,0 +1,40 @@
+template_type: single_task
+name: Payroll_Tax_Clarification_Specialist_v1
+description: Provides detailed explanations of tax deductions
+agent_role: Tax Deduction Consultant
+agent_goal: Clarify and explain tax-related payroll deductions
+agent_instructions: '1. Review individual tax deduction details
+
+  2. Explain specific tax calculation methods
+
+  3. Provide context for different deduction types
+
+  4. Offer guidance on tax-related queries
+
+  '
+features:
+- type: tax_explanation
+  config:
+    explanation_levels:
+    - basic
+    - detailed
+    - comprehensive
+  priority: 1
+tools:
+- tax_code_reference
+- deduction_breakdown_tool
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    tax_category: string
+    deduction_explanation: string
+    applicable_tax_codes: array
+    net_impact_on_compensation: number
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,33 @@
+template_type: single_task
+name: Skills_Matcher_Role_v1
+description: Comprehensive employee skills assessment and profiling
+agent_role: Skills Analyst
+agent_goal: Conduct detailed skills inventory and create comprehensive employee skill
+  profile
+agent_instructions: '1. Collect employee''s current skills and competencies
+
+  2. Validate and categorize skills
+
+  3. Create structured skills profile
+
+  4. Identify potential skill gaps and growth areas
+
+  '
+features:
+- type: skills_assessment
+  config:
+    assessment_method: multi-dimensional
+    skill_depth: comprehensive
+tools:
+- skills_database
+- skill_taxonomy_mapping
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

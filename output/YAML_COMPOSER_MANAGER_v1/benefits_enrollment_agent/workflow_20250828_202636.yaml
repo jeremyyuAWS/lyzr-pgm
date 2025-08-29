@@ -1,0 +1,9 @@
+flow_name: Employee_Benefits_Enrollment
+flow_data:
+  tasks:
+    - name: benefits_comparison
+      function: call_agent
+      agent: Benefits_Comparison_Agent_v1
+    - name: cost_analysis
+      function: call_agent
+      agent: Benefits_Cost_Analysis_Agent_v1

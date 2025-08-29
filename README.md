@@ -10,25 +10,19 @@ It ensures consistent payload formatting for the Lyzr API and provides automatio
 
 ```
 .
-├── agents/                 # YAML definitions for agents
+├── agents/                 
 │   ├── managers/           # Manager agent YAMLs
 │   └── roles/              # Role agent YAMLs
-├── scripts/                # CLI scripts
-│   ├── create_agent.py      # Create a single agent from YAML
-│   ├── create_manager.py    # Create manager agent with role(s) from YAML
-│   ├── run_agent.py         # Run inference on an agent by ID
-│   ├── parse_json_to_yaml.py# Parse manager JSON → role YAMLs
-│   ├── list_agents.py       # List all existing agents
-│   ├── delete_agents.py     # Delete all agents (with dry-run mode)
-│   ├── runme.py             # Run batch actions defined in UPDATEME.yaml
-├── src/
-│   ├── api/
-│   │   └── client.py        # Lyzr API client (httpx wrapper)
-│   ├── services/
-│   │   └── agent_manager.py # Manager creation + linking roles
-│   └── utils/
-│       └── payload_normalizer.py
-└── UPDATEME.yaml            # Config for which agents/workflows to create
+├── scripts/                
+│   ├── create_agent.py           # Create a single agent from YAML
+│   ├── create_manager.py         # Create manager agent with role(s) from YAML
+│   ├── create_manager_from_yaml.py# ✅ Create manager directly from generated output YAML
+│   ├── run_agent.py              # Run inference on an agent by ID
+│   ├── run_list_iterate.py       # Run a manager across list of use cases
+│   ├── parse_json_to_yaml.py     # Parse manager JSON → role YAMLs
+│   ├── list_agents.py            # List all existing agents
+│   ├── delete_agents.py          # Delete all agents (with dry-run mode)
+│   ├── runme.py                  # Batch runner (uses UPDATEME.yaml)
 ```
 
 ---
@@ -74,11 +68,25 @@ python -m scripts.create_agent agents/roles/YAML_COMPOSER_ROLE.yaml --debug
 python -m scripts.create_manager agents/managers/kyc_manager.yaml --debug
 ```
 
-or via batch runner (`UPDATEME.yaml`):
+---
+
+### 🔹 Create Manager From Generated YAML (Best for Iteration)
+
+Often when you run an inference (via `run_list_iterate` or `parse_json_to_yaml`) you’ll get an **output YAML** that already contains the manager definition.
+To create that manager directly:
 
 ```bash
-python -m scripts.runme
+python -m scripts.create_manager_from_yaml output/YAML_COMPOSER_MANAGER_v1/hr_helpdesk_agent/HR_Helpdesk_Manager_v1.yaml
 ```
+
+**With debug + user override:**
+
+```bash
+LYZR_DEBUG=1 LYZR_USER_ID="jeremyyu@lyzr.ai" \
+python -m scripts.create_manager_from_yaml output/YAML_COMPOSER_MANAGER_v1/hr_helpdesk_agent/HR_Helpdesk_Manager_v1.yaml
+```
+
+This is the **fastest way to validate new YAML definitions** since it bypasses re-running the whole workflow.
 
 ---
 
@@ -92,9 +100,44 @@ python -m scripts.run_agent 68ac92f41425de516e43e6e2 "Start KYC process"
 
 ---
 
-### 🔹 Parse / Generate YAMLs
+### 🔹 Run Manager Across Use Cases (Recommended)
 
-**Parse Manager JSON into Role YAMLs**
+**Example:**
+
+```bash
+python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml
+```
+
+That will:
+
+1. Create the manager + roles
+2. Iterate over use cases in `use_cases_hr.yaml`
+3. Retry failed cases automatically
+4. Save outputs to `output/<manager>/<usecase>/`
+
+#### Controlling JSON Output
+
+* **No JSON saved (default):**
+
+  ```bash
+  python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml
+  ```
+
+* **Save JSON (CLI flag):**
+
+  ```bash
+  python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml --save
+  ```
+
+* **Save JSON (env var):**
+
+  ```bash
+  SAVE_OUTPUTS=1 python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml
+  ```
+
+---
+
+### 🔹 Parse / Generate YAMLs
 
 ```bash
 python -m scripts.parse_json_to_yaml manager_response.json --output_dir agents/roles
@@ -104,21 +147,9 @@ python -m scripts.parse_json_to_yaml manager_response.json --output_dir agents/r
 
 ### 🔹 List / Delete Agents
 
-**List all agents**
-
 ```bash
 python -m scripts.list_agents
-```
-
-**Delete all agents (preview only)**
-
-```bash
 python -m scripts.delete_agents --dry-run
-```
-
-**Delete all agents (confirmed)**
-
-```bash
 python -m scripts.delete_agents
 ```
 
@@ -139,9 +170,7 @@ curl --request POST \
     "model": "gpt-4o-mini",
     "temperature": 0.7,
     "top_p": 0.9,
-    "features": [
-      {"type": "yaml_syntax_validation", "config": {}, "priority": 0}
-    ],
+    "features": [],
     "tools": [],
     "response_format": {"type": "json"}
   }'
@@ -151,14 +180,7 @@ curl --request POST \
 
 ## 🧰 Development Notes
 
-* Agent names are automatically stamped with **agent\_id + local date + timezone** for traceability.
-* `payload_normalizer.py` ensures YAML definitions always match the API schema.
-* Debug logs print **payloads, responses, and retry logic** if `LYZR_DEBUG=1`.
-
----
-
-## 👥 Contributing
-
-* Add new Role YAMLs under `agents/roles/`
-* Add new Manager YAMLs under `agents/managers/` and reference role YAMLs in `managed_agents`
-* Update `UPDATEME.yaml` to control batch execution
+* Agent names are stamped with **agent\_id + local date + timezone**.
+* `payload_normalizer.py` enforces API schema.
+* `run_list_iterate.py` is the best way to test multiple use cases.
+* Use `create_manager_from_yaml` to **instantiate a manager directly from generated YAML output**.

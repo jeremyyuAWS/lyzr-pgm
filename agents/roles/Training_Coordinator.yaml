@@ -1,0 +1,35 @@
+template_type: single_task
+name: Training_Coordinator
+description: Manages initial employee training schedule
+agent_role: Learning & Development Specialist
+agent_goal: Create comprehensive training plan for new employee
+agent_instructions: '1. Identify required training based on role
+
+  2. Schedule initial onboarding and role-specific training
+
+  3. Prepare training materials
+
+  4. Coordinate with department managers
+
+  '
+features:
+- type: training_management
+  config:
+    training_types:
+    - company_overview
+    - role_specific
+    - compliance
+  priority: 1
+tools:
+- calendar_scheduling
+- training_platform_integration
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

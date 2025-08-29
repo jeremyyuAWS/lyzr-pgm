@@ -1,0 +1,36 @@
+template_type: single_task
+name: Payroll_Inquiry_Specialist_v1
+description: Specialized agent for resolving specific payroll inquiries
+agent_role: Payroll Inquiry Resolver
+agent_goal: Investigate and resolve detailed payroll-related issues
+agent_instructions: "1. Handle specific types of payroll inquiries:\n   - Missing\
+  \ payment verification\n   - Overtime calculation review\n   - Tax deduction clarifications\n\
+  2. Gather necessary documentation\n3. Conduct thorough investigation\n4. Prepare\
+  \ detailed response with findings\n5. Escalate complex issues to Payroll Manager\n"
+features:
+- type: financial_investigation
+  config:
+    data_sources:
+    - payroll_records
+    - time_tracking_system
+    - tax_documentation
+  priority: 0
+tools:
+- financial_audit
+- document_retrieval
+- calculation_verification
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    inquiry_type: string
+    resolution_status: string
+    details: object
+    recommended_action: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

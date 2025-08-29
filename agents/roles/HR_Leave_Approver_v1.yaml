@@ -1,0 +1,30 @@
+template_type: single_task
+name: HR_Leave_Approver_v1
+description: Processes and approves employee leave requests
+agent_role: Leave Approval Specialist
+agent_goal: Review and approve/reject leave requests
+agent_instructions: "1. Review submitted leave request details\n2. Check:\n   - Compliance\
+  \ with company policies\n   - Departmental impact\n   - Leave balance availability\n\
+  3. Make approval/rejection decision\n4. Update leave balance\n5. Notify employee\
+  \ of decision\n"
+features:
+- type: request_approval
+  config:
+    approval_criteria:
+    - policy_compliance
+    - business_continuity
+  priority: 0
+tools:
+- approval_workflow
+- notification_system
+- leave_balance_updater
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

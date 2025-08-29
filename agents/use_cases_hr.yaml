@@ -1,29 +1,229 @@
-use_case: >
-  Create an agent that can screen a candidate against a job description.
-  The agent should analyze a resume and a job description, compare skills,
-  experience, and education, and produce:
-    - a fit score (percentage match)
-    - a list of strengths (skills/experiences that align well)
-    - a list of gaps (missing or weak areas)
+use_cases:
+  - name: hr_helpdesk_agent
+    description: |
+      Create a Manager + Role setup for an HR Helpdesk Agent that answers employee questions
+      on HR policies, payroll, and benefits. Ensure YAML is schema-compliant:
+        - workflow_name, workflow_yaml, agents[]
+        - Each agents[].yaml must include all required keys:
+          name, description, agent_role, agent_goal, agent_instructions,
+          features, tools, response_format.
 
-requirements:
-  domain: Human Resources
-  purpose: Accelerate candidate evaluation for recruiters
-  inputs:
-    - candidate_resume: Free-text resume
-    - job_description: Free-text job description
-  outputs:
-    - fit_score: Number (0-100)
-    - strengths: Array of strings
-    - gaps: Array of strings
+      Example expected output:
+      {
+        "workflow_name": "HR_Helpdesk_Flow",
+        "workflow_yaml": "flow_name: HR_Helpdesk_Flow\nflow_data:\n  tasks:\n    - name: answer_hr_queries\n      function: call_agent\n      agent: HR_Helpdesk_Role_v1",
+        "agents": [
+          { "name": "HR_Helpdesk_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "HR_Helpdesk_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
 
-constraints:
-  - Must conform to Lyzr agent YAML schema
-  - Must include all required fields (name, description, agent_role, etc.)
-  - Output format must be strict JSON when agent runs
-  - Examples should demonstrate realistic input/output pairs
+  - name: payroll_query_agent
+    description: |
+      Handle payroll inquiries such as missing payments,
+      overtime calculation, and tax deduction clarifications. Ensure YAML schema compliance.
 
-acceptance_criteria:
-  - YAML definition compiles without schema errors
-  - Agent can be created by workflow_create.py
-  - Test inference returns JSON with {fit_score, strengths, gaps}
+      Example expected output:
+      {
+        "workflow_name": "Payroll_Query_Flow",
+        "workflow_yaml": "flow_name: Payroll_Query_Flow\nflow_data:\n  tasks:\n    - name: resolve_payroll_issue\n      function: call_agent\n      agent: Payroll_Role_v1",
+        "agents": [
+          { "name": "Payroll_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Payroll_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: leave_request_agent
+    description: |
+      Manage employee leave requests, approvals, and balances. Handle different leave types (sick, vacation, parental).
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Leave_Request_Flow",
+        "workflow_yaml": "flow_name: Leave_Request_Flow\nflow_data:\n  tasks:\n    - name: process_leave\n      function: call_agent\n      agent: Leave_Role_v1",
+        "agents": [
+          { "name": "Leave_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Leave_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: onboarding_agent
+    description: |
+      Onboard new employees: collect docs, schedule training, and provision IT access.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Onboarding_Flow",
+        "workflow_yaml": "flow_name: Onboarding_Flow\nflow_data:\n  tasks:\n    - name: onboarding_tasks\n      function: call_agent\n      agent: Onboarding_Role_v1",
+        "agents": [
+          { "name": "Onboarding_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Onboarding_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: offboarding_agent
+    description: |
+      Manage employee exits: equipment returns, access removal, final paycheck.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Offboarding_Flow",
+        "workflow_yaml": "flow_name: Offboarding_Flow\nflow_data:\n  tasks:\n    - name: handle_exit\n      function: call_agent\n      agent: Offboarding_Role_v1",
+        "agents": [
+          { "name": "Offboarding_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Offboarding_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: recruitment_screening_agent
+    description: |
+      Screen resumes against job descriptions and prioritize candidates.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Recruitment_Screening_Flow",
+        "workflow_yaml": "flow_name: Recruitment_Screening_Flow\nflow_data:\n  tasks:\n    - name: screen_resumes\n      function: call_agent\n      agent: Recruit_Role_v1",
+        "agents": [
+          { "name": "Recruit_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Recruit_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: performance_review_agent
+    description: |
+      Assist managers with performance reviews, consolidate peer feedback.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Performance_Review_Flow",
+        "workflow_yaml": "flow_name: Performance_Review_Flow\nflow_data:\n  tasks:\n    - name: conduct_review\n      function: call_agent\n      agent: Review_Role_v1",
+        "agents": [
+          { "name": "Review_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Review_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: training_recommendation_agent
+    description: |
+      Recommend courses and certifications based on employee skills and goals.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Training_Recommendation_Flow",
+        "workflow_yaml": "flow_name: Training_Recommendation_Flow\nflow_data:\n  tasks:\n    - name: recommend_training\n      function: call_agent\n      agent: Training_Role_v1",
+        "agents": [
+          { "name": "Training_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Training_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: compliance_training_tracker
+    description: |
+      Track and remind employees to complete compliance training.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Compliance_Training_Flow",
+        "workflow_yaml": "flow_name: Compliance_Training_Flow\nflow_data:\n  tasks:\n    - name: track_training\n      function: call_agent\n      agent: Compliance_Role_v1",
+        "agents": [
+          { "name": "Compliance_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Compliance_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: benefits_enrollment_agent
+    description: |
+      Support employees with benefits enrollment, compare plans and costs.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Benefits_Enrollment_Flow",
+        "workflow_yaml": "flow_name: Benefits_Enrollment_Flow\nflow_data:\n  tasks:\n    - name: enroll_benefits\n      function: call_agent\n      agent: Benefits_Role_v1",
+        "agents": [
+          { "name": "Benefits_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Benefits_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: expense_reimbursement_agent
+    description: |
+      Handle employee expense submissions and approvals.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Expense_Reimbursement_Flow",
+        "workflow_yaml": "flow_name: Expense_Reimbursement_Flow\nflow_data:\n  tasks:\n    - name: process_expenses\n      function: call_agent\n      agent: Expense_Role_v1",
+        "agents": [
+          { "name": "Expense_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Expense_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: employee_feedback_collector
+    description: |
+      Collect employee feedback through surveys and sentiment analysis.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Feedback_Collector_Flow",
+        "workflow_yaml": "flow_name: Feedback_Collector_Flow\nflow_data:\n  tasks:\n    - name: collect_feedback\n      function: call_agent\n      agent: Feedback_Role_v1",
+        "agents": [
+          { "name": "Feedback_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Feedback_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: diversity_inclusion_agent
+    description: |
+      Monitor workforce diversity metrics and recommend strategies.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Diversity_Inclusion_Flow",
+        "workflow_yaml": "flow_name: Diversity_Inclusion_Flow\nflow_data:\n  tasks:\n    - name: analyze_diversity\n      function: call_agent\n      agent: Diversity_Role_v1",
+        "agents": [
+          { "name": "Diversity_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Diversity_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: internal_mobility_agent
+    description: |
+      Suggest internal job opportunities to employees based on skills.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Internal_Mobility_Flow",
+        "workflow_yaml": "flow_name: Internal_Mobility_Flow\nflow_data:\n  tasks:\n    - name: suggest_roles\n      function: call_agent\n      agent: Mobility_Role_v1",
+        "agents": [
+          { "name": "Mobility_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Mobility_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: hr_policy_update_agent
+    description: |
+      Disseminate HR policy changes, summarize updates, and track acknowledgements.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "HR_Policy_Update_Flow",
+        "workflow_yaml": "flow_name: HR_Policy_Update_Flow\nflow_data:\n  tasks:\n    - name: update_policies\n      function: call_agent\n      agent: Policy_Role_v1",
+        "agents": [
+          { "name": "Policy_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Policy_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }

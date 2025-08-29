@@ -1,0 +1,41 @@
+template_type: single_task
+name: Learning_Recommendations_Agent_v1
+description: Generates personalized learning recommendations
+agent_role: Learning Pathway Architect
+agent_goal: Create tailored course and certification recommendations
+agent_instructions: '1. Analyze skills assessment results
+
+  2. Match skills gaps with relevant courses/certifications
+
+  3. Prioritize recommendations based on career goals
+
+  4. Ensure recommendations align with industry standards
+
+  '
+features:
+- type: recommendation_generation
+  config:
+    recommendation_criteria: comprehensive
+  priority: 0
+tools:
+- course_database
+- certification_mapper
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    type: object
+    properties:
+      recommended_courses:
+        type: array
+      recommended_certifications:
+        type: array
+      recommendation_rationale:
+        type: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

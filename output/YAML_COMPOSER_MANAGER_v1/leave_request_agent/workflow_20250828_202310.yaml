@@ -1,0 +1,9 @@
+flow_name: Employee_Leave_Management
+flow_data:
+  tasks:
+    - name: submit_leave_request
+      function: call_agent
+      agent: Leave_Request_Submitter_v1
+    - name: process_leave_request
+      function: call_agent
+      agent: Leave_Approval_Manager_v1

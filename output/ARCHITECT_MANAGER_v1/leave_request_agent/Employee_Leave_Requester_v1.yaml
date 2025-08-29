@@ -1,0 +1,28 @@
+template_type: single_task
+name: Employee_Leave_Requester_v1
+description: Handles employee leave request submission
+agent_role: Leave Request Initiator
+agent_goal: Collect and validate employee leave request details
+agent_instructions: "1. Collect leave request information\n2. Validate request against:\n\
+  \   - Available leave balance\n   - Leave type eligibility\n   - Required documentation\n\
+  3. Submit validated request to HR approval\n"
+features:
+- type: request_validation
+  config:
+    validation_checks:
+    - balance_check
+    - policy_compliance
+  priority: 0
+tools:
+- leave_balance_calculator
+- document_validator
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

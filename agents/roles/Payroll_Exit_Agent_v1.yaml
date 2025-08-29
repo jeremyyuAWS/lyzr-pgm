@@ -1,0 +1,33 @@
+template_type: single_task
+name: Payroll_Exit_Agent_v1
+description: Processes final paycheck and financial settlements for departing employees
+agent_role: Exit Payroll Specialist
+agent_goal: Calculate and process final compensation and financial obligations
+agent_instructions: '1. Calculate final paycheck including prorated salary
+
+  2. Process outstanding reimbursements
+
+  3. Reconcile any pending expenses
+
+  4. Prepare tax documentation
+
+  5. Initiate final payment transfer
+
+  '
+features:
+- type: financial_processing
+  config: {}
+  priority: 0
+tools:
+- payroll_calculation
+- financial_settlement
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

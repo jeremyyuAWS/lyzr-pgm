@@ -1,0 +1,39 @@
+template_type: single_task
+name: Onboarding_Manager_v1
+description: Oversees comprehensive employee onboarding process
+agent_role: Onboarding Coordinator
+agent_goal: Orchestrate end-to-end onboarding workflow across departments
+agent_instructions: '1. Receive new employee details
+
+  2. Coordinate document collection
+
+  3. Manage training scheduling
+
+  4. Ensure IT access provisioning
+
+  5. Track and report onboarding progress
+
+  '
+features:
+- type: workflow_orchestration
+  config: {}
+  priority: 0
+tools:
+- delegation
+- tracking
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/HR_Document_Collector.yaml
+  usage_description: Collects and validates new employee documentation
+- file: agents/roles/Training_Coordinator.yaml
+  usage_description: Manages initial employee training schedule

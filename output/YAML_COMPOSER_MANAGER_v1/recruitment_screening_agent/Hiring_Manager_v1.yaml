@@ -1,0 +1,35 @@
+template_type: single_task
+name: Hiring_Manager_v1
+description: Oversees candidate screening and selection process
+agent_role: Recruitment Manager
+agent_goal: Coordinate and prioritize candidate evaluation
+agent_instructions: '1. Receive incoming resumes and job descriptions
+
+  2. Delegate resume screening to specialized screening agent
+
+  3. Review and prioritize candidate shortlist
+
+  4. Prepare final candidate recommendations
+
+  '
+features:
+- type: orchestration
+  config: {}
+  priority: 0
+tools:
+- candidate_ranking
+- resume_comparison
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Recruiter_Resume_Screener_v1.yaml
+  usage_description: Advanced resume screening and candidate matching agent

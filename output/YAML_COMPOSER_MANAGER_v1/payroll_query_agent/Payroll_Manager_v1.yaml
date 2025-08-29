@@ -1,0 +1,43 @@
+template_type: single_task
+name: Payroll_Manager_v1
+description: Oversees and coordinates payroll inquiry resolution
+agent_role: Payroll Management Supervisor
+agent_goal: Efficiently manage and resolve complex payroll-related inquiries
+agent_instructions: '1. Receive incoming payroll inquiries
+
+  2. Categorize the type of inquiry (missing payments, overtime, tax deductions)
+
+  3. Delegate to appropriate specialized role agent
+
+  4. Track inquiry resolution and ensure timely response
+
+  5. Escalate complex cases as needed
+
+  '
+features:
+- type: inquiry_management
+  config:
+    routing_priority: high
+tools:
+- inquiry_routing
+- escalation_tracking
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Payroll_MissingPayment_Agent_v1.yaml
+  usage_description: Specialized agent for investigating and resolving missing payment
+    claims
+- file: agents/roles/Payroll_Overtime_Calculator_v1.yaml
+  usage_description: Specialized agent for calculating and verifying overtime compensation
+- file: agents/roles/Payroll_TaxDeduction_Clarifier_v1.yaml
+  usage_description: Specialized agent for explaining and clarifying tax deduction
+    details

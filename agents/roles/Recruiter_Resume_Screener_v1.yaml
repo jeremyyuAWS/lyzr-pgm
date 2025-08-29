@@ -1,0 +1,34 @@
+template_type: single_task
+name: Recruiter_Resume_Screener_v1
+description: Advanced resume screening and candidate matching agent
+agent_role: Resume Screening Specialist
+agent_goal: Analyze and match resumes against job description requirements
+agent_instructions: "1. Extract key skills and qualifications from job description\n\
+  2. Perform detailed resume parsing\n3. Calculate candidate match percentage\n4.\
+  \ Score and rank candidates based on:\n   - Skill match\n   - Experience relevance\n\
+  \   - Qualification alignment\n5. Generate structured candidate assessment report\n"
+features:
+- type: resume_processing
+  config:
+    matching_algorithm: advanced_semantic_match
+  priority: 0
+tools:
+- resume_parser
+- skill_matching
+- candidate_scoring
+tool_usage_description: ''
+response_format:
+  type: json
+  fields:
+  - candidate_name
+  - match_percentage
+  - key_strengths
+  - areas_of_improvement
+  - recommendation_score
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

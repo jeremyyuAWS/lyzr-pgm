@@ -1,0 +1,56 @@
+template_type: single_task
+name: ROLE_ExpenseSubmitter_v1
+description: Handles employee expense report submission and initial validation
+agent_role: Expense Submitter
+agent_goal: Collect, organize, and submit accurate expense reports
+agent_instructions: '1. Collect all relevant expense details from employee
+
+  2. Validate expense documents and receipts
+
+  3. Categorize expenses according to company policy
+
+  4. Prepare comprehensive expense report
+
+  5. Submit expense report to approval manager
+
+  '
+features:
+- type: document_processing
+  config:
+    receipt_validation: true
+    expense_categorization: true
+  priority: 0
+tools:
+- receipt_scanner
+- expense_categorizer
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    required:
+    - total_expense
+    - expense_categories
+    - supporting_documents
+    properties:
+      total_expense:
+        type: number
+      expense_categories:
+        type: array
+        items:
+          type: string
+      supporting_documents:
+        type: array
+        items:
+          type: object
+          properties:
+            doc_type:
+              type: string
+            doc_url:
+              type: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

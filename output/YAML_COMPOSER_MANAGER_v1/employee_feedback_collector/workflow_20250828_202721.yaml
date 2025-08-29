@@ -1,0 +1,9 @@
+flow_name: Employee_Feedback_Survey_Flow
+flow_data:
+  tasks:
+    - name: distribute_survey
+      function: call_agent
+      agent: Survey_Distribution_Agent_v1
+    - name: analyze_feedback
+      function: call_agent
+      agent: Sentiment_Analysis_Agent_v1

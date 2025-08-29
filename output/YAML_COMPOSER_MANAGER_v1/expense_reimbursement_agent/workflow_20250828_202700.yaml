@@ -1,0 +1,9 @@
+flow_name: Expense_Submission_Approval_Flow
+flow_data:
+  tasks:
+    - name: submit_expense
+      function: call_agent
+      agent: ROLE_ExpenseSubmitter_v1
+    - name: review_expense
+      function: call_agent
+      agent: MANAGER_ExpenseApprover_v1

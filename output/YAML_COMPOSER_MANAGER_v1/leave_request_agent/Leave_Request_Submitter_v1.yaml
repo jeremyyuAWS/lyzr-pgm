@@ -1,0 +1,48 @@
+template_type: single_task
+name: Leave_Request_Submitter_v1
+description: Handles employee leave request submission and initial validation
+agent_role: Leave Request Coordinator
+agent_goal: Collect and prepare leave request details for review
+agent_instructions: '1. Capture leave request details
+
+  2. Validate request completeness
+
+  3. Check initial eligibility
+
+  4. Prepare structured leave request
+
+  '
+features:
+- type: data_collection
+  config:
+    required_fields:
+    - employee_id
+    - leave_type
+    - start_date
+    - end_date
+    - reason
+- type: pre_validation
+  config:
+    validation_checks:
+    - sufficient_balance
+    - no_conflicting_requests
+tools:
+- leave_balance_lookup
+- request_formatter
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    request_id: string
+    leave_type: string
+    request_status:
+    - submitted
+    - incomplete
+    validation_notes: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

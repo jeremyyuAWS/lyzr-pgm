@@ -1,0 +1,55 @@
+template_type: single_task
+name: MANAGER_ExpenseApprover_v1
+description: Oversees and manages employee expense approval workflow
+agent_role: Expense Approval Manager
+agent_goal: Review, validate, and approve or reject employee expense submissions
+agent_instructions: '1. Receive expense submission details from employees
+
+  2. Validate expense against company policies
+
+  3. Perform multi-level review for expenses
+
+  4. Approve or reject expenses with detailed feedback
+
+  5. Initiate reimbursement process for approved expenses
+
+  '
+features:
+- type: decision_making
+  config:
+    approval_levels: 2
+    policy_check: true
+  priority: 1
+tools:
+- expense_policy_validator
+- approval_workflow
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+  schema:
+    required:
+    - decision
+    - total_amount
+    - approval_notes
+    properties:
+      decision:
+        type: string
+        enum:
+        - approved
+        - rejected
+        - needs_clarification
+      total_amount:
+        type: number
+      approval_notes:
+        type: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/ROLE_ExpenseSubmitter_v1.yaml
+  usage_description: Handles employee expense report submission and initial validation

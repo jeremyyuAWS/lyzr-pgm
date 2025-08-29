@@ -1,0 +1,12 @@
+flow_name: Employee_Onboarding_Flow
+flow_data:
+  tasks:
+    - name: collect_documents
+      function: call_agent
+      agent: HR_Document_Collector
+    - name: schedule_training
+      function: call_agent
+      agent: Training_Coordinator
+    - name: it_access_provisioning
+      function: call_agent
+      agent: IT_Access_Manager

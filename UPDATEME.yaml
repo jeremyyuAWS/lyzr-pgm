@@ -4,7 +4,8 @@ actions:
     enabled: true
     files:
       # Manager agents you want created
-      - agents/managers/ARCHITECT_MANAGER_v1.yaml
+      # - agents/managers/ARCHITECT_MANAGER_v1.yaml
+      - agents/managers/YAML_COMPOSER_MANAGER_v1.yaml
       # You can add more manager YAMLs here
       # - agents/managers/KYC_Manager.yaml
 

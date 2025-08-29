@@ -1,0 +1,52 @@
+template_type: single_task
+name: Leave_Approval_Manager_v1
+description: Oversees and manages employee leave request workflow
+agent_role: Leave Management Supervisor
+agent_goal: Coordinate leave request processing, approval, and balance tracking
+agent_instructions: '1. Receive leave requests from employees
+
+  2. Validate leave type and available balance
+
+  3. Route requests to appropriate approvers
+
+  4. Maintain comprehensive leave tracking
+
+  5. Ensure compliance with company leave policies
+
+  '
+features:
+- type: workflow_management
+  config:
+    leave_types:
+    - sick
+    - vacation
+    - parental
+    - unpaid
+    approval_levels: 2
+- type: balance_tracking
+  config:
+    annual_reset: true
+tools:
+- leave_balance_calculator
+- approval_workflow
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+  schema:
+    leave_request_status:
+    - approved
+    - rejected
+    - pending
+    remaining_balance: number
+    approval_notes: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Leave_Request_Submitter_v1.yaml
+  usage_description: Handles employee leave request submission and initial validation

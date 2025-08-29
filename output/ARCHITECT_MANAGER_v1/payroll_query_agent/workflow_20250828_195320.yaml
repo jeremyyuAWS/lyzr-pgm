@@ -1,0 +1,6 @@
+flow_name: Payroll_Query_Flow
+flow_data:
+  tasks:
+    - name: resolve_payroll_issue
+      function: call_agent
+      agent: Payroll_Role_v1

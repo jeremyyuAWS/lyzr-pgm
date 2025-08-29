@@ -1,0 +1,9 @@
+flow_name: Leave_Request_Flow
+flow_data:
+  tasks:
+    - name: submit_leave_request
+      function: call_agent
+      agent: Employee_Leave_Requester_v1
+    - name: process_leave_request
+      function: call_agent
+      agent: HR_Leave_Approver_v1
