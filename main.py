@@ -1,34 +1,60 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from src.api.client import LyzrAPIClient
 
-app = FastAPI()
+app = FastAPI(title="Lyzr PGM API")
+
+# Allow frontend + Studio
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can restrict this later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class AgentActionRequest(BaseModel):
     action: str
-    api_key: str = None
-    agent_id: str = None
-    payload: dict = None
+    api_key: str | None = None
+    agent_id: str | None = None
+    message: str | None = None
+    yaml_input: str | None = None
+
+@app.get("/")
+def root():
+    return {"ok": True, "message": "Welcome to Lyzr PGM API"}
+
+@app.get("/health")
+def health_check():
+    return {"ok": True, "message": "FastAPI backend is healthy"}
 
 @app.post("/agent-action/")
-async def agent_action(req: AgentActionRequest):
+def agent_action(req: AgentActionRequest):
+    if not req.api_key:
+        raise HTTPException(status_code=400, detail="api_key is required")
+
     client = LyzrAPIClient(api_key=req.api_key)
 
-    if req.action == "list_agents":
-        result = client.list_agents()
-        return {"ok": True, "agents": result}
+    try:
+        if req.action == "list_agents":
+            return {"ok": True, "agents": client.list_agents()}
 
-    elif req.action == "delete_agent" and req.agent_id:
-        result = client.delete_agent(req.agent_id)
-        return {"ok": True, "deleted": req.agent_id, "response": result}
+        elif req.action == "delete_all_agents":
+            return {"ok": True, "response": client.delete_all_agents()}
 
-    elif req.action == "delete_all_agents":
-        result = client.delete_all_agents()
-        return {"ok": True, "response": result}
+        elif req.action == "delete_agent" and req.agent_id:
+            return {"ok": True, "response": client.delete_agent(req.agent_id)}
 
-    elif req.action == "create_agent" and req.payload:
-        result = client.create_agent(req.payload)
-        return {"ok": True, "response": result}
+        elif req.action == "run_inference" and req.agent_id and req.message:
+            return {"ok": True, "response": client.run_inference(req.agent_id, req.message)}
 
-    else:
-        return {"ok": False, "error": "Unknown action or missing params"}
+        elif req.action == "create_agent_from_yaml" and req.yaml_input:
+            return {"ok": True, "response": client.create_agent_from_yaml(req.yaml_input, is_path=False)}
+
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported action or missing params: {req.action}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
