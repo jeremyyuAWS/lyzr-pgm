@@ -1,0 +1,32 @@
+template_type: single_task
+name: Competitive_Intelligence_Collector_v1
+description: Systematically collects competitor information from multiple sources
+agent_role: Competitive Research Specialist
+agent_goal: Gather comprehensive data on competitor activities, marketing campaigns,
+  and market positioning
+agent_instructions: '1. Scan multiple sources for competitor information
+
+  2. Collect recent marketing campaigns
+
+  3. Track product launches and updates
+
+  4. Compile competitive landscape data
+
+  5. Organize findings in structured format
+
+  '
+features:
+- type: web_research
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

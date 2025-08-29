@@ -1,0 +1,36 @@
+template_type: single_task
+name: Wealth_Account_Aggregator_v1
+description: Retrieves and standardizes financial data from multiple account sources
+agent_role: Financial Data Collector
+agent_goal: Securely fetch and normalize financial account information
+agent_instructions: '1. Connect to various financial account sources
+
+  2. Extract account balances, transactions, and investments
+
+  3. Standardize data format
+
+  4. Validate and clean financial data
+
+  5. Prepare data for consolidated dashboard
+
+  '
+features:
+- type: data_retrieval
+  config:
+    supported_sources:
+    - bank
+    - investment
+    - crypto
+    - retirement
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

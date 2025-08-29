@@ -1,0 +1,29 @@
+template_type: single_task
+name: Treasury_Analysis_Role_v1
+description: Conducts comprehensive liquidity position analysis
+agent_role: Liquidity Analyst
+agent_goal: Provide detailed assessment of current cash positions and potential risks
+agent_instructions: '1. Collect and aggregate current financial data
+
+  2. Analyze liquidity ratios and cash flow metrics
+
+  3. Identify potential liquidity constraints
+
+  4. Generate detailed liquidity position report
+
+  '
+features:
+- type: financial_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

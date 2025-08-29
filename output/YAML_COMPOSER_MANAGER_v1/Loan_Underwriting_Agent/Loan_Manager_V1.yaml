@@ -1,0 +1,32 @@
+template_type: single_task
+name: Loan_Manager_V1
+description: Oversees loan approval workflow and coordinates financial assessment
+agent_role: Loan Approval Manager
+agent_goal: Coordinate comprehensive financial analysis for loan applications
+agent_instructions: "1. Receive loan application details\n2. Delegate tasks to specialized\
+  \ role agents:\n   - Credit score analysis\n   - Income verification\n   - Debt\
+  \ ratio assessment\n3. Aggregate and synthesize financial assessment results\n4.\
+  \ Make final recommendation on loan approval\n"
+features:
+- type: decision_support
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Loan_Role_Creditanalyzer_V1.yaml
+  usage_description: Analyzes applicant credit scores and credit history
+- file: agents/roles/Loan_Role_Incomeverifier_V1.yaml
+  usage_description: Verifies applicant's income and employment status
+- file: agents/roles/Loan_Role_Debtratioanalyzer_V1.yaml
+  usage_description: Calculates and assesses applicant's debt-to-income ratio

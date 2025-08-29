@@ -1,0 +1,31 @@
+template_type: single_task
+name: CLAIMS_STATUS_ROLE_v1
+description: Manage claim status communication and updates
+agent_role: Claims Status Coordinator
+agent_goal: Provide timely and accurate updates on claim processing status
+agent_instructions: '1. Track claim progression through workflow
+
+  2. Generate status updates for claimants
+
+  3. Communicate additional information requirements
+
+  4. Maintain comprehensive claim status records
+
+  5. Facilitate communication between claimant and processing team
+
+  '
+features:
+- type: communication_management
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

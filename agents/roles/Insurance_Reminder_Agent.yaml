@@ -1,0 +1,32 @@
+template_type: single_task
+name: Insurance_Reminder_Agent
+description: Manages insurance premium payment reminders
+agent_role: Premium Reminder Specialist
+agent_goal: Send timely and personalized premium payment reminders
+agent_instructions: '1. Generate personalized reminder notifications
+
+  2. Use multi-channel communication (email, SMS, phone)
+
+  3. Provide payment instructions and deadlines
+
+  4. Track reminder delivery and responses
+
+  '
+features:
+- type: communication_management
+  config:
+    channels:
+    - email
+    - sms
+    - phone
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

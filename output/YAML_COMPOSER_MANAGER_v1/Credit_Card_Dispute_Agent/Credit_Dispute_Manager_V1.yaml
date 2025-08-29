@@ -1,0 +1,37 @@
+template_type: single_task
+name: Credit_Dispute_Manager_V1
+description: Oversees the entire credit card dispute resolution process
+agent_role: Dispute Resolution Coordinator
+agent_goal: Manage and coordinate the end-to-end credit card dispute workflow
+agent_instructions: '1. Receive initial dispute reports
+
+  2. Delegate to appropriate agents for investigation
+
+  3. Track dispute progress
+
+  4. Ensure timely resolution
+
+  5. Compile final resolution report
+
+  '
+features:
+- type: workflow_orchestration
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Credit_Dispute_Intake_Agent_V1.yaml
+  usage_description: Initial intake and documentation of credit card disputes
+- file: agents/roles/Credit_Charge_Verifier_V1.yaml
+  usage_description: Investigates and verifies disputed credit card charges

@@ -1,0 +1,35 @@
+template_type: single_task
+name: Investment_Strategy_Analyst_v1
+description: Develops personalized investment strategy across financial goals
+agent_role: Investment Strategy Analyst
+agent_goal: Create optimized investment allocation strategy
+agent_instructions: '1. Review financial goals from previous agents
+
+  2. Develop balanced investment portfolio
+
+  3. Recommend asset allocation
+
+  4. Provide risk management strategy
+
+  '
+features:
+- type: investment_analysis
+  config:
+    multi_goal_optimization: true
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    investment_strategy:
+      overall_asset_allocation: object
+      risk_score: number
+      recommended_investments: array
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

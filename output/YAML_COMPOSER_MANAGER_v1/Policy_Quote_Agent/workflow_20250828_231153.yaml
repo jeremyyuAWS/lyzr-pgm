@@ -1,0 +1,9 @@
+flow_name: Insurance_Quote_Generation_Flow
+flow_data:
+  tasks:
+    - name: collect_customer_info
+      function: call_agent
+      agent: INSURANCE_ROLE_CustomerInfoCollector_v1
+    - name: generate_quote
+      function: call_agent
+      agent: INSURANCE_ROLE_QuoteGenerator_v1

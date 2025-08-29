@@ -1,9 +1,0 @@
-flow_name: Professional_Development_Flow
-flow_data:
-  tasks:
-    - name: assess_skills
-      function: call_agent
-      agent: Skills_Assessment_Agent_v1
-    - name: recommend_courses
-      function: call_agent
-      agent: Learning_Recommendations_Agent_v1

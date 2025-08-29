@@ -1,0 +1,12 @@
+flow_name: Credit_Card_Dispute_Management
+flow_data:
+  tasks:
+    - name: initial_dispute_intake
+      function: call_agent
+      agent: Credit_Dispute_Intake_Agent_v1
+    - name: charge_verification
+      function: call_agent
+      agent: Credit_Charge_Verifier_v1
+    - name: resolution_management
+      function: call_agent
+      agent: Credit_Dispute_Resolution_Manager_v1

@@ -1,0 +1,33 @@
+template_type: single_task
+name: Wealth_Strategist_Analyzer_V1
+description: Conducts in-depth analysis of investment assets and potential growth
+  strategies
+agent_role: Asset Strategy Analyst
+agent_goal: Perform comprehensive evaluation of investment portfolio, identifying
+  optimization opportunities
+agent_instructions: '1. Analyze current asset allocation
+
+  2. Assess risk tolerance and financial goals
+
+  3. Recommend asset rebalancing strategies
+
+  4. Identify potential high-growth investment opportunities
+
+  5. Generate detailed asset performance projections
+
+  '
+features:
+- type: financial_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

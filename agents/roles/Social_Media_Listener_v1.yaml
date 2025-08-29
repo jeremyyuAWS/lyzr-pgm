@@ -1,0 +1,33 @@
+template_type: single_task
+name: Social_Media_Listener_v1
+description: Collects and filters brand mentions across social media platforms.
+agent_role: Social Media Mention Collector
+agent_goal: Capture and categorize all brand-related mentions in real-time.
+agent_instructions: '1. Scan multiple social media platforms for brand keywords
+
+  2. Collect and organize mentions by platform and type
+
+  3. Filter out irrelevant mentions
+
+  4. Prepare mentions for sentiment analysis
+
+  '
+features:
+- type: data_collection
+  config:
+    keywords:
+    - BrandName
+    - CompanyName
+    - ProductName
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

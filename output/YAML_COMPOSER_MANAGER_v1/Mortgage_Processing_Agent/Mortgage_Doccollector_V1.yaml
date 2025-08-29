@@ -1,0 +1,27 @@
+template_type: single_task
+name: Mortgage_Doccollector_V1
+description: Collects and verifies mortgage application documents
+agent_role: Document Verification Specialist
+agent_goal: Gather and validate all required mortgage application documents
+agent_instructions: "1. Request necessary documentation from applicant\n2. Verify\
+  \ document completeness and authenticity\n3. Check for:\n   - Proof of income\n\
+  \   - Identity verification\n   - Credit reports\n   - Property documents\n4. Compile\
+  \ and organize document package\n"
+features:
+- type: document_processing
+  config:
+    validation_checks:
+    - completeness
+    - authenticity
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

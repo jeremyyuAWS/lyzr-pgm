@@ -1,0 +1,29 @@
+template_type: single_task
+name: Wealth_Strategy_Analyzer_v1
+description: Conducts in-depth analysis of investment assets and potential opportunities
+agent_role: Asset Strategy Specialist
+agent_goal: Evaluate and optimize investment portfolio across multiple asset classes
+agent_instructions: '1. Analyze current asset allocation
+
+  2. Identify potential investment opportunities
+
+  3. Assess risk-adjusted returns
+
+  4. Recommend personalized investment strategies
+
+  '
+features:
+- type: investment_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

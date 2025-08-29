@@ -1,0 +1,35 @@
+template_type: single_task
+name: Customer_Account_Setup_V1
+description: Finalizes customer account creation and initial setup
+agent_role: Account Provisioning Specialist
+agent_goal: Complete account setup based on verified customer information
+agent_instructions: '1. Receive validated customer information
+
+  2. Create customer account in primary system
+
+  3. Set up initial account parameters
+
+  4. Generate welcome package
+
+  5. Prepare for initial customer communication
+
+  '
+features:
+- type: account_provisioning
+  config:
+    account_types:
+    - standard
+    - premium
+    default_access_level: standard
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

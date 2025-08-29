@@ -1,0 +1,34 @@
+template_type: single_task
+name: Customer_Account_Setup_Agent_v1
+description: Finalizes customer account creation and initial setup
+agent_role: Account Provisioning Specialist
+agent_goal: Create and configure customer account based on verified information
+agent_instructions: '1. Validate successful KYC and document verification
+
+  2. Create customer account in system
+
+  3. Set up initial account preferences
+
+  4. Generate welcome package
+
+  5. Prepare for initial account activation
+
+  '
+features:
+- type: account_provisioning
+  config:
+    account_types:
+    - personal
+    - business
+  priority: 3
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,39 @@
+template_type: single_task
+name: AML_Risk_Categorizer_v1
+description: Finalizes customer risk categorization and recommends compliance actions
+agent_role: Risk Categorization Specialist
+agent_goal: Determine final risk profile and necessary compliance measures
+agent_instructions: '1. Receive risk analysis data from Risk Analyzer
+
+  2. Apply advanced risk categorization algorithms
+
+  3. Determine final risk category (Low/Medium/High)
+
+  4. Generate recommended compliance actions
+
+  5. Prepare comprehensive risk profile report
+
+  '
+features:
+- type: risk_classification
+  config:
+    classification_models:
+    - statistical_scoring
+    - behavioral_analysis
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  structure:
+    final_risk_category: string
+    compliance_actions: array
+    escalation_required: boolean
+    monitoring_intensity: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

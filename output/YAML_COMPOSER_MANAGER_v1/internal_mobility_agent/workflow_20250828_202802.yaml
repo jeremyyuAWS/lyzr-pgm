@@ -1,6 +1,0 @@
-flow_name: Internal_Job_Opportunities_Flow
-flow_data:
-  tasks:
-    - name: skill_matching
-      function: call_agent
-      agent: Career_Opportunities_Matcher_v1

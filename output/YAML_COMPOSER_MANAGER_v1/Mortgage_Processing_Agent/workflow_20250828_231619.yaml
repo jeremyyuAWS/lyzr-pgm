@@ -1,0 +1,12 @@
+flow_name: Mortgage_Origination_Flow
+flow_data:
+  tasks:
+    - name: collect_documents
+      function: call_agent
+      agent: Mortgage_DocCollector_v1
+    - name: review_application
+      function: call_agent
+      agent: Mortgage_Approver_v1
+    - name: process_disbursement
+      function: call_agent
+      agent: Mortgage_Disbursement_v1

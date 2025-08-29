@@ -1,9 +1,0 @@
-flow_name: Workforce_Diversity_Analytics
-flow_data:
-  tasks:
-    - name: collect_diversity_metrics
-      function: call_agent
-      agent: Diversity_Metrics_Analyzer_v1
-    - name: generate_recommendations
-      function: call_agent
-      agent: Diversity_Strategy_Recommender_v1

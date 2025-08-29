@@ -1,0 +1,37 @@
+template_type: single_task
+name: Bank_Sales_Manager_V1
+description: Oversees cross-selling insurance products to banking customers
+agent_role: Bank Sales Manager
+agent_goal: Coordinate strategic cross-selling of insurance products to existing bank
+  customers
+agent_instructions: '1. Analyze customer banking profiles
+
+  2. Identify potential insurance product opportunities
+
+  3. Delegate detailed product recommendation to specialist agent
+
+  4. Track and report cross-selling success rates
+
+  '
+features:
+- type: strategic_sales_coordination
+  config:
+    customer_data_sources:
+    - banking_system
+    - customer_profiles
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Insurance_Product_Recommender_V1.yaml
+  usage_description: Generates personalized insurance product recommendations

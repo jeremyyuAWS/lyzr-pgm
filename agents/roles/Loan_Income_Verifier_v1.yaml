@@ -1,0 +1,29 @@
+template_type: single_task
+name: Loan_Income_Verifier_v1
+description: Validates applicant's income and employment status
+agent_role: Income Verification Specialist
+agent_goal: Confirm financial stability and consistent income sources
+agent_instructions: '1. Request and collect income documentation
+
+  2. Verify employment status
+
+  3. Cross-reference income claims
+
+  4. Generate income verification report
+
+  '
+features:
+- type: document_verification
+  config: {}
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

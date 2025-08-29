@@ -1,0 +1,32 @@
+template_type: single_task
+name: KYC_Verification_Agent
+description: Performs Know Your Customer (KYC) checks
+agent_role: KYC Specialist
+agent_goal: Conduct comprehensive customer identity verification
+agent_instructions: '1. Collect customer identification information
+
+  2. Perform background checks
+
+  3. Verify customer identity against global databases
+
+  4. Flag any potential compliance risks
+
+  '
+features:
+- type: compliance_verification
+  config:
+    databases:
+    - global_watchlists
+    - financial_regulators
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,29 @@
+template_type: single_task
+name: Audit_Report_Generator_v1
+description: Comprehensive regulatory compliance audit report generator
+agent_role: Compliance Reporting Specialist
+agent_goal: Consolidate and generate detailed compliance audit reports
+agent_instructions: '1. Collect compliance check results from all regulatory domains
+
+  2. Synthesize findings into a comprehensive report
+
+  3. Highlight compliance status, risks, and recommendations
+
+  4. Generate structured audit documentation
+
+  '
+features:
+- type: reporting
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

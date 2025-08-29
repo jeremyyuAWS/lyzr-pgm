@@ -1,0 +1,31 @@
+template_type: single_task
+name: INSURANCE_ROLE_FailedPaymentResolver_v1
+description: Manages and resolves failed insurance premium payments
+agent_role: Payment Recovery Specialist
+agent_goal: Mitigate risks associated with failed premium payments
+agent_instructions: '1. Identify reason for payment failure
+
+  2. Initiate customer communication
+
+  3. Provide alternative payment methods
+
+  4. Prevent policy lapse
+
+  5. Escalate prolonged non-payment cases
+
+  '
+features:
+- type: risk_mitigation
+  config: {}
+  priority: 3
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

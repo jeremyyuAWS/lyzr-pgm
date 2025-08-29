@@ -1,0 +1,32 @@
+template_type: single_task
+name: Kyc_Risk_Analyzer_V1
+description: Conducts in-depth customer risk profiling for AML compliance
+agent_role: Risk Analysis Specialist
+agent_goal: Perform comprehensive risk assessment based on financial behaviors
+agent_instructions: "1. Analyze customer's financial transaction history\n2. Assess\
+  \ risk factors including:\n   - Transaction patterns\n   - Frequency and volume\
+  \ of transactions\n   - Geographic risk indicators\n   - Unusual financial behaviors\n\
+  3. Generate detailed risk profile with scoring\n4. Identify potential money laundering\
+  \ or fraud indicators\n"
+features:
+- type: financial_analysis
+  config:
+    risk_scoring: true
+    pattern_recognition: true
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    risk_level: string
+    risk_score: number
+    key_risk_indicators: array
+    recommended_actions: array
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,30 @@
+template_type: single_task
+name: Cash_Deployment_Strategist_V1
+description: Develops strategic recommendations for optimal cash utilization
+agent_role: Cash Strategy Specialist
+agent_goal: Create tailored recommendations for cash deployment based on liquidity
+  analysis
+agent_instructions: '1. Review liquidity analysis report
+
+  2. Evaluate potential investment or deployment options
+
+  3. Consider risk tolerance, return potential, and strategic objectives
+
+  4. Generate prioritized cash deployment recommendations
+
+  '
+features:
+- type: strategic_planning
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

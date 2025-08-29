@@ -1,0 +1,31 @@
+template_type: single_task
+name: Credit_Charge_Verifier_V1
+description: Investigates and verifies disputed credit card charges
+agent_role: Charge Verification Specialist
+agent_goal: Conduct thorough investigation of disputed transactions
+agent_instructions: '1. Review transaction details
+
+  2. Contact merchant for transaction verification
+
+  3. Check transaction against account history
+
+  4. Analyze potential fraud indicators
+
+  5. Prepare detailed verification report
+
+  '
+features:
+- type: transaction_investigation
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

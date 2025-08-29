@@ -1,0 +1,29 @@
+template_type: single_task
+name: GDPR_Compliance_Agent_v1
+description: General Data Protection Regulation (GDPR) compliance specialist
+agent_role: Data Protection Compliance Officer
+agent_goal: Verify data privacy and protection measures
+agent_instructions: '1. Audit data collection practices
+
+  2. Review data storage and processing procedures
+
+  3. Verify data subject rights implementation
+
+  4. Check cross-border data transfer compliance
+
+  '
+features:
+- type: data_privacy
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,32 @@
+template_type: single_task
+name: Bfsi_Balance_Agent_V1
+description: Specialized agent for handling account balance inquiries
+agent_role: Balance Inquiry Specialist
+agent_goal: Provide accurate and secure account balance information
+agent_instructions: '1. Verify customer authentication
+
+  2. Retrieve current account balance
+
+  3. Present balance details securely
+
+  4. Offer additional financial insights if applicable
+
+  '
+features:
+- type: financial_data_retrieval
+  config:
+    data_types:
+    - current_balance
+    - available_balance
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

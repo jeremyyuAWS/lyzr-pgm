@@ -1,0 +1,33 @@
+template_type: single_task
+name: Market_Trends_Agent
+description: Analyzes current market trends and economic indicators
+agent_role: Market Strategist
+agent_goal: Identify and synthesize key market trends and economic signals
+agent_instructions: '1. Collect real-time market data and economic indicators
+
+  2. Analyze trend patterns and potential market movements
+
+  3. Identify critical economic and sector-specific insights
+
+  4. Generate structured trend analysis report
+
+  '
+features:
+- type: trend_analysis
+  config:
+    data_sources:
+    - financial_news
+    - market_indices
+    - economic_reports
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

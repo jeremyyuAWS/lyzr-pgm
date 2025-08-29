@@ -1,0 +1,31 @@
+template_type: single_task
+name: Pension_ROLE_WithdrawalPlanner_v1
+description: Develops personalized pension withdrawal strategies
+agent_role: Withdrawal Strategy Specialist
+agent_goal: Create optimal withdrawal plans considering individual needs
+agent_instructions: '1. Assess individual retirement goals
+
+  2. Calculate sustainable withdrawal rates
+
+  3. Consider tax implications
+
+  4. Develop personalized withdrawal strategies
+
+  5. Provide ongoing withdrawal recommendations
+
+  '
+features:
+- type: financial_planning
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

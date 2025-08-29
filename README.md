@@ -9,22 +9,24 @@ It ensures consistent payload formatting for the Lyzr API and provides automatio
 ## 📦 Project Structure
 
 ```
+
 .
-├── agents/                 
-│   ├── managers/           # Manager agent YAMLs
-│   └── roles/              # Role agent YAMLs
-├── scripts/                
-│   ├── create_agent.py            # Create a single agent from YAML
-│   ├── create_manager.py          # Create manager agent with role(s) from YAML
-│   ├── create_manager_from_yaml.py# ✅ Create manager directly from generated output YAML
-│   ├── create_from_output.py      # ⭐ Recursively create Managers + Workflows from output folder
-│   ├── run_agent.py               # Run inference on an agent by ID
-│   ├── run_list_iterate.py        # ⭐ Run a manager across list of use cases
-│   ├── parse_json_to_yaml.py      # Parse manager JSON → role YAMLs
-│   ├── list_agents.py             # List all existing agents
-│   ├── delete_agents.py           # Delete all agents (with dry-run mode)
-│   ├── runme.py                   # Batch runner (uses UPDATEME.yaml)
-```
+├── agents/
+│   ├── managers/            # Manager agent YAMLs
+│   └── roles/               # Role agent YAMLs
+├── scripts/
+│   ├── create\_agent.py             # Create a single agent from YAML
+│   ├── create\_manager.py           # Create manager agent with role(s) from YAML
+│   ├── create\_manager\_from\_yaml.py # ✅ Create manager directly from generated output YAML
+│   ├── create\_from\_output.py       # ⭐⭐ Recursively create Managers + Workflows from output folder
+│   ├── run\_agent.py                # Run inference on an agent by ID
+│   ├── run\_list\_iterate.py         # ⭐⭐ Run a manager across list of use cases (with optional --push ⭐⭐⭐)
+│   ├── parse\_json\_to\_yaml.py       # Parse manager JSON → role YAMLs
+│   ├── list\_agents.py              # List all existing agents
+│   ├── delete\_agents.py            # Delete all agents (with dry-run mode)
+│   ├── runme.py                    # Batch runner (uses UPDATEME.yaml)
+
+````
 
 ---
 
@@ -42,7 +44,7 @@ If you have an **output folder** containing multiple subfolders (each with a `*M
 
 ```bash
 python -m scripts.create_from_output output/YAML_COMPOSER_MANAGER_v1 --debug
-```
+````
 
 This will:
 
@@ -61,4 +63,52 @@ Example output:
 ✅ Manager created: HR_Helpdesk_Manager_v1 (id=68b...e4)
 🚀 Creating Workflow from workflow_20250828_202636.yaml
 ✅ Workflow created: HR Helpdesk Flow (id=215...c7)
+```
+
+---
+
+### 🔁 Run a Manager Across a Use Case List
+
+You can run a **Manager YAML** against a **Use Case list YAML** (e.g., HR, BFSI, etc.) to generate schema-compliant agents + workflows.
+
+Example with HR use cases:
+
+```bash
+python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml
+```
+
+Example with BFSI use cases:
+
+```bash
+python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_bfsi.yaml
+```
+
+#### 🆕 `--push` Flag
+
+By default, `run_list_iterate` only saves generated YAMLs locally (under `output/`).
+
+If you want the created YAML agents to be **pushed to the Lyzr platform automatically**, add the `--push` flag:
+
+* Generate YAMLs only:
+
+  ```bash
+  python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_bfsi.yaml
+  ```
+
+* Generate **and push**:
+
+  ```bash
+  python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_bfsi.yaml --push
+  ```
+
+Example output with push:
+
+```
+▶️ Running agents/use_cases_bfsi.yaml with manager agents/managers/YAML_COMPOSER_MANAGER_v1.yaml
+📝 Saved canonical agent YAML → output/Fraud_Detection_Agent.yaml
+...
+🚀 Push flag enabled — pushing created agents to Lyzr platform...
+✅ Pushed agent Fraud_Detection_Agent
+✅ Pushed agent Claims_Processing_Agent
+🤖 Created manager BFSI_Manager_v1 with 25 linked roles
 ```

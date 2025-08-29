@@ -1,0 +1,36 @@
+template_type: single_task
+name: Education_Savings_Advisor_v1
+description: Specialized agent for education savings planning
+agent_role: Education Savings Consultant
+agent_goal: Develop comprehensive education savings strategy
+agent_instructions: '1. Assess current education savings
+
+  2. Estimate future education costs
+
+  3. Recommend 529 plans or other education savings vehicles
+
+  4. Create savings milestone tracking
+
+  '
+features:
+- type: savings_planning
+  config:
+    education_cost_projection: true
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    education_savings_plan:
+      current_savings: number
+      projected_education_costs: number
+      recommended_monthly_contribution: number
+      suggested_savings_vehicles: array
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

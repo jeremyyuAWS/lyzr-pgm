@@ -1,0 +1,34 @@
+template_type: single_task
+name: Marketing_Subject_Line_Analyzer_v1
+description: Performs A/B testing on email subject lines
+agent_role: Subject Line Performance Specialist
+agent_goal: Identify most effective email subject line variations
+agent_instructions: '1. Receive multiple subject line variants
+
+  2. Design controlled email testing methodology
+
+  3. Track open rates and engagement
+
+  4. Conduct statistical significance analysis
+
+  5. Recommend optimal subject line
+
+  '
+features:
+- type: email_optimization
+  config:
+    metrics:
+    - open_rate
+    - click_rate
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

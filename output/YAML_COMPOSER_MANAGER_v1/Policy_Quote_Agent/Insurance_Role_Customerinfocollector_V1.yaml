@@ -1,0 +1,27 @@
+template_type: single_task
+name: Insurance_Role_Customerinfocollector_V1
+description: Collects comprehensive customer information for insurance quoting
+agent_role: Customer Information Specialist
+agent_goal: Gather detailed and accurate customer data for quote generation
+agent_instructions: "1. Prompt customer for essential insurance-related information\n\
+  2. Validate and verify provided customer details\n3. Collect:\n   - Personal demographics\n\
+  \   - Risk profile\n   - Property/asset details\n   - Coverage preferences\n4. Perform\
+  \ initial risk assessment\n5. Return structured customer information JSON\n"
+features:
+- type: data_collection
+  config:
+    validation_levels:
+    - basic_info
+    - risk_profile
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

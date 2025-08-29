@@ -1,0 +1,47 @@
+template_type: single_task
+name: Cybersecurity_Manager_V1
+description: Oversees enterprise cybersecurity risk assessment and recommendation
+  workflow
+agent_role: Cybersecurity Risk Management Coordinator
+agent_goal: Coordinate comprehensive cybersecurity risk evaluation and provide strategic
+  recommendations
+agent_instructions: '1. Initiate comprehensive enterprise cybersecurity risk assessment
+
+  2. Delegate detailed risk analysis to specialized role agent
+
+  3. Collect and synthesize risk analysis findings
+
+  4. Trigger coverage recommendation generation
+
+  5. Review and validate final risk assessment and recommendation report
+
+  '
+features:
+- type: strategic_coordination
+  config:
+    risk_tolerance_levels:
+    - low
+    - medium
+    - high
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+  schema:
+    risk_summary: object
+    coverage_recommendations: array
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Cybersecurity_Riskassessment_Agent.yaml
+  usage_description: Performs detailed cybersecurity risk analysis for enterprise
+    infrastructure
+- file: agents/roles/Cybersecurity_Coveragerecommendation_Agent.yaml
+  usage_description: Generates tailored cybersecurity coverage and mitigation recommendations

@@ -1,0 +1,24 @@
+template_type: single_task
+name: Email_Personalization_Agent_v1
+description: Generates personalized email content and subject lines
+agent_role: Email Content Personalization Specialist
+agent_goal: Create highly targeted email communications that resonate with specific
+  customer segments
+agent_instructions: "1. Receive customer profile insights\n2. Generate personalized:\n\
+  \   - Subject lines\n   - Email body content\n   - Targeted product offers\n3. Ensure\
+  \ content matches customer preferences\n4. Optimize for engagement and conversion\n"
+features:
+- type: content_generation
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

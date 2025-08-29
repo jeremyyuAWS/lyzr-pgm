@@ -1,0 +1,36 @@
+template_type: single_task
+name: Brand_Monitoring_Aggregator_v1
+description: Collects brand mentions from multiple sources
+agent_role: Mention Collector
+agent_goal: Gather comprehensive brand mentions across different platforms
+agent_instructions: '1. Scan news sites, social media platforms, and review websites
+
+  2. Collect recent brand mentions within specified timeframe
+
+  3. Extract key metadata (source, date, platform, content)
+
+  4. Standardize and aggregate mentions for further analysis
+
+  '
+features:
+- type: web_scraping
+  config:
+    sources:
+    - news
+    - twitter
+    - facebook
+    - linkedin
+    - yelp
+    - google_reviews
+    time_window: 7 days
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

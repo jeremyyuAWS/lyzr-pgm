@@ -1,0 +1,12 @@
+flow_name: Tax_Compliance_Workflow
+flow_data:
+  tasks:
+    - name: regulatory_scan
+      function: call_agent
+      agent: TAX_ROLE_RegComplianceScanner_v1
+    - name: deduction_analysis
+      function: call_agent
+      agent: TAX_ROLE_DeductionAnalyzer_v1
+    - name: filing_preparation
+      function: call_agent
+      agent: TAX_ROLE_FilingPreparator_v1

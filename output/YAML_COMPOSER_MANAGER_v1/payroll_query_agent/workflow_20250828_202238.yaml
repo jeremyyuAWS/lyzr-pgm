@@ -1,5 +1,0 @@
-flow_name: Payroll_Inquiry_Management
-flow_data:
-  tasks:
-    - name: process_payroll_inquiry
-      function: route_to_specialized_agent

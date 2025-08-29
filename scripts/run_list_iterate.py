@@ -1,4 +1,5 @@
 # scripts/run_list_iterate.py
+
 import os
 import sys
 import json
@@ -10,18 +11,31 @@ import argparse
 
 from src.api.client import LyzrAPIClient
 from src.services.agent_manager import AgentManager
-from src.utils.normalize_output import normalize_inference_output
+from src.utils.normalize_output import normalize_inference_output, canonicalize_name
+from src.services.workflow_manager import create_workflow_from_yaml
 
 
-def run_inference(client: LyzrAPIClient, agent_id: str, usecase: dict, out_root: Path, save_outputs: bool, max_retries: int = 3):
+def run_inference(
+    client: LyzrAPIClient,
+    agent_id: str,
+    usecase: dict,
+    out_root: Path,
+    save_outputs: bool,
+    push: bool,
+    manager: AgentManager,
+    max_retries: int = 3,
+):
     """Run inference for a single use case, retrying if response unusable."""
-    usecase_name = usecase.get("name", "unnamed_usecase").replace(" ", "_").lower()
+    raw_name = usecase.get("name", "unnamed_usecase")
+    usecase_name = canonicalize_name(raw_name)   # Title_Case_Underscore
     usecase_text = usecase.get("description", "")
     if not usecase_text:
         print(f"⚠️ Skipping {usecase_name}: no description found")
         return
 
-    print(f"\n📥 Running use case: {usecase_name}")
+    # pretty name for logs
+    pretty_name = usecase.get("name", "Unnamed Use Case").replace("_", " ").title()
+    print(f"\n📥 Running use case: {pretty_name}")
 
     out_dir = out_root / usecase_name
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -58,6 +72,37 @@ def run_inference(client: LyzrAPIClient, agent_id: str, usecase: dict, out_root:
                         json.dump(norm, f, indent=2)
                     print(f"✅ Normalized inference output saved to {norm_file}")
                 usable = True
+
+                # 🚀 Push to Lyzr Platform if requested
+                if push:
+                    print(f"🚀 Push flag enabled — creating agents from {out_dir}")
+
+                    # 1. Manager + Roles
+                    mgr_files = list(out_dir.glob("*Manager*.yaml"))
+                    if mgr_files:
+                        manager_yaml_path = mgr_files[0]
+                        mgr_result = manager.create_manager_with_roles(str(manager_yaml_path))
+                        if mgr_result:
+                            print(f"✅ Manager created: {mgr_result.get('name')} (id={mgr_result.get('agent_id')})")
+                        else:
+                            print(f"❌ Failed to create Manager from {manager_yaml_path}")
+                    else:
+                        print(f"⚠️ No Manager YAML found in {out_dir}")
+
+                    # 2. Workflow
+                    wf_files = sorted(out_dir.glob("workflow_*.yaml"))
+                    if wf_files:
+                        workflow_yaml_path = wf_files[-1]
+                        print(f"🚀 Creating Workflow from {workflow_yaml_path}")
+                        wf_result = create_workflow_from_yaml(client, str(workflow_yaml_path))
+                        if wf_result.get("ok"):
+                            data = wf_result.get("data", {})
+                            print(f"✅ Workflow created: {data.get('flow_name')} (id={data.get('flow_id')})")
+                        else:
+                            print(f"❌ Workflow creation failed in {out_dir}: {wf_result}")
+                    else:
+                        print(f"⚠️ No Workflow YAML found in {out_dir}")
+
             except Exception as e:
                 print(f"⚠️ Normalization failed on attempt {attempt}: {e}")
 
@@ -77,6 +122,7 @@ def main():
     parser.add_argument("manager_yaml", help="Path to manager agent YAML")
     parser.add_argument("usecases_file", help="Path to use cases YAML file")
     parser.add_argument("--save", action="store_true", help="Save raw/normalized JSON outputs")
+    parser.add_argument("--push", action="store_true", help="Push created agents & workflows to Lyzr platform")
     args = parser.parse_args()
 
     # toggle logic: CLI flag overrides env
@@ -102,7 +148,7 @@ def main():
     # Run inference per use case
     out_root = Path("output") / Path(args.manager_yaml).stem
     for uc in usecases.get("use_cases", []):
-        run_inference(client, mgr_id, uc, out_root, save_outputs)
+        run_inference(client, mgr_id, uc, out_root, save_outputs, args.push, manager)
 
 
 if __name__ == "__main__":

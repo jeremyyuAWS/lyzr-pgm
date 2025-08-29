@@ -1,0 +1,29 @@
+template_type: single_task
+name: TAX_ROLE_DocumentAnalyzer_v1
+description: Performs detailed analysis of tax-related documents
+agent_role: Tax Document Specialist
+agent_goal: Meticulously review and categorize tax documents for optimal filing
+agent_instructions: '1. Collect and organize all tax-related documentation
+
+  2. Identify potential deductions and tax credits
+
+  3. Verify document accuracy and completeness
+
+  4. Generate structured report of findings
+
+  '
+features:
+- type: document_processing
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

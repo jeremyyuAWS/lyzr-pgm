@@ -9,7 +9,8 @@ def normalize_payload(agent_yaml: dict) -> dict:
         "agent_goal": agent_yaml.get("agent_goal", ""),
         "agent_instructions": agent_yaml.get("agent_instructions", ""),
         "tool_usage_description": agent_yaml.get("tool_usage_description", ""),
-        "tools": agent_yaml.get("tools", []),
+        # "tools": agent_yaml.get("tools", []),
+        "tools": [],  # Start empty, populate whne platform supports
         "response_format": agent_yaml.get("response_format", {"type": "json"}),
         "provider_id": agent_yaml.get("provider_id", "OpenAI"),
         "model": agent_yaml.get("model", "gpt-4o-mini"),

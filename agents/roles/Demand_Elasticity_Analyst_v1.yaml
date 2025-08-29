@@ -1,0 +1,32 @@
+template_type: single_task
+name: Demand_Elasticity_Analyst_v1
+description: Performs advanced demand sensitivity and pricing impact analysis
+agent_role: Pricing Sensitivity Researcher
+agent_goal: Calculate precise demand elasticity and price sensitivity metrics
+agent_instructions: '1. Collect historical sales and pricing data
+
+  2. Perform statistical analysis of price-demand relationship
+
+  3. Calculate price elasticity coefficients
+
+  4. Develop demand sensitivity models
+
+  '
+features:
+- type: economic_analysis
+  config:
+    analysis_methods:
+    - regression_analysis
+    - price_sensitivity_mapping
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,36 @@
+template_type: single_task
+name: Wealth_Dashboard_Renderer_v1
+description: Generates interactive and comprehensive wealth visualization
+agent_role: Dashboard Visualization Specialist
+agent_goal: Create intuitive and detailed wealth dashboard
+agent_instructions: '1. Receive consolidated financial data
+
+  2. Apply visualization best practices
+
+  3. Generate interactive dashboard
+
+  4. Provide multiple view options (summary, detailed, historical)
+
+  5. Ensure data presentation is clear and informative
+
+  '
+features:
+- type: data_visualization
+  config:
+    chart_types:
+    - pie
+    - line
+    - bar
+    - breakdown
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,33 @@
+template_type: single_task
+name: Financial_Analyst_Role_v1
+description: Performs detailed analysis of liquidity positions and cash deployment
+  opportunities
+agent_role: Financial Strategic Analyst
+agent_goal: Conduct comprehensive analysis of cash positions and recommend optimal
+  deployment strategies
+agent_instructions: '1. Analyze current cash reserves and liquidity metrics
+
+  2. Identify potential investment or strategic deployment opportunities
+
+  3. Assess risk and return for various cash utilization scenarios
+
+  4. Prepare detailed recommendation report
+
+  5. Flag any liquidity constraints or potential shortfalls
+
+  '
+features:
+- type: financial_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

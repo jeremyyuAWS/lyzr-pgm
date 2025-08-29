@@ -1,0 +1,30 @@
+template_type: single_task
+name: Investment_Portfolio_Optimizer_v1
+description: Develops optimized investment strategies tailored to individual financial
+  goals
+agent_role: Portfolio Strategy Specialist
+agent_goal: Create personalized investment portfolio with optimal risk-return balance
+agent_instructions: '1. Analyze asset and risk assessment outputs
+
+  2. Develop customized investment allocation strategy
+
+  3. Recommend portfolio diversification
+
+  4. Provide target asset allocation and investment vehicles
+
+  '
+features:
+- type: investment_optimization
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

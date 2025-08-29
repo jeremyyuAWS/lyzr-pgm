@@ -1,0 +1,407 @@
+use_cases:
+  - name: Fraud_Detection_Agent
+    description: |
+      Detect suspicious transactions and flag potential fraud in real-time.
+      Ensure YAML schema compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "Fraud_Detection_Flow",
+        "workflow_yaml": "flow_name: Fraud_Detection_Flow\nflow_data:\n  tasks:\n    - name: detect_fraud\n      function: call_agent\n      agent: Fraud_Role_v1",
+        "agents": [
+          { "name": "Fraud_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Fraud_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Claims_Processing_Agent
+    description: |
+      Automate insurance claims intake, validation, adjudication, and status updates.
+
+      Example expected output:
+      {
+        "workflow_name": "Claims_Processing_Flow",
+        "workflow_yaml": "flow_name: Claims_Processing_Flow\nflow_data:\n  tasks:\n    - name: process_claim\n      function: call_agent\n      agent: Claims_Role_v1",
+        "agents": [
+          { "name": "Claims_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Claims_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Loan_Underwriting_Agent
+    description: |
+      Analyze applicant credit scores, income verification, and debt ratios for loan approvals.
+
+      Example expected output:
+      {
+        "workflow_name": "Loan_Underwriting_Flow",
+        "workflow_yaml": "flow_name: Loan_Underwriting_Flow\nflow_data:\n  tasks:\n    - name: underwrite_loan\n      function: call_agent\n      agent: Underwriting_Role_v1",
+        "agents": [
+          { "name": "Underwriting_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Underwriting_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Customer_Risk_Profiling_Agent
+    description: |
+      Generate customer risk profiles for AML/KYC based on financial history and behaviors.
+
+      Example expected output:
+      {
+        "workflow_name": "Risk_Profiling_Flow",
+        "workflow_yaml": "flow_name: Risk_Profiling_Flow\nflow_data:\n  tasks:\n    - name: profile_risk\n      function: call_agent\n      agent: Risk_Role_v1",
+        "agents": [
+          { "name": "Risk_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Risk_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Policy_Quote_Agent
+    description: |
+      Generate personalized insurance quotes based on customer inputs and actuarial data.
+
+      Example expected output:
+      {
+        "workflow_name": "Policy_Quote_Flow",
+        "workflow_yaml": "flow_name: Policy_Quote_Flow\nflow_data:\n  tasks:\n    - name: generate_quote\n      function: call_agent\n      agent: Quote_Role_v1",
+        "agents": [
+          { "name": "Quote_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Quote_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Regulatory_Compliance_Agent
+    description: |
+      Perform compliance checks for AML, KYC, SOX, and GDPR. Generate audit reports.
+
+      Example expected output:
+      {
+        "workflow_name": "Regulatory_Compliance_Flow",
+        "workflow_yaml": "flow_name: Regulatory_Compliance_Flow\nflow_data:\n  tasks:\n    - name: compliance_check\n      function: call_agent\n      agent: Compliance_Role_v1",
+        "agents": [
+          { "name": "Compliance_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Compliance_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Portfolio_Advisor_Agent
+    description: |
+      Provide investment portfolio allocation and rebalancing recommendations.
+
+      Example expected output:
+      {
+        "workflow_name": "Portfolio_Advisor_Flow",
+        "workflow_yaml": "flow_name: Portfolio_Advisor_Flow\nflow_data:\n  tasks:\n    - name: advise_portfolio\n      function: call_agent\n      agent: Advisor_Role_v1",
+        "agents": [
+          { "name": "Advisor_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Advisor_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Premium_Payment_Agent
+    description: |
+      Manage insurance premium reminders, transactions, and failed payment handling.
+
+      Example expected output:
+      {
+        "workflow_name": "Premium_Payment_Flow",
+        "workflow_yaml": "flow_name: Premium_Payment_Flow\nflow_data:\n  tasks:\n    - name: process_payment\n      function: call_agent\n      agent: Payment_Role_v1",
+        "agents": [
+          { "name": "Payment_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Payment_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Claims_Fraud_Audit_Agent
+    description: |
+      Audit insurance claims for fraud indicators and prepare investigation reports.
+
+      Example expected output:
+      {
+        "workflow_name": "Claims_Fraud_Audit_Flow",
+        "workflow_yaml": "flow_name: Claims_Fraud_Audit_Flow\nflow_data:\n  tasks:\n    - name: audit_claims\n      function: call_agent\n      agent: Audit_Role_v1",
+        "agents": [
+          { "name": "Audit_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Audit_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Financial_Planning_Agent
+    description: |
+      Build customer financial plans for retirement, education, and savings goals.
+
+      Example expected output:
+      {
+        "workflow_name": "Financial_Planning_Flow",
+        "workflow_yaml": "flow_name: Financial_Planning_Flow\nflow_data:\n  tasks:\n    - name: create_plan\n      function: call_agent\n      agent: Planning_Role_v1",
+        "agents": [
+          { "name": "Planning_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Planning_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Wealth_Management_Agent
+    description: |
+      Offer personalized wealth management strategies across assets and liabilities.
+
+      Example expected output:
+      {
+        "workflow_name": "Wealth_Management_Flow",
+        "workflow_yaml": "flow_name: Wealth_Management_Flow\nflow_data:\n  tasks:\n    - name: manage_wealth\n      function: call_agent\n      agent: Wealth_Role_v1",
+        "agents": [
+          { "name": "Wealth_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Wealth_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Credit_Card_Dispute_Agent
+    description: |
+      Handle cardholder disputes, verify charges, and manage resolution workflows.
+
+      Example expected output:
+      {
+        "workflow_name": "Credit_Card_Dispute_Flow",
+        "workflow_yaml": "flow_name: Credit_Card_Dispute_Flow\nflow_data:\n  tasks:\n    - name: resolve_dispute\n      function: call_agent\n      agent: Dispute_Role_v1",
+        "agents": [
+          { "name": "Dispute_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Dispute_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Mortgage_Processing_Agent
+    description: |
+      Automate mortgage origination steps: documentation, approvals, and disbursement.
+
+      Example expected output:
+      {
+        "workflow_name": "Mortgage_Processing_Flow",
+        "workflow_yaml": "flow_name: Mortgage_Processing_Flow\nflow_data:\n  tasks:\n    - name: process_mortgage\n      function: call_agent\n      agent: Mortgage_Role_v1",
+        "agents": [
+          { "name": "Mortgage_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Mortgage_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Investment_Research_Agent
+    description: |
+      Summarize analyst reports, market trends, and generate investment memos.
+
+      Example expected output:
+      {
+        "workflow_name": "Investment_Research_Flow",
+        "workflow_yaml": "flow_name: Investment_Research_Flow\nflow_data:\n  tasks:\n    - name: analyze_market\n      function: call_agent\n      agent: Research_Role_v1",
+        "agents": [
+          { "name": "Research_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Research_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Treasury_Liquidity_Agent
+    description: |
+      Monitor liquidity positions and recommend cash deployment strategies.
+
+      Example expected output:
+      {
+        "workflow_name": "Treasury_Liquidity_Flow",
+        "workflow_yaml": "flow_name: Treasury_Liquidity_Flow\nflow_data:\n  tasks:\n    - name: manage_liquidity\n      function: call_agent\n      agent: Treasury_Role_v1",
+        "agents": [
+          { "name": "Treasury_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Treasury_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Insurance_Policy_Admin_Agent
+    description: |
+      Manage policy endorsements, renewals, cancellations, and customer updates.
+
+      Example expected output:
+      {
+        "workflow_name": "Policy_Admin_Flow",
+        "workflow_yaml": "flow_name: Policy_Admin_Flow\nflow_data:\n  tasks:\n    - name: manage_policy\n      function: call_agent\n      agent: Policy_Role_v1",
+        "agents": [
+          { "name": "Policy_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Policy_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Customer_Onboarding_Agent
+    description: |
+      Automate onboarding (KYC, document verification, account setup).
+
+      Example expected output:
+      {
+        "workflow_name": "Customer_Onboarding_Flow",
+        "workflow_yaml": "flow_name: Customer_Onboarding_Flow\nflow_data:\n  tasks:\n    - name: onboard_customer\n      function: call_agent\n      agent: Onboarding_Role_v1",
+        "agents": [
+          { "name": "Onboarding_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Onboarding_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Pension_Management_Agent
+    description: |
+      Help customers track contributions, returns, and withdrawal planning.
+
+      Example expected output:
+      {
+        "workflow_name": "Pension_Management_Flow",
+        "workflow_yaml": "flow_name: Pension_Management_Flow\nflow_data:\n  tasks:\n    - name: manage_pension\n      function: call_agent\n      agent: Pension_Role_v1",
+        "agents": [
+          { "name": "Pension_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Pension_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Tax_Compliance_Agent
+    description: |
+      Assist in tax filings, deductions, and compliance with changing regulations.
+
+      Example expected output:
+      {
+        "workflow_name": "Tax_Compliance_Flow",
+        "workflow_yaml": "flow_name: Tax_Compliance_Flow\nflow_data:\n  tasks:\n    - name: ensure_tax_compliance\n      function: call_agent\n      agent: Tax_Role_v1",
+        "agents": [
+          { "name": "Tax_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Tax_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: AML_Investigation_Agent
+    description: |
+      Investigate flagged transactions for Anti-Money Laundering compliance.
+
+      Example expected output:
+      {
+        "workflow_name": "AML_Investigation_Flow",
+        "workflow_yaml": "flow_name: AML_Investigation_Flow\nflow_data:\n  tasks:\n    - name: investigate_aml\n      function: call_agent\n      agent: AML_Role_v1",
+        "agents": [
+          { "name": "AML_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "AML_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Cyber_Insurance_Risk_Agent
+    description: |
+      Evaluate enterprise cybersecurity risk and generate coverage recommendations.
+
+      Example expected output:
+      {
+        "workflow_name": "Cyber_Insurance_Risk_Flow",
+        "workflow_yaml": "flow_name: Cyber_Insurance_Risk_Flow\nflow_data:\n  tasks:\n    - name: assess_cyber_risk\n      function: call_agent\n      agent: Cyber_Role_v1",
+        "agents": [
+          { "name": "Cyber_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Cyber_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Reinsurance_Settlement_Agent
+    description: |
+      Automate reinsurance claim settlements and reporting between carriers.
+
+      Example expected output:
+      {
+        "workflow_name": "Reinsurance_Settlement_Flow",
+        "workflow_yaml": "flow_name: Reinsurance_Settlement_Flow\nflow_data:\n  tasks:\n    - name: settle_reinsurance\n      function: call_agent\n      agent: Reinsurance_Role_v1",
+        "agents": [
+          { "name": "Reinsurance_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Reinsurance_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Bancassurance_CrossSell_Agent
+    description: |
+      Recommend cross-sell insurance products to banking customers.
+
+      Example expected output:
+      {
+        "workflow_name": "Bancassurance_CrossSell_Flow",
+        "workflow_yaml": "flow_name: Bancassurance_CrossSell_Flow\nflow_data:\n  tasks:\n    - name: cross_sell_insurance\n      function: call_agent\n      agent: CrossSell_Role_v1",
+        "agents": [
+          { "name": "CrossSell_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "CrossSell_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Derivatives_Trade_Surveillance_Agent
+    description: |
+      Monitor derivative trades for market abuse and regulatory breaches.
+
+      Example expected output:
+      {
+        "workflow_name": "Derivatives_Surveillance_Flow",
+        "workflow_yaml": "flow_name: Derivatives_Surveillance_Flow\nflow_data:\n  tasks:\n    - name: monitor_derivatives\n      function: call_agent\n      agent: Derivatives_Role_v1",
+        "agents": [
+          { "name": "Derivatives_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Derivatives_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Customer_Support_Chatbot_Agent
+    description: |
+      Handle BFSI customer queries about balances, policies, claims, and loans.
+
+      Example expected output:
+      {
+        "workflow_name": "Customer_Support_Chatbot_Flow",
+        "workflow_yaml": "flow_name: Customer_Support_Chatbot_Flow\nflow_data:\n  tasks:\n    - name: answer_customer_queries\n      function: call_agent\n      agent: Chatbot_Role_v1",
+        "agents": [
+          { "name": "Chatbot_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Chatbot_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Sustainability_ESG_Agent
+    description: |
+      Evaluate ESG (Environmental, Social, Governance) metrics for investment portfolios.
+
+      Example expected output:
+      {
+        "workflow_name": "Sustainability_ESG_Flow",
+        "workflow_yaml": "flow_name: Sustainability_ESG_Flow\nflow_data:\n  tasks:\n    - name: evaluate_esg\n      function: call_agent\n      agent: ESG_Role_v1",
+        "agents": [
+          { "name": "ESG_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "ESG_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Collections_Recovery_Agent
+    description: |
+      Automate loan collections, repayment reminders, and delinquency handling.
+
+      Example expected output:
+      {
+        "workflow_name": "Collections_Recovery_Flow",
+        "workflow_yaml": "flow_name: Collections_Recovery_Flow\nflow_data:\n  tasks:\n    - name: recover_collections\n      function: call_agent\n      agent: Collections_Role_v1",
+        "agents": [
+          { "name": "Collections_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Collections_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Wealth_Reporting_Agent
+    description: |
+      Generate consolidated wealth dashboards across multiple accounts.
+
+      Example expected output:
+      {
+        "workflow_name": "Wealth_Reporting_Flow",
+        "workflow_yaml": "flow_name: Wealth_Reporting_Flow\nflow_data:\n  tasks:\n    - name: report_wealth\n      function: call_agent\n      agent: Reporting_Role_v1",
+        "agents": [
+          { "name": "Reporting_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Reporting_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Robo_Advisor_Agent
+    description: |
+      Provide automated, low-cost investment recommendations to retail clients.
+
+      Example expected output:
+      {
+        "workflow_name": "Robo_Advisor_Flow",
+        "workflow_yaml": "flow_name: Robo_Advisor_Flow\nflow_data:\n  tasks:\n    - name: advise_robo\n      function: call_agent\n      agent: Robo_Role_v1",
+        "agents": [
+          { "name": "Robo_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Robo_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }

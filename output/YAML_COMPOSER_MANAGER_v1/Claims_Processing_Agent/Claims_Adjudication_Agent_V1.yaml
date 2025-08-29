@@ -1,0 +1,31 @@
+template_type: single_task
+name: Claims_Adjudication_Agent_V1
+description: Evaluate and make final determination on insurance claims
+agent_role: Claims Adjudicator
+agent_goal: Determine claim approval, partial approval, or denial
+agent_instructions: '1. Review validated claim details
+
+  2. Apply claims assessment rules
+
+  3. Calculate potential payout
+
+  4. Make final claim decision
+
+  5. Prepare detailed adjudication report
+
+  '
+features:
+- type: decision_making
+  config:
+    rule_engine_integration: true
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

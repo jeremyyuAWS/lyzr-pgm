@@ -1,0 +1,37 @@
+template_type: single_task
+name: LEAD_ROLE_Scorer_v1
+description: Specialized agent for comprehensive lead scoring
+agent_role: Lead Scoring Specialist
+agent_goal: Evaluate leads based on fit, intent, and potential conversion
+agent_instructions: '1. Analyze lead demographic information
+
+  2. Assess company/individual fit
+
+  3. Evaluate lead intent signals
+
+  4. Calculate multi-dimensional scoring
+
+  5. Generate detailed lead score with breakdown
+
+  '
+features:
+- type: lead_scoring
+  config:
+    scoring_model: multi-factor
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    lead_score: number
+    fit_score: number
+    intent_score: number
+    recommendation: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

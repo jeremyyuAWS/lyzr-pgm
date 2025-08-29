@@ -1,0 +1,31 @@
+template_type: single_task
+name: Insurance_Role_Quotegenerator_V1
+description: Generates personalized insurance quotes using actuarial data and customer
+  information
+agent_role: Actuarial Quote Specialist
+agent_goal: Create precise, personalized insurance quotes based on comprehensive risk
+  analysis
+agent_instructions: "1. Receive validated customer information\n2. Cross-reference\
+  \ with actuarial databases\n3. Apply advanced risk assessment algorithms\n4. Calculate\
+  \ personalized premium rates\n5. Generate detailed quote breakdown\n6. Consider:\n\
+  \   - Individual risk factors\n   - Historical claim data\n   - Current market rates\n\
+  7. Produce comprehensive quote with:\n   - Recommended coverage\n   - Premium calculation\n\
+  \   - Risk explanation\n"
+features:
+- type: quote_generation
+  config:
+    data_sources:
+    - actuarial_tables
+    - market_rates
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

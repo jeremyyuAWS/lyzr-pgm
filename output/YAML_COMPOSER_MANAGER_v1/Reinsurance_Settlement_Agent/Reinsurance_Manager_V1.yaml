@@ -1,0 +1,41 @@
+template_type: single_task
+name: Reinsurance_Manager_V1
+description: Orchestrates the end-to-end reinsurance claim settlement process
+agent_role: Reinsurance Claims Coordinator
+agent_goal: Manage and streamline the entire reinsurance claim settlement workflow
+agent_instructions: '1. Receive incoming reinsurance claims from multiple carriers
+
+  2. Coordinate claim intake, validation, and settlement processes
+
+  3. Ensure compliance and accuracy throughout the workflow
+
+  4. Generate comprehensive reports for stakeholders
+
+  '
+features:
+- type: workflow_orchestration
+  config:
+    cross_carrier_communication: true
+    compliance_check: true
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Reinsurance_Claim_Intake_Agent.yaml
+  usage_description: Handles initial collection and preprocessing of reinsurance claims
+- file: agents/roles/Reinsurance_Claim_Validator_Agent.yaml
+  usage_description: Performs comprehensive validation of reinsurance claims
+- file: agents/roles/Reinsurance_Settlement_Agent.yaml
+  usage_description: Processes and finalizes reinsurance claim settlements
+- file: agents/roles/Reinsurance_Reporting_Agent.yaml
+  usage_description: Generates comprehensive reports on reinsurance claim settlements

@@ -1,0 +1,30 @@
+template_type: single_task
+name: Investment_Analyzer_Agent
+description: Performs in-depth analysis of investment portfolio
+agent_role: Portfolio Analyst
+agent_goal: Conduct comprehensive assessment of current portfolio composition, performance,
+  and risk profile
+agent_instructions: '1. Analyze asset allocation
+
+  2. Evaluate current portfolio performance
+
+  3. Assess risk exposure and diversification
+
+  4. Generate detailed portfolio insights
+
+  '
+features:
+- type: financial_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

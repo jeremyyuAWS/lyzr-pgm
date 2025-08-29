@@ -1,0 +1,29 @@
+template_type: single_task
+name: PolicyCancellation_Role_v1
+description: Handles policy cancellation requests
+agent_role: Policy Cancellation Specialist
+agent_goal: Process policy cancellations efficiently and compliantly
+agent_instructions: '1. Verify cancellation request details
+
+  2. Check policy terms and conditions
+
+  3. Process cancellation
+
+  4. Generate cancellation confirmation
+
+  '
+features:
+- type: compliance
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

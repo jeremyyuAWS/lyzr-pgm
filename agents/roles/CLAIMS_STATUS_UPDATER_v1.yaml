@@ -1,0 +1,35 @@
+template_type: single_task
+name: CLAIMS_STATUS_UPDATER_v1
+description: Manages claim status communication and tracking
+agent_role: Claims Communication Specialist
+agent_goal: Provide timely and accurate updates to claimants
+agent_instructions: '1. Receive claim assessment results
+
+  2. Generate appropriate status communication
+
+  3. Update claim tracking system
+
+  4. Notify claimant of claim status
+
+  5. Prepare payment or denial documentation
+
+  '
+features:
+- type: communication_management
+  config:
+    communication_channels:
+    - email
+    - portal
+    - phone
+  priority: 3
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

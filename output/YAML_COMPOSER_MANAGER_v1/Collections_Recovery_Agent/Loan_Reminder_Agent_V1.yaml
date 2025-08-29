@@ -1,0 +1,32 @@
+template_type: single_task
+name: Loan_Reminder_Agent_V1
+description: Handles automated loan repayment reminders
+agent_role: Reminder Specialist
+agent_goal: Send timely and personalized loan repayment notifications
+agent_instructions: '1. Identify upcoming loan payments
+
+  2. Generate personalized reminder messages
+
+  3. Send reminders via multiple channels (email, SMS)
+
+  4. Track reminder delivery and customer responses
+
+  '
+features:
+- type: communication
+  config:
+    channels:
+    - email
+    - sms
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,29 @@
+template_type: single_task
+name: Pension_Returns_Analyzer_V1
+description: Performs in-depth analysis of pension investment returns
+agent_role: Investment Performance Analyst
+agent_goal: Evaluate and interpret pension fund investment performance
+agent_instructions: '1. Calculate historical investment returns
+
+  2. Compare performance against benchmark indices
+
+  3. Assess risk-adjusted returns
+
+  4. Provide detailed performance insights
+
+  '
+features:
+- type: investment_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

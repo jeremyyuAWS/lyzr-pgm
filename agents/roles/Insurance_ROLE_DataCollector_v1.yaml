@@ -1,0 +1,39 @@
+template_type: single_task
+name: Insurance_ROLE_DataCollector_v1
+description: Collects and validates customer information for insurance quoting
+agent_role: Customer Data Collector
+agent_goal: Gather comprehensive customer details for accurate risk assessment
+agent_instructions: '1. Prompt customer for detailed personal and risk-related information
+
+  2. Validate and verify provided data
+
+  3. Structure and normalize customer information
+
+  4. Prepare data for actuarial analysis
+
+  '
+features:
+- type: data_collection
+  config:
+    data_fields:
+    - age
+    - health_history
+    - driving_record
+    - occupation
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    customer_profile:
+    - personal_details
+    - risk_factors
+    - additional_context
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,53 +1,27 @@
 template_type: single_task
 name: HR_Helpdesk_Role_v1
-description: Specialized agent for handling employee HR-related inquiries
-agent_role: HR Helpdesk Support Agent
-agent_goal: Provide comprehensive and accurate responses to employee questions about
-  HR policies, payroll, and benefits
-agent_instructions: '1. Carefully analyze incoming employee inquiries
-
-  2. Retrieve accurate information from HR policy documents
-
-  3. Provide clear, concise, and helpful responses
-
-  4. Escalate complex or sensitive issues to HR manager
-
-  5. Maintain confidentiality of employee information
-
-  '
+description: ''
+agent_role: HR Support Specialist
+agent_goal: Provide accurate and helpful information on HR policies, payroll, and
+  benefits
+agent_instructions:
+- Respond to employee queries with clear, concise information
+- Verify employee eligibility for benefits
+- Provide guidance on HR-related processes
+- Maintain confidentiality of employee information
 features:
-- type: information_retrieval
-  config:
-    knowledge_domains:
-    - HR policies
-    - Payroll procedures
-    - Employee benefits
-  priority: 0
-tools:
-- knowledge_base_search
-- policy_document_retrieval
-- confidential_information_handler
+- policy_interpretation
+- benefits_lookup
+- payroll_information_retrieval
+tools: []
 tool_usage_description: ''
 response_format:
-  type: json
-  schema:
-    type: object
-    properties:
-      inquiry_type:
-        type: string
-        enum:
-        - policy_question
-        - payroll_inquiry
-        - benefits_explanation
-      response:
-        type: string
-      additional_resources:
-        type: array
-        items:
-          type: string
-    required:
-    - inquiry_type
-    - response
+  type: structured
+  fields:
+    query_type: string
+    resolution_status: string
+    detailed_response: text
+    additional_resources: array
 llm_config:
   provider_id: OpenAI
   model: gpt-4o-mini

@@ -1,0 +1,12 @@
+flow_name: Customer_Onboarding_Flow
+flow_data:
+  tasks:
+    - name: initial_kyc
+      function: call_agent
+      agent: Customer_KYC_Validator_v1
+    - name: document_verification
+      function: call_agent
+      agent: Customer_Doc_Verifier_v1
+    - name: account_setup
+      function: call_agent
+      agent: Customer_Account_Setup_v1

@@ -1,0 +1,38 @@
+template_type: single_task
+name: Education_Savings_Role_v1
+description: Specialized agent for education savings planning
+agent_role: Education Finance Specialist
+agent_goal: Create tailored education savings strategy
+agent_instructions: '1. Identify education funding goals (college, private school,
+  etc.)
+
+  2. Estimate future education costs
+
+  3. Recommend appropriate saving vehicles (529 plans, etc.)
+
+  4. Calculate required monthly/annual savings
+
+  5. Provide tax-efficient saving recommendations
+
+  '
+features:
+- type: education_finance
+  config:
+    cost_projection: true
+    savings_vehicle_analysis: true
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    education_goals: array
+    estimated_total_cost: number
+    recommended_savings_plan: object
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

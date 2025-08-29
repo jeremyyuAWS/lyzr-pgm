@@ -1,6 +1,0 @@
-flow_name: Candidate_Screening_Flow
-flow_data:
-  tasks:
-    - name: resume_screening
-      function: call_agent
-      agent: Recruiter_Resume_Screener_v1

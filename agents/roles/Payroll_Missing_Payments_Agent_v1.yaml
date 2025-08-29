@@ -2,23 +2,26 @@ template_type: single_task
 name: Payroll_Missing_Payments_Agent_v1
 description: Investigates and resolves missing payment claims
 agent_role: Missing Payments Specialist
-agent_goal: Trace and rectify any discrepancies in employee compensation
-agent_instructions: '1. Verify payment records in payroll system
+agent_goal: Accurately trace and rectify missing or incorrect payment issues
+agent_instructions: '1. Verify payment records in financial system
 
-  2. Cross-reference with time tracking and work logs
+  2. Cross-reference employee timesheets and payment history
 
   3. Identify root cause of missing payment
 
-  4. Prepare correction and reimbursement recommendation
+  4. Prepare detailed report for resolution
+
+  5. Coordinate with finance department for correction
 
   '
 features:
 - type: financial_investigation
-  config: {}
-  priority: 0
-tools:
-- payroll_system_access
-- financial_records_lookup
+  config:
+    payment_sources:
+    - payroll_system
+    - bank_records
+  priority: 1
+tools: []
 tool_usage_description: ''
 response_format:
   type: json

@@ -1,0 +1,252 @@
+use_cases:
+  - name: Lead_Qualification_Agent
+    description: |
+      Qualify inbound leads based on provided information, scoring them by fit and intent.
+
+      Example expected output:
+      {
+        "workflow_name": "Lead_Qualification_Flow",
+        "workflow_yaml": "flow_name: Lead_Qualification_Flow\nflow_data:\n  tasks:\n    - name: qualify_lead\n      function: call_agent\n      agent: Lead_Role_v1",
+        "agents": [
+          { "name": "Lead_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Lead_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Campaign_Optimization_Agent
+    description: |
+      Analyze campaign performance data and recommend optimizations for targeting, creatives, and spend.
+
+      Example expected output:
+      {
+        "workflow_name": "Campaign_Optimization_Flow",
+        "workflow_yaml": "flow_name: Campaign_Optimization_Flow\nflow_data:\n  tasks:\n    - name: optimize_campaign\n      function: call_agent\n      agent: Campaign_Role_v1",
+        "agents": [
+          { "name": "Campaign_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Campaign_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Content_Generation_Agent
+    description: |
+      Generate marketing content such as blogs, social posts, or email templates aligned with brand tone.
+
+      Example expected output:
+      {
+        "workflow_name": "Content_Generation_Flow",
+        "workflow_yaml": "flow_name: Content_Generation_Flow\nflow_data:\n  tasks:\n    - name: generate_content\n      function: call_agent\n      agent: Content_Role_v1",
+        "agents": [
+          { "name": "Content_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Content_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Customer_Segmentation_Agent
+    description: |
+      Segment customers based on demographic, behavioral, and transactional data for targeted campaigns.
+
+      Example expected output:
+      {
+        "workflow_name": "Customer_Segmentation_Flow",
+        "workflow_yaml": "flow_name: Customer_Segmentation_Flow\nflow_data:\n  tasks:\n    - name: segment_customers\n      function: call_agent\n      agent: Segment_Role_v1",
+        "agents": [
+          { "name": "Segment_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Segment_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Social_Listening_Agent
+    description: |
+      Monitor social media channels for brand mentions and sentiment.
+
+      Example expected output:
+      {
+        "workflow_name": "Social_Listening_Flow",
+        "workflow_yaml": "flow_name: Social_Listening_Flow\nflow_data:\n  tasks:\n    - name: listen_social\n      function: call_agent\n      agent: Social_Role_v1",
+        "agents": [
+          { "name": "Social_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Social_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Competitive_Intelligence_Agent
+    description: |
+      Collect and summarize competitor activity, campaigns, and customer feedback.
+
+      Example expected output:
+      {
+        "workflow_name": "Competitive_Intelligence_Flow",
+        "workflow_yaml": "flow_name: Competitive_Intelligence_Flow\nflow_data:\n  tasks:\n    - name: monitor_competitors\n      function: call_agent\n      agent: Competitive_Role_v1",
+        "agents": [
+          { "name": "Competitive_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Competitive_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: SEO_Optimization_Agent
+    description: |
+      Audit website SEO and recommend optimizations for keywords, metadata, and backlinks.
+
+      Example expected output:
+      {
+        "workflow_name": "SEO_Optimization_Flow",
+        "workflow_yaml": "flow_name: SEO_Optimization_Flow\nflow_data:\n  tasks:\n    - name: optimize_seo\n      function: call_agent\n      agent: SEO_Role_v1",
+        "agents": [
+          { "name": "SEO_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "SEO_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: AB_Test_Agent
+    description: |
+      Manage A/B testing for creatives, subject lines, and landing pages.
+
+      Example expected output:
+      {
+        "workflow_name": "AB_Test_Flow",
+        "workflow_yaml": "flow_name: AB_Test_Flow\nflow_data:\n  tasks:\n    - name: run_ab_test\n      function: call_agent\n      agent: AB_Role_v1",
+        "agents": [
+          { "name": "AB_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "AB_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Customer_Journey_Mapping_Agent
+    description: |
+      Map the end-to-end customer journey, identifying drop-off points and engagement opportunities.
+
+      Example expected output:
+      {
+        "workflow_name": "Customer_Journey_Flow",
+        "workflow_yaml": "flow_name: Customer_Journey_Flow\nflow_data:\n  tasks:\n    - name: map_journey\n      function: call_agent\n      agent: Journey_Role_v1",
+        "agents": [
+          { "name": "Journey_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Journey_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Email_Personalization_Agent
+    description: |
+      Personalize email subject lines, content, and offers based on customer profile.
+
+      Example expected output:
+      {
+        "workflow_name": "Email_Personalization_Flow",
+        "workflow_yaml": "flow_name: Email_Personalization_Flow\nflow_data:\n  tasks:\n    - name: personalize_email\n      function: call_agent\n      agent: Email_Role_v1",
+        "agents": [
+          { "name": "Email_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Email_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Lead_Nurturing_Agent
+    description: |
+      Automate lead nurturing workflows with tailored communications across channels.
+
+      Example expected output:
+      {
+        "workflow_name": "Lead_Nurturing_Flow",
+        "workflow_yaml": "flow_name: Lead_Nurturing_Flow\nflow_data:\n  tasks:\n    - name: nurture_leads\n      function: call_agent\n      agent: Nurture_Role_v1",
+        "agents": [
+          { "name": "Nurture_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Nurture_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Ad_Performance_Tracking_Agent
+    description: |
+      Track ad performance across channels and recommend budget allocation.
+
+      Example expected output:
+      {
+        "workflow_name": "Ad_Performance_Flow",
+        "workflow_yaml": "flow_name: Ad_Performance_Flow\nflow_data:\n  tasks:\n    - name: track_ads\n      function: call_agent\n      agent: Ad_Role_v1",
+        "agents": [
+          { "name": "Ad_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Ad_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Event_Management_Agent
+    description: |
+      Support event promotion, registration, and attendee engagement.
+
+      Example expected output:
+      {
+        "workflow_name": "Event_Management_Flow",
+        "workflow_yaml": "flow_name: Event_Management_Flow\nflow_data:\n  tasks:\n    - name: manage_event\n      function: call_agent\n      agent: Event_Role_v1",
+        "agents": [
+          { "name": "Event_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Event_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Influencer_Outreach_Agent
+    description: |
+      Identify and engage influencers aligned with brand campaigns.
+
+      Example expected output:
+      {
+        "workflow_name": "Influencer_Outreach_Flow",
+        "workflow_yaml": "flow_name: Influencer_Outreach_Flow\nflow_data:\n  tasks:\n    - name: outreach_influencers\n      function: call_agent\n      agent: Influencer_Role_v1",
+        "agents": [
+          { "name": "Influencer_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Influencer_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Voice_of_Customer_Agent
+    description: |
+      Collect, analyze, and summarize customer feedback from multiple channels.
+
+      Example expected output:
+      {
+        "workflow_name": "Voice_of_Customer_Flow",
+        "workflow_yaml": "flow_name: Voice_of_Customer_Flow\nflow_data:\n  tasks:\n    - name: collect_feedback\n      function: call_agent\n      agent: Feedback_Role_v1",
+        "agents": [
+          { "name": "Feedback_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Feedback_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Brand_Monitoring_Agent
+    description: |
+      Monitor brand mentions and reputation across news, social, and review sites.
+
+      Example expected output:
+      {
+        "workflow_name": "Brand_Monitoring_Flow",
+        "workflow_yaml": "flow_name: Brand_Monitoring_Flow\nflow_data:\n  tasks:\n    - name: monitor_brand\n      function: call_agent\n      agent: Brand_Role_v1",
+        "agents": [
+          { "name": "Brand_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Brand_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Pricing_Strategy_Agent
+    description: |
+      Recommend pricing strategies based on competitive data, demand elasticity, and margin targets.
+
+      Example expected output:
+      {
+        "workflow_name": "Pricing_Strategy_Flow",
+        "workflow_yaml": "flow_name: Pricing_Strategy_Flow\nflow_data:\n  tasks:\n    - name: recommend_pricing\n      function: call_agent\n      agent: Pricing_Role_v1",
+        "agents": [
+          { "name": "Pricing_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Pricing_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }
+
+  - name: Loyalty_Program_Agent
+    description: |
+      Manage loyalty program offers, redemption tracking, and customer tiers.
+
+      Example expected output:
+      {
+        "workflow_name": "Loyalty_Program_Flow",
+        "workflow_yaml": "flow_name: Loyalty_Program_Flow\nflow_data:\n  tasks:\n    - name: manage_loyalty\n      function: call_agent\n      agent: Loyalty_Role_v1",
+        "agents": [
+          { "name": "Loyalty_Manager_v1", "type": "manager", "yaml": "..." },
+          { "name": "Loyalty_Role_v1", "type": "role", "yaml": "..." }
+        ]
+      }

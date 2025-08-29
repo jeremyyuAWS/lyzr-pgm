@@ -1,0 +1,41 @@
+template_type: single_task
+name: Insurance_Manager_V1
+description: Oversees insurance premium management workflow
+agent_role: Insurance Workflow Manager
+agent_goal: Coordinate insurance premium reminders, transactions, and payment recovery
+agent_instructions: '1. Monitor upcoming premium due dates
+
+  2. Initiate reminder sequences
+
+  3. Track payment statuses
+
+  4. Escalate failed payment cases
+
+  5. Ensure continuous insurance coverage
+
+  '
+features:
+- type: workflow_orchestration
+  config:
+    payment_grace_period: 15
+    reminder_frequency:
+    - 7
+    - 3
+    - 1
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Insurance_Reminder_Agent.yaml
+  usage_description: Manages insurance premium payment reminders
+- file: agents/roles/Insurance_Payment_Agent.yaml
+  usage_description: Handles insurance premium payment processing and recovery

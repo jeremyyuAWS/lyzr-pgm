@@ -1,0 +1,9 @@
+flow_name: Insurance_Fraud_Investigation_Flow
+flow_data:
+  tasks:
+    - name: claim_analysis
+      function: call_agent
+      agent: FRAUD_INVESTIGATOR_ROLE_v1
+    - name: report_generation
+      function: call_agent
+      agent: CLAIMS_MANAGER_v1

@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 
+# Default config used if LLM details are not specified in the YAML
 DEFAULT_LLM_CONFIG = {
     "provider_id": "OpenAI",
     "model": "gpt-4o-mini",
@@ -14,6 +15,17 @@ DEFAULT_LLM_CONFIG = {
     "response_format": {"type": "json"},
 }
 
+
+def canonicalize_name(raw_name: str) -> str:
+    """
+    Force a name into Title_Case_Underscore format.
+    Example: "fraud_detection_agent" → "Fraud_Detection_Agent"
+             "customer-onboarding"   → "Customer_Onboarding"
+             "Claims Manager"        → "Claims_Manager"
+    """
+    return "_".join(word.capitalize() for word in re.split(r"[_\-\s]+", raw_name) if word)
+
+
 def canonicalize_agent_yaml(agent: dict) -> dict:
     """Return canonical agent dict (not string yet)."""
     try:
@@ -21,7 +33,9 @@ def canonicalize_agent_yaml(agent: dict) -> dict:
     except Exception:
         parsed = {"name": agent.get("name", "unnamed_agent")}
 
-    name = parsed.get("name", agent.get("name", "unnamed_agent"))
+    raw_name = parsed.get("name", agent.get("name", "unnamed_agent"))
+    name = canonicalize_name(raw_name)  # 🔑 Force Title_Case_Underscore
+
     is_manager = any(x in name.lower() for x in ["manager", "mgr"])
 
     canonical = {
@@ -32,7 +46,8 @@ def canonicalize_agent_yaml(agent: dict) -> dict:
         "agent_goal": parsed.get("agent_goal", ""),
         "agent_instructions": parsed.get("agent_instructions", ""),
         "features": parsed.get("features", []),
-        "tools": parsed.get("tools", []),
+        # Tools disabled until platform fix
+        "tools": [],
         "tool_usage_description": parsed.get(
             "tool_usage_description",
             "The manager orchestrates subordinate role agents and packages outputs."
@@ -47,7 +62,7 @@ def canonicalize_agent_yaml(agent: dict) -> dict:
 def normalize_inference_output(raw_response: str, out_dir: Path, max_attempts: int = 5):
     """
     Robust normalizer with canonical YAML saving.
-    - Saves workflow + agent YAMLs to <usecase> folder
+    - Saves workflow + agent YAMLs to <usecase> folder (exact out_dir passed in)
     - Also copies role YAMLs into agents/roles/
     - Updates Manager YAMLs with managed_agents pointing to canonical paths
     """
@@ -57,6 +72,9 @@ def normalize_inference_output(raw_response: str, out_dir: Path, max_attempts: i
             return json.loads(s)
         except Exception:
             return None
+
+    # Ensure out_dir exists
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Parsing loop ---
     parsed = None
@@ -84,7 +102,9 @@ def normalize_inference_output(raw_response: str, out_dir: Path, max_attempts: i
         # agents
         agent_matches = re.findall(r'"yaml":\s*"([^"]+)"', raw_response, re.DOTALL)
         if agent_matches:
-            parsed["agents"] = [{"yaml": b.encode("utf-8").decode("unicode_escape")} for b in agent_matches]
+            parsed["agents"] = [
+                {"yaml": b.encode("utf-8").decode("unicode_escape")} for b in agent_matches
+            ]
 
     # --- Save workflow.yaml ---
     if "workflow_yaml" in parsed:
@@ -113,7 +133,9 @@ def normalize_inference_output(raw_response: str, out_dir: Path, max_attempts: i
                 print(f"📂 Copied role agent YAML → {repo_path}")
 
     # --- Post-process: Update Manager(s) with managed_agents ---
-    managers = [a for a in saved_agents if "manager" in a["name"].lower() or "mgr" in a["name"].lower()]
+    managers = [
+        a for a in saved_agents if "manager" in a["name"].lower() or "mgr" in a["name"].lower()
+    ]
     roles = [a for a in saved_agents if a not in managers]
 
     if managers and roles:
@@ -126,14 +148,18 @@ def normalize_inference_output(raw_response: str, out_dir: Path, max_attempts: i
                 mgr_yaml["managed_agents"] = [
                     {
                         "file": f"agents/roles/{role['name']}.yaml",
-                        "usage_description": role.get("description", f"{role['name']} supports the manager.")
+                        "usage_description": role.get(
+                            "description", f"{role['name']} supports the manager."
+                        )
                     }
                     for role in roles
                 ]
 
                 with open(mgr_path, "w") as f:
                     yaml.safe_dump(mgr_yaml, f, sort_keys=False)
-                print(f"🔗 Updated Manager {mgr['name']} with {len(roles)} managed_agents (canonical paths)")
+                print(
+                    f"🔗 Updated Manager {mgr['name']} with {len(roles)} managed_agents (canonical paths)"
+                )
             except Exception as e:
                 print(f"⚠️ Could not update manager {mgr['name']}: {e}")
 

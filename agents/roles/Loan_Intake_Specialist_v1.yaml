@@ -1,0 +1,35 @@
+template_type: single_task
+name: Loan_Intake_Specialist_v1
+description: Collects and preprocesses initial loan application information
+agent_role: Intake Specialist
+agent_goal: Gather comprehensive applicant details and prepare for underwriting
+agent_instructions: '1. Collect applicant personal and financial information
+
+  2. Validate initial application completeness
+
+  3. Prepare structured data for further analysis
+
+  '
+features:
+- type: data_collection
+  config:
+    required_fields:
+    - personal_info
+    - employment_details
+    - income_documents
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    applicant_id: string
+    application_status: string
+    collected_documents: array
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

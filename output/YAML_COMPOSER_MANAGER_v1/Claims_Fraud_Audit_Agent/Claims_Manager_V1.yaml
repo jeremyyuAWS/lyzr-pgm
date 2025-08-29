@@ -1,0 +1,34 @@
+template_type: single_task
+name: Claims_Manager_V1
+description: Oversees insurance fraud investigation workflow
+agent_role: Claims Investigation Manager
+agent_goal: Coordinate and supervise fraud detection and reporting process
+agent_instructions: '1. Receive initial fraud indicator reports from investigator
+
+  2. Review and validate investigation findings
+
+  3. Compile comprehensive investigation reports
+
+  4. Determine next steps for potentially fraudulent claims
+
+  '
+features:
+- type: oversight
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: The manager orchestrates subordinate role agents and packages
+  outputs.
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
+managed_agents:
+- file: agents/roles/Fraud_Investigator_Role_V1.yaml
+  usage_description: Specialized agent for detecting fraud indicators in insurance
+    claims

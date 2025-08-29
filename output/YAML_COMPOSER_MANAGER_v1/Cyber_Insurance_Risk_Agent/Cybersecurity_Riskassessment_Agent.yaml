@@ -1,0 +1,34 @@
+template_type: single_task
+name: Cybersecurity_Riskassessment_Agent
+description: Performs detailed cybersecurity risk analysis for enterprise infrastructure
+agent_role: Cybersecurity Risk Analyst
+agent_goal: Conduct comprehensive evaluation of enterprise security posture and potential
+  vulnerabilities
+agent_instructions: "1. Collect and analyze enterprise security infrastructure details\n\
+  2. Assess current security controls and potential vulnerabilities\n3. Perform threat\
+  \ modeling and risk scoring\n4. Identify potential security gaps and exposure points\n\
+  5. Generate detailed risk assessment report with:\n   - Vulnerability inventory\n\
+  \   - Risk severity rankings\n   - Potential impact analysis\n"
+features:
+- type: risk_analysis
+  config:
+    analysis_depth:
+    - network
+    - application
+    - data
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    vulnerabilities: array
+    risk_scores: object
+    recommended_mitigations: array
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,9 @@
+flow_name: Retail_Investment_Recommendation_Flow
+flow_data:
+  tasks:
+    - name: assess_client_profile
+      function: call_agent
+      agent: Investment_Profiler_v1
+    - name: generate_recommendations
+      function: call_agent
+      agent: Investment_Advisor_v1

@@ -1,0 +1,34 @@
+template_type: single_task
+name: Lead_Segmentation_Agent_v1
+description: Analyzes and segments leads based on various criteria
+agent_role: Lead Segmentation Specialist
+agent_goal: Create precise lead segments for targeted communication
+agent_instructions: '1. Analyze lead data points
+
+  2. Create detailed lead segments
+
+  3. Identify communication preferences
+
+  4. Generate segment-specific insights
+
+  '
+features:
+- type: data_analysis
+  config:
+    segmentation_criteria:
+    - industry
+    - company_size
+    - engagement_level
+    - interests
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

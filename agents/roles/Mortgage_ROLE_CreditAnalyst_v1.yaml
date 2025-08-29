@@ -1,0 +1,29 @@
+template_type: single_task
+name: Mortgage_ROLE_CreditAnalyst_v1
+description: Performs comprehensive credit and financial assessment
+agent_role: Credit Risk Analyst
+agent_goal: Conduct thorough credit evaluation of mortgage applicant
+agent_instructions: '1. Review collected documents
+
+  2. Perform credit score analysis
+
+  3. Assess financial stability and risk
+
+  4. Generate detailed credit assessment report
+
+  '
+features:
+- type: risk_assessment
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

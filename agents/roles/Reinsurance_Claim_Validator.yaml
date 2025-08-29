@@ -1,0 +1,31 @@
+template_type: single_task
+name: Reinsurance_Claim_Validator
+description: Performs comprehensive validation of reinsurance claims
+agent_role: Claims Verification Specialist
+agent_goal: Conduct thorough analysis of claim details and supporting documentation
+agent_instructions: '1. Review claim documentation in detail
+
+  2. Cross-reference with carrier policies
+
+  3. Verify claim legitimacy and coverage
+
+  4. Flag any discrepancies or potential issues
+
+  '
+features:
+- type: compliance_check
+  config:
+    policy_verification: true
+    risk_assessment: true
+  priority: 2
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

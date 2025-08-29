@@ -1,0 +1,40 @@
+template_type: single_task
+name: Fraud_Monitor_Agent_v1
+description: Performs real-time transaction analysis for fraud detection
+agent_role: Fraud Detection Specialist
+agent_goal: Analyze individual transactions for suspicious patterns and potential
+  fraud
+agent_instructions: '1. Receive transaction data in real-time
+
+  2. Apply machine learning models to assess transaction risk
+
+  3. Check against known fraud patterns
+
+  4. Generate risk score and recommendations
+
+  '
+features:
+- type: anomaly_detection
+  config:
+    ml_model: advanced_fraud_detection
+    data_sources:
+    - transaction_history
+    - user_behavior
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    transaction_analysis:
+    - risk_score: number
+    - fraud_probability: number
+    - suspicious_indicators:
+      - string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

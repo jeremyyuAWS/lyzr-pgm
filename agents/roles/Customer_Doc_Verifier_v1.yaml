@@ -1,0 +1,33 @@
+template_type: single_task
+name: Customer_Doc_Verifier_V1
+description: Conducts comprehensive document verification
+agent_role: Document Verification Specialist
+agent_goal: Validate and authenticate customer-submitted documents
+agent_instructions: '1. Receive documents from KYC stage
+
+  2. Perform advanced document authentication
+
+  3. Check document validity and integrity
+
+  4. Cross-reference with submitted information
+
+  '
+features:
+- type: document_processing
+  config:
+    verification_methods:
+    - OCR
+    - digital_signature
+    - forensic_analysis
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,36 @@
+template_type: single_task
+name: Debt_Ratio_Evaluator_v1
+description: Calculates and analyzes applicant's debt-to-income ratio
+agent_role: Debt Ratio Analyst
+agent_goal: Determine financial capacity and lending risk based on existing debts
+agent_instructions: '1. Aggregate all existing debt obligations
+
+  2. Calculate debt-to-income ratio
+
+  3. Assess financial burden and repayment capacity
+
+  4. Generate debt sustainability report
+
+  '
+features:
+- type: financial_analysis
+  config:
+    max_debt_ratio: 0.43
+    warning_threshold: 0.35
+  priority: 6
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    total_monthly_debt: number
+    total_monthly_income: number
+    debt_to_income_ratio: number
+    debt_sustainability_rating: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

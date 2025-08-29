@@ -1,0 +1,33 @@
+template_type: single_task
+name: Reinsurance_Settlement_Agent
+description: Processes and finalizes reinsurance claim settlements
+agent_role: Claims Settlement Executor
+agent_goal: Calculate, approve, and process claim settlements between carriers
+agent_instructions: '1. Calculate settlement amounts based on validated claims
+
+  2. Determine cost-sharing percentages
+
+  3. Prepare settlement documents
+
+  4. Initiate fund transfers between carriers
+
+  '
+features:
+- type: financial_processing
+  config:
+    settlement_types:
+    - full
+    - partial
+    - proportional
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

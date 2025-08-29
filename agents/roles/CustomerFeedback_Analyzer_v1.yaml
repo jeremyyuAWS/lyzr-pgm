@@ -1,0 +1,33 @@
+template_type: single_task
+name: CustomerFeedback_Analyzer_v1
+description: Performs in-depth analysis of collected customer feedback
+agent_role: Feedback Insights Researcher
+agent_goal: Extract meaningful patterns and sentiments from feedback data
+agent_instructions: '1. Apply sentiment analysis techniques
+
+  2. Identify key themes and recurring issues
+
+  3. Quantify feedback across different dimensions
+
+  4. Generate structured analytical insights
+
+  '
+features:
+- type: data_analysis
+  config:
+    analysis_methods:
+    - sentiment_analysis
+    - theme_clustering
+    - trend_detection
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

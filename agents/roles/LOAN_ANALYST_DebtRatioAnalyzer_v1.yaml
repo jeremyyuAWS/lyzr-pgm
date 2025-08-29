@@ -1,0 +1,29 @@
+template_type: single_task
+name: LOAN_ANALYST_DebtRatioAnalyzer_v1
+description: Calculates and evaluates applicant's debt-to-income ratios
+agent_role: Debt Ratio Analyst
+agent_goal: Comprehensively assess applicant's debt load and repayment capacity
+agent_instructions: '1. Collect all existing debt information
+
+  2. Calculate total monthly debt obligations
+
+  3. Compute debt-to-income ratio
+
+  4. Evaluate financial sustainability for loan
+
+  '
+features:
+- type: financial_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

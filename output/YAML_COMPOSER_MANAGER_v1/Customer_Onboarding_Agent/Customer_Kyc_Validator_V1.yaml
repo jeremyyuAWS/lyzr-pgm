@@ -1,0 +1,33 @@
+template_type: single_task
+name: Customer_Kyc_Validator_V1
+description: Performs initial Know Your Customer (KYC) verification
+agent_role: KYC Specialist
+agent_goal: Validate customer identity and initial compliance checks
+agent_instructions: '1. Collect customer personal information
+
+  2. Perform initial identity verification
+
+  3. Check against watchlists and compliance databases
+
+  4. Generate KYC assessment report
+
+  '
+features:
+- type: identity_verification
+  config:
+    sources:
+    - government_id
+    - address_proof
+    - background_check
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

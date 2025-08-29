@@ -1,0 +1,29 @@
+template_type: single_task
+name: Influencer_Researcher_v1
+description: Identifies and screens potential influencers for brand campaigns
+agent_role: Influencer Research Specialist
+agent_goal: Discover and analyze potential influencers across social media platforms
+agent_instructions: "1. Conduct comprehensive social media research\n2. Collect key\
+  \ metrics:\n   - Follower count\n   - Engagement rates\n   - Content relevance\n\
+  \   - Audience demographics\n3. Generate detailed influencer profiles\n4. Provide\
+  \ initial recommendation list\n"
+features:
+- type: data_research
+  config:
+    social_media_platforms:
+    - Instagram
+    - YouTube
+    - TikTok
+    - Twitter
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

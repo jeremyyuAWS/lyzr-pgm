@@ -1,0 +1,29 @@
+template_type: single_task
+name: Esg_Data_Collector_Agent
+description: Collects and aggregates ESG-related data for investment portfolios
+agent_role: ESG Data Collector
+agent_goal: Gather comprehensive ESG metrics from multiple sources
+agent_instructions: '1. Identify relevant ESG data sources
+
+  2. Collect environmental, social, and governance metrics
+
+  3. Validate and standardize collected data
+
+  4. Prepare structured ESG data report
+
+  '
+features:
+- type: data_collection
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

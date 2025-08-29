@@ -1,0 +1,32 @@
+template_type: single_task
+name: Investment_Memo_Generator
+description: Synthesizes research findings into comprehensive investment memo
+agent_role: Investment Strategist
+agent_goal: Create detailed, actionable investment recommendation memo
+agent_instructions: '1. Integrate insights from analyst reports and market trends
+
+  2. Develop comprehensive investment thesis
+
+  3. Highlight key risks and opportunities
+
+  4. Generate structured, professional investment memo
+
+  '
+features:
+- type: document_generation
+  config:
+    output_format:
+    - pdf
+    - markdown
+  priority: 2
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

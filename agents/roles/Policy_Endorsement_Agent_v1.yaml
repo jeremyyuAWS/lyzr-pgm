@@ -1,0 +1,41 @@
+template_type: single_task
+name: Policy_Endorsement_Agent_v1
+description: Handles policy endorsement requests and modifications
+agent_role: Policy Endorsement Specialist
+agent_goal: Process and validate policy endorsement requests
+agent_instructions: '1. Review endorsement request details
+
+  2. Validate policy eligibility for endorsement
+
+  3. Calculate premium adjustments
+
+  4. Update policy documentation
+
+  5. Generate endorsement confirmation
+
+  '
+features:
+- type: policy_modification
+  config:
+    max_endorsements_per_session: 5
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    type: object
+    properties:
+      endorsement_status:
+        type: string
+      premium_adjustment:
+        type: number
+      effective_date:
+        type: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,29 @@
+template_type: single_task
+name: TAX_ROLE_ComplianceChecker_v1
+description: Monitors and validates tax regulation compliance
+agent_role: Regulatory Compliance Specialist
+agent_goal: Ensure adherence to current tax laws and regulations
+agent_instructions: '1. Track recent changes in tax regulations
+
+  2. Cross-reference client documents with current compliance requirements
+
+  3. Flag potential compliance risks or needed adjustments
+
+  4. Provide up-to-date regulatory guidance
+
+  '
+features:
+- type: regulatory_monitoring
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

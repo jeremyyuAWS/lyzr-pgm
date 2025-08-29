@@ -1,9 +1,0 @@
-flow_name: HR_Policy_Update_Flow
-flow_data:
-  tasks:
-    - name: policy_dissemination
-      function: call_agent
-      agent: HR_Policy_Manager_v1
-    - name: policy_acknowledgement_tracking
-      function: call_agent
-      agent: HR_Policy_Tracker_v1

@@ -1,0 +1,32 @@
+template_type: single_task
+name: Claims_Intake_Agent_V1
+description: Manages initial claim submission and document collection
+agent_role: Claims Intake Specialist
+agent_goal: Efficiently collect and organize initial claim information
+agent_instructions: '1. Receive claim submission from policyholder
+
+  2. Validate basic claim information
+
+  3. Request additional documentation if needed
+
+  4. Prepare claim for further processing
+
+  '
+features:
+- type: document_processing
+  config:
+    supported_document_types:
+    - pdf
+    - image
+    - digital_form
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

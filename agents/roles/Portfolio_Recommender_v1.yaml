@@ -1,0 +1,31 @@
+template_type: single_task
+name: Portfolio_Recommender_v1
+description: Generates automated, low-cost investment recommendations
+agent_role: Investment Portfolio Strategist
+agent_goal: Create optimized, cost-effective investment portfolios
+agent_instructions: '1. Analyze client financial profile from Investment Analyzer
+
+  2. Select low-cost index funds and ETFs
+
+  3. Create diversified portfolio matching client''s risk profile
+
+  4. Minimize expense ratios and transaction costs
+
+  5. Provide detailed investment recommendations
+
+  '
+features:
+- type: portfolio_optimization
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

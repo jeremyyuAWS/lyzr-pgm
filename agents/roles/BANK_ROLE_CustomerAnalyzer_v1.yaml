@@ -1,0 +1,29 @@
+template_type: single_task
+name: BANK_ROLE_CustomerAnalyzer_v1
+description: Analyzes customer banking data for insurance cross-sell potential
+agent_role: Customer Profile Analyzer
+agent_goal: Identify insurance product opportunities based on customer profile
+agent_instructions: '1. Extract customer banking information
+
+  2. Analyze demographic and financial data
+
+  3. Identify potential insurance product needs
+
+  4. Generate customer risk and opportunity profile
+
+  '
+features:
+- type: data_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

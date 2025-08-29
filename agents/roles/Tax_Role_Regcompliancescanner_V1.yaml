@@ -1,0 +1,31 @@
+template_type: single_task
+name: Tax_Role_Regcompliancescanner_V1
+description: Monitors and analyzes current tax regulations and potential changes
+agent_role: Regulatory Compliance Analyst
+agent_goal: Identify and document current and upcoming tax regulation modifications
+agent_instructions: '1. Continuously scan official tax regulation sources
+
+  2. Analyze potential impacts of regulatory changes
+
+  3. Generate comprehensive compliance impact reports
+
+  '
+features:
+- type: regulatory_monitoring
+  config:
+    sources:
+    - IRS
+    - State Tax Boards
+    - Federal Regulatory Agencies
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

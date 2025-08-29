@@ -1,0 +1,35 @@
+template_type: single_task
+name: Document_Verification_Agent
+description: Processes and verifies customer submitted documents
+agent_role: Document Verification Specialist
+agent_goal: Validate and authenticate customer documentation
+agent_instructions: '1. Receive customer documents
+
+  2. Perform optical character recognition (OCR)
+
+  3. Cross-reference documents with submitted information
+
+  4. Validate document authenticity
+
+  5. Flag any discrepancies
+
+  '
+features:
+- type: document_processing
+  config:
+    supported_docs:
+    - passport
+    - driver_license
+    - utility_bill
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

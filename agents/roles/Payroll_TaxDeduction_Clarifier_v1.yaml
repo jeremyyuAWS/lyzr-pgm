@@ -1,26 +1,26 @@
 template_type: single_task
 name: Payroll_TaxDeduction_Clarifier_v1
-description: Specialized agent for explaining and clarifying tax deduction details
-agent_role: Tax Deduction Compliance Specialist
-agent_goal: Provide comprehensive explanations of tax deduction calculations
-agent_instructions: '1. Access employee tax withholding records
+description: Specialized agent for tax deduction explanations and clarifications
+agent_role: Tax Deduction Specialist
+agent_goal: Provide clear and comprehensive tax deduction explanations
+agent_instructions: '1. Review specific tax deduction queries
 
-  2. Explain tax deduction calculations in clear terms
+  2. Verify tax calculation basis
 
-  3. Identify specific tax codes and deduction sources
+  3. Explain deduction rationale and calculations
 
-  4. Provide guidance on potential tax optimization
-
-  5. Ensure compliance with current tax regulations
+  4. Provide compliance and regulatory context
 
   '
 features:
-- type: tax_compliance_analysis
+- type: tax_analysis
   config:
-    regulatory_check: true
-tools:
-- tax_code_lookup
-- regulatory_compliance_checker
+    jurisdictions:
+    - federal
+    - state
+    - local
+  priority: 1
+tools: []
 tool_usage_description: ''
 response_format:
   type: json

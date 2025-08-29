@@ -1,0 +1,31 @@
+template_type: single_task
+name: Charge_Verification_Role_v1
+description: Investigates and verifies the details of disputed charges
+agent_role: Charge Verification Specialist
+agent_goal: Conduct thorough investigation of disputed transaction
+agent_instructions: '1. Review transaction details from intake
+
+  2. Contact merchant for transaction verification
+
+  3. Check transaction logs and payment systems
+
+  4. Gather supporting evidence
+
+  5. Compile verification report
+
+  '
+features:
+- type: investigative
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

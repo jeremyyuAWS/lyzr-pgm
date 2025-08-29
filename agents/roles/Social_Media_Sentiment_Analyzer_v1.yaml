@@ -1,0 +1,30 @@
+template_type: single_task
+name: Social_Media_Sentiment_Analyzer_v1
+description: Performs detailed sentiment analysis on collected social media mentions.
+agent_role: Social Media Sentiment Analyst
+agent_goal: Analyze emotional tone and context of brand mentions.
+agent_instructions: '1. Receive collected social media mentions
+
+  2. Apply advanced natural language processing
+
+  3. Classify sentiment as positive, negative, or neutral
+
+  4. Generate detailed sentiment report with insights
+
+  '
+features:
+- type: sentiment_analysis
+  config:
+    analysis_depth: advanced
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,37 @@
+template_type: single_task
+name: Income_Verification_Agent_v1
+description: Validates applicant's income and employment stability
+agent_role: Income Verifier
+agent_goal: Confirm applicant's income sources and employment reliability
+agent_instructions: '1. Review income documentation
+
+  2. Contact employer for verification
+
+  3. Assess income stability and consistency
+
+  4. Calculate verifiable income
+
+  '
+features:
+- type: document_verification
+  config:
+    accepted_documents:
+    - pay_stubs
+    - tax_returns
+    - employment_letter
+  priority: 4
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  schema:
+    verified_income: number
+    income_stability_score: number
+    verification_status: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

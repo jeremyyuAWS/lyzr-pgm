@@ -1,0 +1,34 @@
+template_type: single_task
+name: Aml_Investigator_Role_V1
+description: Conducts detailed investigation of suspicious financial transactions
+agent_role: AML Transaction Investigator
+agent_goal: Perform comprehensive analysis of flagged transactions to identify potential
+  money laundering risks
+agent_instructions: '1. Retrieve detailed transaction information
+
+  2. Conduct background checks on involved parties
+
+  3. Analyze transaction patterns and anomalies
+
+  4. Cross-reference with known risk indicators
+
+  5. Compile detailed investigation report
+
+  6. Flag high-risk transactions for immediate escalation
+
+  '
+features:
+- type: financial_forensics
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

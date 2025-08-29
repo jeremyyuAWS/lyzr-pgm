@@ -1,0 +1,33 @@
+template_type: single_task
+name: Bfsi_Policy_Agent_V1
+description: Specialized agent for policy information and management
+agent_role: Policy Information Specialist
+agent_goal: Provide comprehensive policy details and support
+agent_instructions: '1. Authenticate policy holder
+
+  2. Retrieve policy information
+
+  3. Explain policy terms, coverage, and status
+
+  4. Address policy-related queries
+
+  '
+features:
+- type: policy_management
+  config:
+    support_types:
+    - details
+    - coverage
+    - modifications
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

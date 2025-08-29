@@ -1,0 +1,12 @@
+flow_name: Investment_Research_Flow
+flow_data:
+  tasks:
+    - name: collect_reports
+      function: call_agent
+      agent: Research_Aggregator_v1
+    - name: analyze_trends
+      function: call_agent
+      agent: Market_Trend_Analyst_v1
+    - name: generate_memo
+      function: call_agent
+      agent: Investment_Memo_Generator_v1

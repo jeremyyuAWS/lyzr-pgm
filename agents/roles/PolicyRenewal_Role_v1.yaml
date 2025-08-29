@@ -1,0 +1,29 @@
+template_type: single_task
+name: PolicyRenewal_Role_v1
+description: Manages policy renewal processes
+agent_role: Policy Renewal Coordinator
+agent_goal: Ensure smooth and timely policy renewals
+agent_instructions: '1. Identify policies approaching expiration
+
+  2. Generate renewal notifications
+
+  3. Process renewal applications
+
+  4. Update policy terms and coverage
+
+  '
+features:
+- type: scheduling
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

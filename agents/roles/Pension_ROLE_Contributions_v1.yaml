@@ -1,0 +1,29 @@
+template_type: single_task
+name: Pension_ROLE_Contributions_v1
+description: Tracks and manages pension fund contributions
+agent_role: Contribution Tracker
+agent_goal: Monitor and record all pension fund contributions accurately
+agent_instructions: '1. Collect and verify contribution details
+
+  2. Track individual and employer contributions
+
+  3. Ensure timely and complete contribution recording
+
+  4. Generate contribution reports
+
+  '
+features:
+- type: financial_tracking
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

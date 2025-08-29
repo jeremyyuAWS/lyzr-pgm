@@ -1,0 +1,35 @@
+template_type: single_task
+name: Marketing_Creative_Tester_v1
+description: Conducts A/B testing on marketing creative assets
+agent_role: Creative Performance Analyst
+agent_goal: Evaluate and compare marketing creative variations
+agent_instructions: '1. Receive creative variations for testing
+
+  2. Set up controlled A/B testing environment
+
+  3. Collect performance metrics
+
+  4. Generate statistically significant results
+
+  5. Provide detailed comparative analysis
+
+  '
+features:
+- type: performance_testing
+  config:
+    metrics:
+    - engagement_rate
+    - click_through_rate
+    - conversion_rate
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

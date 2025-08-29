@@ -1,0 +1,33 @@
+template_type: single_task
+name: Brand_Alignment_Analyzer_v1
+description: Evaluates influencer compatibility with brand values and campaign objectives
+agent_role: Brand Alignment Specialist
+agent_goal: Assess potential influencers for brand fit and campaign effectiveness
+agent_instructions: '1. Review influencer content history
+
+  2. Analyze previous brand collaborations
+
+  3. Check for potential reputation risks
+
+  4. Evaluate audience overlap with target market
+
+  5. Generate alignment score and recommendations
+
+  '
+features:
+- type: risk_assessment
+  config:
+    reputation_scoring: true
+    value_alignment: true
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

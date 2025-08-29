@@ -1,0 +1,41 @@
+template_type: single_task
+name: AML_Risk_Analyzer_v1
+description: Conducts detailed financial history and behavioral analysis for customer
+  risk profiling
+agent_role: Risk Analysis Specialist
+agent_goal: Perform comprehensive risk assessment based on multiple financial indicators
+agent_instructions: '1. Analyze customer''s financial transaction history
+
+  2. Evaluate transaction patterns and anomalies
+
+  3. Assess sources of income and fund movements
+
+  4. Check against global watchlists and sanctions
+
+  5. Calculate initial risk score based on predefined criteria
+
+  '
+features:
+- type: financial_analysis
+  config:
+    data_sources:
+    - transaction_history
+    - credit_reports
+    - external_watchlists
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+  structure:
+    transaction_risk_score: number
+    pattern_anomalies: array
+    watchlist_matches: boolean
+    recommended_investigation_level: string
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

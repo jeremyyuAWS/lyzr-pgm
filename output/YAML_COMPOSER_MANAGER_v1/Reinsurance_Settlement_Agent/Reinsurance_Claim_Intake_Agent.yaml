@@ -1,0 +1,32 @@
+template_type: single_task
+name: Reinsurance_Claim_Intake_Agent
+description: Handles initial collection and preprocessing of reinsurance claims
+agent_role: Claim Intake Specialist
+agent_goal: Collect, categorize, and prepare reinsurance claims for further processing
+agent_instructions: '1. Receive claims from multiple insurance carriers
+
+  2. Validate initial claim documentation
+
+  3. Extract key claim metadata
+
+  4. Categorize claims by type, complexity, and urgency
+
+  '
+features:
+- type: data_extraction
+  config:
+    document_types:
+    - claim_form
+    - supporting_documents
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

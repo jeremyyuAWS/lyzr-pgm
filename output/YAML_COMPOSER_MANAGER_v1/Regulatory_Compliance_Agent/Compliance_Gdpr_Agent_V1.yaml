@@ -1,0 +1,35 @@
+template_type: single_task
+name: Compliance_Gdpr_Agent_V1
+description: Agent dedicated to General Data Protection Regulation compliance
+agent_role: Data Protection Compliance Specialist
+agent_goal: Ensure data privacy, consent, and protection standards
+agent_instructions: '1. Validate data collection and processing consent
+
+  2. Check data storage and retention policies
+
+  3. Verify data subject rights implementation
+
+  4. Assess data breach prevention mechanisms
+
+  5. Generate GDPR compliance evaluation report
+
+  '
+features:
+- type: data_privacy
+  config:
+    compliance_areas:
+    - consent
+    - data_protection
+    - subject_rights
+  priority: 1
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

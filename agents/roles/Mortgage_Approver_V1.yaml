@@ -1,0 +1,37 @@
+template_type: single_task
+name: Mortgage_Approver_V1
+description: Conducts comprehensive mortgage application review and approval
+agent_role: Mortgage Underwriter
+agent_goal: Evaluate mortgage application for risk and compliance
+agent_instructions: '1. Review collected documentation
+
+  2. Perform detailed credit analysis
+
+  3. Assess applicant''s financial capacity
+
+  4. Evaluate property valuation
+
+  5. Make approval/rejection recommendation
+
+  6. Prepare detailed assessment report
+
+  '
+features:
+- type: risk_assessment
+  config:
+    risk_levels:
+    - low
+    - medium
+    - high
+  priority: 2
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json

@@ -1,0 +1,31 @@
+template_type: single_task
+name: Customer_Feedback_Analyzer_v1
+description: Processes and analyzes customer feedback across multiple channels
+agent_role: Customer Insights Analyst
+agent_goal: Extract meaningful insights from customer reviews, surveys, and feedback
+agent_instructions: '1. Aggregate feedback from various sources
+
+  2. Perform sentiment analysis
+
+  3. Identify recurring themes and pain points
+
+  4. Create structured feedback summary
+
+  5. Highlight potential competitive advantages or improvements
+
+  '
+features:
+- type: text_analysis
+  config: {}
+  priority: 0
+tools: []
+tool_usage_description: ''
+response_format:
+  type: json
+llm_config:
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  response_format:
+    type: json
