@@ -14,41 +14,17 @@ It ensures consistent payload formatting for the Lyzr API and provides automatio
 │   ├── managers/           # Manager agent YAMLs
 │   └── roles/              # Role agent YAMLs
 ├── scripts/                
-│   ├── create_agent.py           # Create a single agent from YAML
-│   ├── create_manager.py         # Create manager agent with role(s) from YAML
+│   ├── create_agent.py            # Create a single agent from YAML
+│   ├── create_manager.py          # Create manager agent with role(s) from YAML
 │   ├── create_manager_from_yaml.py# ✅ Create manager directly from generated output YAML
-│   ├── run_agent.py              # Run inference on an agent by ID
-│   ├── run_list_iterate.py       # Run a manager across list of use cases
-│   ├── parse_json_to_yaml.py     # Parse manager JSON → role YAMLs
-│   ├── list_agents.py            # List all existing agents
-│   ├── delete_agents.py          # Delete all agents (with dry-run mode)
-│   ├── runme.py                  # Batch runner (uses UPDATEME.yaml)
+│   ├── create_from_output.py      # ⭐ Recursively create Managers + Workflows from output folder
+│   ├── run_agent.py               # Run inference on an agent by ID
+│   ├── run_list_iterate.py        # ⭐ Run a manager across list of use cases
+│   ├── parse_json_to_yaml.py      # Parse manager JSON → role YAMLs
+│   ├── list_agents.py             # List all existing agents
+│   ├── delete_agents.py           # Delete all agents (with dry-run mode)
+│   ├── runme.py                   # Batch runner (uses UPDATEME.yaml)
 ```
-
----
-
-## ⚙️ Setup
-
-1. **Clone repo & install dependencies**
-
-   ```bash
-   git clone https://github.com/jeremyyuAWS/lyzr-pgm
-   cd lyzr-pgm
-   pip install -r requirements.txt
-   ```
-
-2. **Configure API key**
-   Add your Lyzr API key to `.env`:
-
-   ```bash
-   echo 'LYZR_API_KEY=sk-default-xxxxxxx' >> .env
-   ```
-
-   Optional: turn on debug logging
-
-   ```bash
-   echo 'LYZR_DEBUG=1' >> .env
-   ```
 
 ---
 
@@ -56,131 +32,33 @@ It ensures consistent payload formatting for the Lyzr API and provides automatio
 
 ### 🔹 Create Agents
 
-**Create a single Role agent**
-
-```bash
-python -m scripts.create_agent agents/roles/YAML_COMPOSER_ROLE.yaml --debug
-```
-
-**Create a Manager agent with its Roles (auto-linked)**
-
-```bash
-python -m scripts.create_manager agents/managers/kyc_manager.yaml --debug
-```
+...
 
 ---
 
-### 🔹 Create Manager From Generated YAML (Best for Iteration)
+### 🔭 Create From Output (Managers + Workflows in Bulk)
 
-Often when you run an inference (via `run_list_iterate` or `parse_json_to_yaml`) you’ll get an **output YAML** that already contains the manager definition.
-To create that manager directly:
-
-```bash
-python -m scripts.create_manager_from_yaml output/YAML_COMPOSER_MANAGER_v1/hr_helpdesk_agent/HR_Helpdesk_Manager_v1.yaml
-```
-
-**With debug + user override:**
+If you have an **output folder** containing multiple subfolders (each with a `*Manager*.yaml` and `workflow_*.yaml`), you can auto-create them all:
 
 ```bash
-LYZR_DEBUG=1 LYZR_USER_ID="jeremyyu@lyzr.ai" \
-python -m scripts.create_manager_from_yaml output/YAML_COMPOSER_MANAGER_v1/hr_helpdesk_agent/HR_Helpdesk_Manager_v1.yaml
+python -m scripts.create_from_output output/YAML_COMPOSER_MANAGER_v1 --debug
 ```
 
-This is the **fastest way to validate new YAML definitions** since it bypasses re-running the whole workflow.
+This will:
 
----
+1. Recursively scan all subfolders under `output/YAML_COMPOSER_MANAGER_v1/`
+2. For each subfolder:
 
-### 🔹 Run / Test Agents
+   * Create the Manager agent (and its Roles) from `*Manager*.yaml`
+   * Create the Workflow from the latest `workflow_*.yaml`
+3. Print results (✅ success, ❌ failure) in sequence
 
-**Run an agent by ID**
+Example output:
 
-```bash
-python -m scripts.run_agent 68ac92f41425de516e43e6e2 "Start KYC process"
 ```
-
----
-
-### 🔹 Run Manager Across Use Cases (Recommended)
-
-**Example:**
-
-```bash
-python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml
+📂 Processing subfolder: output/YAML_COMPOSER_MANAGER_v1/hr_helpdesk_agent
+🚀 Creating Manager + Roles from HR_Helpdesk_Manager_v1.yaml
+✅ Manager created: HR_Helpdesk_Manager_v1 (id=68b...e4)
+🚀 Creating Workflow from workflow_20250828_202636.yaml
+✅ Workflow created: HR Helpdesk Flow (id=215...c7)
 ```
-
-That will:
-
-1. Create the manager + roles
-2. Iterate over use cases in `use_cases_hr.yaml`
-3. Retry failed cases automatically
-4. Save outputs to `output/<manager>/<usecase>/`
-
-#### Controlling JSON Output
-
-* **No JSON saved (default):**
-
-  ```bash
-  python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml
-  ```
-
-* **Save JSON (CLI flag):**
-
-  ```bash
-  python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml --save
-  ```
-
-* **Save JSON (env var):**
-
-  ```bash
-  SAVE_OUTPUTS=1 python -m scripts.run_list_iterate agents/managers/YAML_COMPOSER_MANAGER_v1.yaml agents/use_cases_hr.yaml
-  ```
-
----
-
-### 🔹 Parse / Generate YAMLs
-
-```bash
-python -m scripts.parse_json_to_yaml manager_response.json --output_dir agents/roles
-```
-
----
-
-### 🔹 List / Delete Agents
-
-```bash
-python -m scripts.list_agents
-python -m scripts.delete_agents --dry-run
-python -m scripts.delete_agents
-```
-
----
-
-### 🔹 Debug with Raw cURL
-
-```bash
-curl --request POST \
-  --url https://agent-prod.studio.lyzr.ai/v3/agents/ \
-  --header "Content-Type: application/json" \
-  --header "x-api-key: $LYZR_API_KEY" \
-  --data '{
-    "name": "TestAgent",
-    "description": "Quick test agent",
-    "system_prompt": "You are a test agent",
-    "provider_id": "OpenAI",
-    "model": "gpt-4o-mini",
-    "temperature": 0.7,
-    "top_p": 0.9,
-    "features": [],
-    "tools": [],
-    "response_format": {"type": "json"}
-  }'
-```
-
----
-
-## 🧰 Development Notes
-
-* Agent names are stamped with **agent\_id + local date + timezone**.
-* `payload_normalizer.py` enforces API schema.
-* `run_list_iterate.py` is the best way to test multiple use cases.
-* Use `create_manager_from_yaml` to **instantiate a manager directly from generated YAML output**.
