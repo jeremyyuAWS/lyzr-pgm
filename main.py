@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from src.api.client import LyzrAPIClient
+from src.services.agent_manager import AgentManager  # ✅ added
 
 # --------------------
 # Setup Logging
@@ -83,6 +84,12 @@ def agent_action(req: AgentActionRequest):
         elif req.action == "create_agent_from_yaml" and req.yaml_input:
             resp = client.create_agent_from_yaml(req.yaml_input, is_path=False)
             logger.info(f"✅ create_agent_from_yaml -> {resp}")
+            return {"ok": True, "response": resp}
+
+        elif req.action == "create_manager_with_roles" and req.yaml_input:
+            manager = AgentManager(client)
+            resp = manager.create_manager_with_roles(req.yaml_input)
+            logger.info(f"✅ create_manager_with_roles -> {resp}")
             return {"ok": True, "response": resp}
 
         else:
