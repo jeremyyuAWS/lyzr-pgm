@@ -1,6 +1,8 @@
 import os
+import json
 import logging
 from pathlib import Path
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -23,7 +25,7 @@ app = FastAPI(title="Lyzr PGM API")
 # --------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # TODO: Restrict to your frontend domain(s) in prod
+    allow_origins=["*"],   # TODO: Restrict in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,17 +45,41 @@ class AgentActionRequest(BaseModel):
 
 
 # --------------------
+# Cache Helpers
+# --------------------
+CACHE_FILE = Path(".manager_cache.json")
+
+def load_cache():
+    if CACHE_FILE.exists():
+        return json.loads(CACHE_FILE.read_text())
+    return {}
+
+def save_cache(cache: dict):
+    CACHE_FILE.write_text(json.dumps(cache, indent=2))
+
+def get_cached_manager(manager_name: str) -> str | None:
+    cache = load_cache()
+    return cache.get(manager_name)
+
+def set_cached_manager(manager_name: str, manager_id: str):
+    cache = load_cache()
+    cache[manager_name] = {
+        "manager_id": manager_id,
+        "cached_at": datetime.utcnow().isoformat()
+    }
+    save_cache(cache)
+
+
+# --------------------
 # Routes
 # --------------------
 @app.get("/")
 def root():
     return {"ok": True, "message": "Welcome to Lyzr PGM API"}
 
-
 @app.get("/health")
 def health_check():
     return {"ok": True, "message": "FastAPI backend is healthy"}
-
 
 @app.post("/agent-action/")
 def agent_action(req: AgentActionRequest):
@@ -65,75 +91,32 @@ def agent_action(req: AgentActionRequest):
 
     try:
         # --------------------
-        # LIST AGENTS
+        # RUN MANAGER + USECASE YAML (with caching)
         # --------------------
-        if req.action == "list_agents":
-            resp = client.list_agents()
-            logger.info(f"✅ list_agents -> {resp}")
-            return {"ok": True, "agents": resp}
-
-        # --------------------
-        # DELETE ALL AGENTS
-        # --------------------
-        elif req.action == "delete_all_agents":
-            resp = client.delete_all_agents()
-            logger.info(f"✅ delete_all_agents -> {resp}")
-            return {"ok": True, "response": resp}
-
-        # --------------------
-        # DELETE SINGLE AGENT
-        # --------------------
-        elif req.action == "delete_agent" and req.agent_id:
-            resp = client.delete_agent(req.agent_id)
-            logger.info(f"✅ delete_agent {req.agent_id} -> {resp}")
-            return {"ok": True, "response": resp}
-
-        # --------------------
-        # RUN INFERENCE
-        # --------------------
-        elif req.action == "run_inference" and req.agent_id and req.message:
-            resp = client.run_inference(req.agent_id, req.message)
-            logger.info(f"✅ run_inference {req.agent_id} -> {resp}")
-            return {"ok": True, "response": resp}
-
-        # --------------------
-        # CREATE AGENT FROM YAML
-        # --------------------
-        elif req.action == "create_agent_from_yaml" and req.yaml_input:
-            yaml_text = _load_yaml(req.yaml_input)
-            resp = client.create_agent_from_yaml(yaml_text, is_path=False)
-            logger.info(f"✅ create_agent_from_yaml -> {resp}")
-            return {"ok": True, "response": resp}
-
-        # --------------------
-        # CREATE MANAGER WITH ROLES FROM YAML
-        # --------------------
-        elif req.action == "create_manager_with_roles" and req.manager_yaml:
-            yaml_text = _load_yaml(req.manager_yaml)
-            resp = client.create_manager_with_roles(yaml_text, is_path=False)
-            logger.info(f"✅ create_manager_with_roles -> {resp}")
-            return {"ok": True, "response": resp}
-
-        # --------------------
-        # RUN MANAGER + USECASE YAML (like run_list_iterate)
-        # --------------------
-        elif req.action == "run_manager_with_usecases" and req.manager_yaml and req.usecase_yaml:
-            # 1. Load Manager YAML
+        if req.action == "run_manager_with_usecases" and req.manager_yaml and req.usecase_yaml:
             manager_yaml_text = _load_yaml(req.manager_yaml)
-            manager_resp = client.create_manager_with_roles(manager_yaml_text, is_path=False)
+            manager_obj = yaml.safe_load(manager_yaml_text)
+            manager_name = manager_obj.get("name")
 
-            if not manager_resp.get("ok"):
-                raise HTTPException(status_code=500, detail=f"Failed to create manager: {manager_resp}")
+            # 1. Check cache
+            manager_id = get_cached_manager(manager_name)
+            if manager_id:
+                logger.info(f"⚡ Using cached manager {manager_name} -> {manager_id}")
+            else:
+                # Deploy new manager
+                resp = client.create_manager_with_roles(manager_yaml_text, is_path=False)
+                if not resp.get("ok"):
+                    raise HTTPException(status_code=500, detail=f"Failed to create manager: {resp}")
+                manager_id = resp["data"]["_id"] if "data" in resp else None
+                if not manager_id:
+                    raise HTTPException(status_code=500, detail="Manager ID missing after creation")
+                set_cached_manager(manager_name, manager_id)
+                logger.info(f"✅ Cached new manager {manager_name} -> {manager_id}")
 
-            manager_id = manager_resp["data"]["_id"] if "data" in manager_resp else None
-            if not manager_id:
-                raise HTTPException(status_code=500, detail="Manager ID missing after creation")
-
-            # 2. Load Usecase YAML
+            # 2. Run usecases
             usecase_yaml_text = _load_yaml(req.usecase_yaml)
             usecases = yaml.safe_load(usecase_yaml_text).get("use_cases", [])
 
-            # 3. Run Inference for each usecase
             results = []
             for case in usecases:
                 name = case.get("name")
@@ -147,6 +130,29 @@ def agent_action(req: AgentActionRequest):
                 "manager_id": manager_id,
                 "results": results,
             }
+
+        # --------------------
+        # Other existing actions...
+        # --------------------
+        elif req.action == "list_agents":
+            return {"ok": True, "agents": client.list_agents()}
+
+        elif req.action == "delete_all_agents":
+            return {"ok": True, "response": client.delete_all_agents()}
+
+        elif req.action == "delete_agent" and req.agent_id:
+            return {"ok": True, "response": client.delete_agent(req.agent_id)}
+
+        elif req.action == "run_inference" and req.agent_id and req.message:
+            return {"ok": True, "response": client.run_inference(req.agent_id, req.message)}
+
+        elif req.action == "create_agent_from_yaml" and req.yaml_input:
+            yaml_text = _load_yaml(req.yaml_input)
+            return {"ok": True, "response": client.create_agent_from_yaml(yaml_text, is_path=False)}
+
+        elif req.action == "create_manager_with_roles" and req.manager_yaml:
+            yaml_text = _load_yaml(req.manager_yaml)
+            return {"ok": True, "response": client.create_manager_with_roles(yaml_text, is_path=False)}
 
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported action or missing params: {req.action}")
