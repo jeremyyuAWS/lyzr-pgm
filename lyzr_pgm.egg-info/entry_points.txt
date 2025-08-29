@@ -1,0 +1,6 @@
+[console_scripts]
+create-agent = scripts.create_agent:main
+create-manager = scripts.create_manager:main
+create-manager-from-yaml = scripts.create_manager_from_yaml:main
+run-agent = scripts.run_agent:main
+run-list = scripts.run_list_iterate:main

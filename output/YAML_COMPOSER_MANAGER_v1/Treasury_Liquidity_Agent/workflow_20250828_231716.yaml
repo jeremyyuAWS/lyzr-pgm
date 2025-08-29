@@ -1,9 +1,0 @@
-flow_name: Liquidity_Monitoring_Flow
-flow_data:
-  tasks:
-    - name: analyze_liquidity
-      function: call_agent
-      agent: Financial_Liquidity_Analyst_v1
-    - name: recommend_strategy
-      function: call_agent
-      agent: Cash_Deployment_Strategist_v1

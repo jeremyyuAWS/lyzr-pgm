@@ -1,9 +1,0 @@
-flow_name: Derivative_Trade_Monitoring_Flow
-flow_data:
-  tasks:
-    - name: analyze_trades
-      function: call_agent
-      agent: TRADE_MONITORING_ROLE_v1
-    - name: escalate_suspicious_activity
-      function: call_agent
-      agent: COMPLIANCE_MANAGER_v1

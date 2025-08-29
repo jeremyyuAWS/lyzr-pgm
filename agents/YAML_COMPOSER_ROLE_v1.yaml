@@ -1,6 +1,0 @@
-name: YAML_COMPOSER_ROLE_v1
-template_type: role
-agent_role: Role Agent
-agent_goal: Generate schema-complete YAML fragments.
-agent_instructions: Produce and validate YAML blocks for workflows.
-source: UPDATEME.yaml

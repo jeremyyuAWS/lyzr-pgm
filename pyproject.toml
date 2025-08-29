@@ -18,6 +18,9 @@ dependencies = [
     "tzlocal"
 ]
 
+[tool.setuptools]
+packages = ["scripts", "src"]
+
 [project.scripts]
 run-list = "scripts.run_list_iterate:main"
 create-agent = "scripts.create_agent:main"

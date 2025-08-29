@@ -1,9 +1,0 @@
-flow_name: Insurance_Premium_Management
-flow_data:
-  tasks:
-    - name: premium_reminder
-      function: call_agent
-      agent: Insurance_Reminder_Agent
-    - name: payment_processing
-      function: call_agent
-      agent: Insurance_Payment_Agent

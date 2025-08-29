@@ -1,9 +1,0 @@
-flow_name: ESG_Investment_Portfolio_Evaluation
-flow_data:
-  tasks:
-    - name: collect_esg_data
-      function: call_agent
-      agent: ESG_Data_Collector_Agent
-    - name: analyze_esg_metrics
-      function: call_agent
-      agent: ESG_Metrics_Analyzer_Agent

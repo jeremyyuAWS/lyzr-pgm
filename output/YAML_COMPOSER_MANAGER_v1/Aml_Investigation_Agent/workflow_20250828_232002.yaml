@@ -1,6 +1,0 @@
-flow_name: AML_Transaction_Investigation_Flow
-flow_data:
-  tasks:
-    - name: flag_transaction_review
-      function: call_agent
-      agent: AML_Investigator_Role_v1

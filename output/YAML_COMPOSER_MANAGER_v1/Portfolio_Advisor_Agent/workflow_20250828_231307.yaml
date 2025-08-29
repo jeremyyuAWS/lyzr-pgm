@@ -1,9 +1,0 @@
-flow_name: Investment_Portfolio_Management
-flow_data:
-  tasks:
-    - name: analyze_portfolio
-      function: call_agent
-      agent: Investment_Analyzer_Agent
-    - name: generate_recommendations
-      function: call_agent
-      agent: Portfolio_Rebalancing_Agent

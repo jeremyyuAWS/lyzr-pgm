@@ -1,6 +1,0 @@
-name: YAML_COMPOSER_MANAGER_v1
-template_type: manager
-agent_role: Manager Agent
-agent_goal: Orchestrate role agents.
-agent_instructions: Manage YAML schema composition.
-source: UPDATEME.yaml

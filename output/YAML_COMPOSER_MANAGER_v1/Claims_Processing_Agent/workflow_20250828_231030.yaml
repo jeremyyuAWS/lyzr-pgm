@@ -1,7 +1,0 @@
-flow_name: Insurance_Claims_Workflow
-flow_description: End-to-end automation of insurance claims processing
-flow_stages:
-  - intake
-  - validation
-  - adjudication
-  - status_tracking

@@ -1,9 +1,0 @@
-flow_name: Insurance_Cross_Sell_Flow
-flow_data:
-  tasks:
-    - name: customer_segment_analysis
-      function: call_agent
-      agent: BANK_SALES_MANAGER_v1
-    - name: product_recommendation
-      function: call_agent
-      agent: INSURANCE_PRODUCT_RECOMMENDER_v1
