@@ -1,10 +1,10 @@
 import os
 import logging
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from src.api.client import LyzrAPIClient
-from src.services.agent_manager import AgentManager  # ✅ added
 
 # --------------------
 # Setup Logging
@@ -22,7 +22,7 @@ app = FastAPI(title="Lyzr PGM API")
 # --------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # TODO: Restrict to your frontend domain(s) in prod
+    allow_origins=["*"],   # TODO: Restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,14 +82,19 @@ def agent_action(req: AgentActionRequest):
             return {"ok": True, "response": resp}
 
         elif req.action == "create_agent_from_yaml" and req.yaml_input:
-            resp = client.create_agent_from_yaml(req.yaml_input, is_path=False)
-            logger.info(f"✅ create_agent_from_yaml -> {resp}")
-            return {"ok": True, "response": resp}
+            yaml_input = req.yaml_input
 
-        elif req.action == "create_manager_with_roles" and req.yaml_input:
-            manager = AgentManager(client)
-            resp = manager.create_manager_with_roles(req.yaml_input)
-            logger.info(f"✅ create_manager_with_roles -> {resp}")
+            # Detect if yaml_input looks like a file path
+            if Path(yaml_input).exists():
+                logger.info(f"📄 Loading YAML from file: {yaml_input}")
+                with open(yaml_input, "r") as f:
+                    yaml_text = f.read()
+                resp = client.create_agent_from_yaml(yaml_text, is_path=False)
+            else:
+                logger.info("📄 Using provided raw YAML string")
+                resp = client.create_agent_from_yaml(yaml_input, is_path=False)
+
+            logger.info(f"✅ create_agent_from_yaml -> {resp}")
             return {"ok": True, "response": resp}
 
         else:
