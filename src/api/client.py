@@ -134,7 +134,7 @@ class LyzrAPIClient:
         return r.json()
 
     def list_agents(self):
-        """List all agents (Lyzr API uses POST to /v3/agents/list)."""
+        """List all agents (Lyzr API uses POST to /v3/agents/list).JY"""
         return self.post("/v3/agents/list", {})
 
     def delete_all_agents(self):
