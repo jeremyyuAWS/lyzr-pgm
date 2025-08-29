@@ -8,9 +8,14 @@ from src.utils.payload_normalizer import normalize_payload
 
 
 class LyzrAPIClient:
-    def __init__(self, debug: bool = None, timeout: int = 60, retries: int = 3):
+    def __init__(self, api_key: str = None, debug: bool = None, timeout: int = 60, retries: int = 3):
         self.base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai")
-        self.api_key = os.getenv("LYZR_API_KEY")
+
+        # Use provided key OR fallback to env
+        self.api_key = api_key or os.getenv("LYZR_API_KEY")
+        if not self.api_key:
+            raise ValueError("No API key provided (api_key argument or LYZR_API_KEY env required)")
+
         self.headers = {"x-api-key": self.api_key, "Content-Type": "application/json"}
         self.timeout = timeout
         self.retries = retries
@@ -46,7 +51,7 @@ class LyzrAPIClient:
                     except ValueError:
                         return {"ok": True, "status": r.status_code, "data": r.text}
 
-            except httpx.HTTPStatusError as e:
+            except httpx.HTTPStatusError:
                 # Retry on transient errors
                 if r.status_code in [429, 500, 502, 503] and attempt < self.retries - 1:
                     wait = 2 ** attempt
@@ -127,3 +132,22 @@ class LyzrAPIClient:
         r = httpx.post(url, headers=self.headers, json=payload, timeout=self.timeout)
         r.raise_for_status()
         return r.json()
+
+    def list_agents(self):
+        """List all agents (Lyzr API uses POST to /v3/agents/list)."""
+        return self.post("/v3/agents/list", {})
+
+    def delete_all_agents(self):
+        """Delete all agents by iterating over list."""
+        agents_resp = self.list_agents()
+        if not agents_resp.get("ok"):
+            return {"ok": False, "deleted": [], "error": agents_resp.get("data")}
+        
+        agents = agents_resp.get("data", [])
+        deleted = []
+        for agent in agents:
+            agent_id = agent.get("agent_id")
+            if agent_id:
+                self.delete_agent(agent_id)
+                deleted.append(agent_id)
+        return {"ok": True, "deleted": deleted}

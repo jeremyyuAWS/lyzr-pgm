@@ -11,7 +11,8 @@ app = FastAPI(title="Lyzr Agent Orchestrator")
 
 # ---------- Request Schema ----------
 class AgentActionRequest(BaseModel):
-    action: str  # "bulk_create_from_folder", "run_list_iterate", "list_agents", "delete_all_agents"
+    action: str  # e.g. "bulk_create_from_folder", "run_list_iterate", "list_agents", "delete_all_agents"
+    api_key: str | None = None     # <--- NEW field for user-supplied API key
     folder: str | None = None
     yaml_file: str | None = None
     usecases_file: str | None = None
@@ -22,7 +23,8 @@ class AgentActionRequest(BaseModel):
 # ---------- Unified API Endpoint ----------
 @app.post("/agent-action/")
 def agent_action(req: AgentActionRequest):
-    client = LyzrAPIClient()
+    # Always use user’s API key if provided, otherwise fallback to env
+    client = LyzrAPIClient(api_key=req.api_key)
     manager = AgentManager(client)
 
     try:
