@@ -5,21 +5,16 @@ import jwt, os
 bearer_scheme = HTTPBearer()
 JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")  # optional, only if verifying locally
 
-async def get_current_user(token: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
-    """
-    Decode the Supabase JWT and normalize the user object.
-    Ensures we always return `user_id` instead of raw `sub`.
-    """
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
-        payload = jwt.decode(token.credentials, JWT_SECRET, algorithms=["HS256"])
-
-        user_id = payload.get("sub")
-        if not user_id:
-            raise ValueError("JWT missing 'sub' claim")
-
-        return {
-            "user_id": user_id,
-            "claims": payload
-        }
-    except Exception:
+        print("🔑 Incoming JWT:", token[:50], "...")  # log first 50 chars
+        payload = jwt.decode(
+            token,
+            os.getenv("SUPABASE_JWT_SECRET"),   # must match Supabase JWT secret
+            algorithms=["HS256"]
+        )
+        print("✅ Decoded payload:", payload)
+        return {"user_id": payload["sub"], "claims": payload}
+    except Exception as e:
+        print("❌ JWT decode failed:", str(e))
         raise HTTPException(status_code=401, detail="Invalid or expired token")

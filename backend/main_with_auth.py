@@ -9,7 +9,7 @@ from app.services.agent_creator import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
 from backend.auth_middleware import get_current_user
 from fastapi import Request
-
+from jose import jwt
 
 
 # -----------------------------
