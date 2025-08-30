@@ -10,6 +10,10 @@ from src.utils.normalize_output import normalize_inference_output
 from backend.auth_middleware import get_current_user
 from fastapi import Request
 from jose import jwt
+# In main_with_auth.py
+import os
+print("🔍 Loaded SUPABASE_JWT_SECRET (first 8 chars):", os.getenv("SUPABASE_JWT_SECRET", "")[:8])
+
 
 
 # -----------------------------
