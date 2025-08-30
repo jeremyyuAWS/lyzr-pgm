@@ -26,11 +26,12 @@ if not origins or origins == [""]:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,   # Use "*" if you want to test quickly
+    allow_origins=["*"],   # 🔑 open for testing
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # -----------------------------
 # Supabase setup
