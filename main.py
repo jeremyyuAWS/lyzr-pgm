@@ -112,7 +112,7 @@ def agent_action(req: AgentActionRequest):
                 resp = client.create_agent(payload)
                 if not resp.get("ok"):
                     raise HTTPException(status_code=500, detail=f"Failed to create manager: {resp}")
-                manager_id = resp["data"]["_id"] if "data" in resp else None
+                manager_id = resp["data"].get("_id") if "data" in resp else None
                 if not manager_id:
                     raise HTTPException(status_code=500, detail="Manager ID missing after creation")
                 set_cached_manager(manager_name, manager_id)
@@ -175,13 +175,15 @@ def agent_action(req: AgentActionRequest):
             return {"ok": True, "response": client.create_agent_from_yaml(yaml_text, is_path=False)}
 
         # --------------------
-        # Create manager (explicit)
+        # Create manager with roles (explicit)
         # --------------------
         elif req.action == "create_manager_with_roles" and req.manager_yaml:
             yaml_text = _load_yaml(req.manager_yaml)
             yaml_obj = yaml.safe_load(yaml_text)
             payload = normalize_payload(yaml_obj)
-            return {"ok": True, "response": client.create_agent(payload)}
+            resp = client.create_agent(payload)
+            logger.info(f"✅ create_manager_with_roles -> {resp}")
+            return {"ok": True, "response": resp}
 
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported action or missing params: {req.action}")
