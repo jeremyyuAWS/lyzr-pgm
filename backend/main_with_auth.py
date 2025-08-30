@@ -8,6 +8,9 @@ from supabase import create_client, Client
 from app.services.agent_creator import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
 from backend.auth_middleware import get_current_user
+from fastapi import Request
+
+
 
 # -----------------------------
 # FastAPI app
@@ -64,6 +67,12 @@ def get_lyzr_api_key_for_user(user_id: str) -> str:
 # -----------------------------
 # /me (test token decoding)
 # -----------------------------
+@app.get("/debug-token")
+async def debug_token(request: Request):
+    auth = request.headers.get("Authorization")
+    return {"auth_header": auth}
+
+
 @app.get("/me")
 async def read_me(current_user: dict = Depends(get_current_user)):
     return {
