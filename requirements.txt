@@ -6,11 +6,3 @@ PyYAML
 pytz
 supabase
 python-dotenv
-fastapi
-uvicorn
-httpx
-pydantic
-PyYAML
-pytz
-supabase
-python-dotenv

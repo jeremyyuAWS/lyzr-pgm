@@ -1,32 +1,63 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+# app/main.py
+
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from pathlib import Path
 import os, tempfile, httpx, json, yaml
-from datetime import datetime
+
 from app.services.agent_creator import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
-from supabase import create_client, Client
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI(title="Agent Orchestrator API")
+
+# -----------------------------
+# Supabase Helper
+# -----------------------------
+async def fetch_user_api_key(user_id: str) -> str:
+    """
+    Fetch decrypted LYZR API key for a given user_id from Supabase.
+    Requires SUPABASE_URL + SUPABASE_SERVICE_KEY env vars.
+    """
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_service_key = os.getenv("SUPABASE_SERVICE_KEY")
+
+    if not supabase_url or not supabase_service_key:
+        raise HTTPException(status_code=500, detail="Missing Supabase configuration")
+
+    headers = {
+        "apikey": supabase_service_key,
+        "Authorization": f"Bearer {supabase_service_key}",
+        "Content-Type": "application/json",
+    }
+
+    query = {
+        "user_id": f"eq.{user_id}"
+    }
+
+    resp = httpx.get(
+        f"{supabase_url}/rest/v1/user_profiles_with_decrypted_key",
+        headers=headers,
+        params=query,
+        timeout=30
+    )
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=500, detail=f"Supabase fetch failed: {resp.text}")
+
+    data = resp.json()
+    if not data or "decrypted_api_key" not in data[0]:
+        raise HTTPException(status_code=404, detail="No API key found for user")
+
+    return data[0]["decrypted_api_key"]
 
 # -----------------------------
 # 1) Create agents
 # -----------------------------
 @app.post("/create-agents/")
-async def create_agents_from_file(
-    file: UploadFile = File(...),
-    user_id: str = Form(...),
-    lyzr_api_key: str = Form(...)
-):
-    if not lyzr_api_key:
-        raise HTTPException(status_code=400, detail="Missing LYZR_API_KEY in request")
-
+async def create_agents_from_file(user_id: str, file: UploadFile = File(...)):
+    api_key = await fetch_user_api_key(user_id)
     base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai") + "/v3/agents/"
-    headers = {"x-api-key": lyzr_api_key, "Content-Type": "application/json"}
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
     log_file = Path("logs/created_agents.jsonl")
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".yaml") as tmp:
@@ -34,82 +65,44 @@ async def create_agents_from_file(
         yaml_path = Path(tmp.name)
 
     result = create_manager_with_roles(yaml_path, headers, base_url, log_file)
-
-    # Store agent refs in Supabase
-    try:
-        for role in result.get("roles", []):
-            supabase.table("agents").insert({
-                "id": role["agent_id"],
-                "user_id": user_id,
-                "name": role["name"],
-                "type": "role",
-                "created_at": datetime.utcnow().isoformat()
-            }).execute()
-
-        manager = result.get("manager")
-        if manager:
-            supabase.table("agents").insert({
-                "id": manager["agent_id"],
-                "user_id": user_id,
-                "name": manager["name"],
-                "type": "manager",
-                "created_at": datetime.utcnow().isoformat()
-            }).execute()
-    except Exception as e:
-        print("⚠️ Supabase insert failed:", e)
-
     return {"status": "success", "created": result}
-
 
 # -----------------------------
 # 2) Run inference
 # -----------------------------
 class InferencePayload(BaseModel):
+    user_id: str
     agent_id: str
     message: str
-    user_id: str
-    lyzr_api_key: str  # 👈 frontend must provide
 
 @app.post("/run-inference/")
-async def run_inference(req: InferencePayload, format: str = "json"):
-    if not req.lyzr_api_key:
-        raise HTTPException(status_code=400, detail="Missing LYZR_API_KEY in request")
-
+async def run_inference(req: InferencePayload):
+    api_key = await fetch_user_api_key(req.user_id)
     base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai")
-    headers = {"x-api-key": req.lyzr_api_key, "Content-Type": "application/json"}
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
 
     payload = {
         "agent_id": req.agent_id,
         "user_id": req.user_id,
         "session_id": f"session-{os.urandom(4).hex()}",
         "message": req.message,
-        "features": [],
-        "tools": []
+        "features": [],  # keep empty
+        "tools": []      # keep empty
     }
 
     try:
         resp = httpx.post(f"{base_url}/v3/inference/chat/", headers=headers, json=payload, timeout=60)
         resp.raise_for_status()
-        data = resp.json()
-        raw_text = data.get("response", "")
 
-        parsed = normalize_inference_output(raw_text, Path("output") / req.agent_id)
-
-        supabase.table("runs").insert({
-            "agent_id": req.agent_id,
-            "user_id": req.user_id,
-            "message": req.message,
-            "raw_response": raw_text,
-            "normalized": parsed,
-            "created_at": datetime.utcnow().isoformat()
-        }).execute()
+        raw = resp.json()
+        # Normalize output if possible
+        normalized = normalize_inference_output(json.dumps(raw), Path("output") / req.agent_id)
 
         return {
             "status": "success",
             "agent_id": req.agent_id,
-            "raw": raw_text,
-            "normalized": parsed if format == "json" else yaml.safe_dump(parsed, sort_keys=False)
+            "raw": raw,
+            "normalized": normalized
         }
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
