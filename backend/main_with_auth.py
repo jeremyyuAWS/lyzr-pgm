@@ -132,3 +132,21 @@ async def run_inference(
         return {"status": "success", "agent_id": req.agent_id, "raw": raw, "normalized": normalized}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
+
+# -----------------------------
+# 3) List agents
+# -----------------------------
+@app.get("/list-agents/")
+async def list_agents(current_user: dict = Depends(get_current_user)):
+    user_id = current_user["user_id"]
+    api_key = get_lyzr_api_key_for_user(user_id)
+
+    base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai")
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+
+    try:
+        resp = httpx.get(f"{base_url}/v3/agents/", headers=headers, timeout=60)
+        resp.raise_for_status()
+        return {"status": "success", "agents": resp.json()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"List agents failed: {e}")
