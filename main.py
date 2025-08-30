@@ -100,18 +100,18 @@ def agent_action(req: AgentActionRequest):
             resp = client.create_manager_with_roles(yaml_source, is_path=False)
             logger.info(f"✅ {req.action} -> {resp}")
 
-            # Try to extract manager + roles info
-            manager_info = resp.get("data") if isinstance(resp, dict) else None
-            roles_info = []
-            if isinstance(resp, dict) and "roles" in resp:
-                roles_info = resp["roles"]
-
-            return {
-                "ok": True,
-                "manager": manager_info,
-                "roles": roles_info,
-                "raw_response": resp
-            }
+            if resp.get("ok"):
+                return {
+                    "ok": True,
+                    "manager": resp.get("data"),
+                    "roles": resp.get("roles", []),
+                }
+            else:
+                return {
+                    "ok": False,
+                    "error": resp.get("error", "Unknown error"),
+                    "roles": resp.get("roles", []),
+                }
 
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported action or missing params: {req.action}")
