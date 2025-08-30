@@ -175,14 +175,18 @@ def agent_action(req: AgentActionRequest):
             return {"ok": True, "response": client.create_agent_from_yaml(yaml_text, is_path=False)}
 
         # --------------------
-        # Create manager with roles (explicit)
+        # Create manager with roles (explicit + alias for backward compat)
         # --------------------
-        elif req.action == "create_manager_with_roles" and req.manager_yaml:
-            yaml_text = _load_yaml(req.manager_yaml)
+        elif req.action in ["create_manager_with_roles", "create_manager"]:
+            yaml_source = req.manager_yaml or req.yaml_input
+            if not yaml_source:
+                raise HTTPException(status_code=400, detail="manager_yaml or yaml_input is required")
+
+            yaml_text = _load_yaml(yaml_source)
             yaml_obj = yaml.safe_load(yaml_text)
             payload = normalize_payload(yaml_obj)
             resp = client.create_agent(payload)
-            logger.info(f"✅ create_manager_with_roles -> {resp}")
+            logger.info(f"✅ {req.action} -> {resp}")
             return {"ok": True, "response": resp}
 
         else:
