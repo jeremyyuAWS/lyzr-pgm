@@ -6,3 +6,4 @@ PyYAML
 pytz
 supabase
 python-dotenv
+python-multipart
