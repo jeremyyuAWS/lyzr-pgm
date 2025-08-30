@@ -1,6 +1,25 @@
+default_timezone: "America/Los_Angeles"  # Change to e.g. UTC, America/New_York, Asia/Tokyo
+
 default_provider_id: "OpenAI"
 default_model: "gpt-4o-mini"
 default_top_p: 0.9
 default_temperature: 0.7
 default_llm_credential_id: "lyzr_openai"
 default_version: "3"
+
+manager:
+  temperature: 0.7
+  # features:
+  #   - type: "orchestration"
+  #     config: {}
+  #     priority: 0
+  tools:
+    - delegation
+
+role:
+  temperature: 0.3
+  # features:
+  #   - type: "task_specific"
+  #     config: {}
+  #     priority: 0
+  tools: []

@@ -1,0 +1,17 @@
+use_cases:
+  - name: KYC_Onboarding_Agent
+    description: >
+      Create a Manager + Role setup for KYC onboarding.
+      The manager should coordinate KYC document processing and
+      identity verification roles, and return a workflow YAML.
+
+  - name: Customer_Support_Agent
+    description: >
+      Automate customer support by routing inquiries to a ticket router role
+      and resolving issues with a resolver role. The manager should orchestrate
+      routing and resolution steps.
+
+  - name: HR_Helpdesk_Agent
+    description: >
+      Build an HR Helpdesk Manager agent that delegates to roles
+      for answering questions about payroll, benefits, and company policies.

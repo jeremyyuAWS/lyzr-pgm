@@ -1,0 +1,6 @@
+🚀 Sending enriched YAML to https://agent-prod.studio.lyzr.ai/agents/create
+
+✅ Status: 405
+{
+  "detail": "Method Not Allowed"
+}

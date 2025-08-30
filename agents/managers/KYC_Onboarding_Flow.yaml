@@ -1,0 +1,51 @@
+workflow_name: KYC_Onboarding_Flow
+workflow_description: >
+  Automates customer onboarding by processing KYC documents
+  and verifying identity.
+
+manager:
+  name: KYC_Manager
+  description: >
+    Orchestrates the entire KYC onboarding flow.
+  role: KYC Onboarding Manager
+  goal: >
+    Coordinate document processing and identity verification to meet compliance.
+  instructions: |
+    1. Accept customer onboarding request with required KYC documents
+    2. Delegate document processing to KYC_DocProcessor
+    3. Delegate identity verification to KYC_IdentityVerifier
+    4. Aggregate results and determine compliance status
+    5. Return structured JSON with verification results and next steps
+  manages:
+    - name: KYC_DocProcessor
+      description: Extracts and validates customer KYC documents
+      usage_description: Handles document ingestion, OCR, and validation
+    - name: KYC_IdentityVerifier
+      description: Verifies customer identity with multi-factor checks
+      usage_description: Performs identity verification and risk scoring
+  version: "1.0"
+
+roles:
+  - name: KYC_DocProcessor
+    description: Extracts and validates customer KYC documents
+    role: Document Processor
+    goal: >
+      Extract, validate, and verify information from customer documents.
+    instructions: |
+      1. Receive uploaded KYC docs
+      2. Perform OCR and extract fields
+      3. Validate authenticity
+      4. Return structured results
+    version: "1.0"
+
+  - name: KYC_IdentityVerifier
+    description: Verifies customer identity with multi-factor checks
+    role: Identity Specialist
+    goal: >
+      Verify customer identity with multi-factor checks.
+    instructions: |
+      1. Receive data from DocProcessor
+      2. Cross-reference external databases
+      3. Perform risk scoring
+      4. Return identity report
+    version: "1.0"
