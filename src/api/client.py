@@ -105,15 +105,47 @@ class LyzrAPIClient:
         return self.create_agent(payload)
 
     def create_manager_with_roles(self, yaml_input: str, is_path: bool = True):
-        """Deploy a Manager agent and linked Roles from YAML."""
+        """
+        Deploy subordinate role agents first, then the manager agent with references.
+        """
         if is_path and Path(yaml_input).exists():
             with open(yaml_input, "r") as f:
-                manager_yaml = yaml.safe_load(f)
+                manager_def = yaml.safe_load(f)
         else:
-            manager_yaml = yaml.safe_load(yaml_input)
+            manager_def = yaml.safe_load(yaml_input)
 
-        payload = {"manager_yaml": manager_yaml}
-        return self.post("/v3/agents/manager/create", payload)
+        role_ids = []
+        for entry in manager_def.get("managed_agents", []):
+            role_file = entry.get("file")
+            role_yaml = None
+
+            if role_file and Path(role_file).exists():
+                role_yaml = Path(role_file).read_text()
+            elif "yaml" in entry:
+                role_yaml = entry["yaml"]
+
+            if role_yaml:
+                role_obj = yaml.safe_load(role_yaml)
+                role_payload = normalize_payload(role_obj)
+                role_resp = self.create_agent(role_payload)
+
+                if role_resp.get("ok") and "data" in role_resp:
+                    rid = role_resp["data"].get("_id") or role_resp["data"].get("agent_id")
+                    if rid:
+                        role_ids.append(rid)
+                        self._log(f"✅ Created role {role_obj.get('name')} -> {rid}")
+                else:
+                    self._log(f"❌ Failed to create role: {role_obj.get('name')}")
+
+        # Normalize manager
+        manager_payload = normalize_payload(manager_def)
+        if role_ids:
+            manager_payload["managed_agents"] = role_ids
+
+        mgr_resp = self.create_agent(manager_payload)
+        self._log(f"✅ Created manager {manager_payload.get('name')} -> {mgr_resp}")
+        return mgr_resp
+
 
     def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
         """Run inference for a given agent_id"""

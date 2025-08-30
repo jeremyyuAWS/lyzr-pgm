@@ -9,7 +9,6 @@ from pydantic import BaseModel
 import yaml
 
 from src.api.client import LyzrAPIClient
-from src.utils.payload_normalizer import normalize_payload
 
 # --------------------
 # Setup Logging
@@ -47,7 +46,7 @@ class AgentActionRequest(BaseModel):
 
 
 # --------------------
-# Cache Helpers
+# Cache Helpers (if you want manager caching)
 # --------------------
 CACHE_FILE = Path(".manager_cache.json")
 
@@ -95,53 +94,11 @@ def agent_action(req: AgentActionRequest):
 
     try:
         # --------------------
-        # RUN MANAGER + USECASE YAML (with caching + saving artifacts)
+        # RUN MANAGER + USECASE YAML (roles-first + normalized outputs saved automatically)
         # --------------------
         if req.action == "run_manager_with_usecases" and req.manager_yaml and req.usecase_yaml:
-            manager_yaml_text = _load_yaml(req.manager_yaml)
-            manager_obj = yaml.safe_load(manager_yaml_text)
-            manager_name = manager_obj.get("name")
-
-            # 1. Check cache
-            manager_id = get_cached_manager(manager_name)
-            if manager_id:
-                logger.info(f"⚡ Using cached manager {manager_name} -> {manager_id}")
-            else:
-                # Deploy new manager
-                payload = normalize_payload(manager_obj)
-                resp = client.create_agent(payload)
-                if not resp.get("ok"):
-                    raise HTTPException(status_code=500, detail=f"Failed to create manager: {resp}")
-                manager_id = resp["data"].get("_id") if "data" in resp else None
-                if not manager_id:
-                    raise HTTPException(status_code=500, detail="Manager ID missing after creation")
-                set_cached_manager(manager_name, manager_id)
-                logger.info(f"✅ Cached new manager {manager_name} -> {manager_id}")
-
-            # 2. Save manager + roles YAMLs
-            _save_manager_and_roles(manager_name, manager_yaml_text, manager_obj)
-
-            # 3. Run usecases
-            usecase_yaml_text = _load_yaml(req.usecase_yaml)
-            usecases = yaml.safe_load(usecase_yaml_text).get("use_cases", [])
-
-            results = []
-            for case in usecases:
-                name = case.get("name")
-                desc = case.get("description")
-                logger.info(f"📥 Running use case: {name}")
-                resp = client.run_inference(manager_id, desc)
-
-                # Save inference output
-                _save_usecase_output(manager_name, name, resp)
-
-                results.append({"use_case": name, "response": resp})
-
-            return {
-                "ok": True,
-                "manager_id": manager_id,
-                "results": results,
-            }
+            resp = client.run_manager_with_usecases(req.manager_yaml, req.usecase_yaml, save_outputs=True)
+            return resp
 
         # --------------------
         # List agents
@@ -175,18 +132,23 @@ def agent_action(req: AgentActionRequest):
             return {"ok": True, "response": client.create_agent_from_yaml(yaml_text, is_path=False)}
 
         # --------------------
-        # Create manager with roles (explicit + alias for backward compat)
+        # Create manager with roles (roles first → manager)
         # --------------------
         elif req.action in ["create_manager_with_roles", "create_manager"]:
             yaml_source = req.manager_yaml or req.yaml_input
             if not yaml_source:
                 raise HTTPException(status_code=400, detail="manager_yaml or yaml_input is required")
 
-            yaml_text = _load_yaml(yaml_source)
-            yaml_obj = yaml.safe_load(yaml_text)
-            payload = normalize_payload(yaml_obj)
-            resp = client.create_agent(payload)
+            resp = client.create_manager_with_roles(yaml_source, is_path=True)
             logger.info(f"✅ {req.action} -> {resp}")
+
+            # Save artifacts (manager + roles YAMLs) if successful
+            if resp.get("ok") and "data" in resp:
+                manager_name = resp["data"].get("name", "Manager")
+                yaml_text = _load_yaml(yaml_source)
+                yaml_obj = yaml.safe_load(yaml_text)
+                _save_manager_and_roles(manager_name, yaml_text, yaml_obj)
+
             return {"ok": True, "response": resp}
 
         else:
@@ -234,18 +196,3 @@ def _save_manager_and_roles(manager_name: str, manager_yaml_text: str, manager_o
                 safe_role = role_name.replace(" ", "_")
                 (outdir / f"{safe_role}.yaml").write_text(role_yaml)
                 logger.info(f"💾 Saved Role YAML -> {outdir}/{safe_role}.yaml")
-
-
-def _save_usecase_output(manager_name: str, usecase_name: str, resp: dict):
-    """Save each use case result to output/{manager}/{usecase}.json"""
-    safe_manager = manager_name.replace(" ", "_")
-    safe_usecase = usecase_name.replace(" ", "_")
-
-    outdir = Path("output") / safe_manager
-    outdir.mkdir(parents=True, exist_ok=True)
-
-    outfile = outdir / f"{safe_usecase}.json"
-    with open(outfile, "w") as f:
-        json.dump(resp, f, indent=2)
-
-    logger.info(f"💾 Saved use case {usecase_name} -> {outfile}")
