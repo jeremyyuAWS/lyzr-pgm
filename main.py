@@ -2,7 +2,6 @@ import os
 import json
 import logging
 from pathlib import Path
-from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -100,18 +99,13 @@ def agent_action(req: AgentActionRequest):
             resp = client.create_manager_with_roles(yaml_source, is_path=False)
             logger.info(f"✅ {req.action} -> {resp}")
 
-            if resp.get("ok"):
-                return {
-                    "ok": True,
-                    "manager": resp.get("data"),
-                    "roles": resp.get("roles", []),
-                }
-            else:
-                return {
-                    "ok": False,
-                    "error": resp.get("error", "Unknown error"),
-                    "roles": resp.get("roles", []),
-                }
+            # Normalize shape for frontend
+            return {
+                "ok": resp.get("ok", False),
+                "manager": resp.get("data"),   # manager object
+                "roles": resp.get("roles", []),  # role objects
+                "error": resp.get("error") if not resp.get("ok") else None
+            }
 
         else:
             raise HTTPException(status_code=400, detail=f"Unsupported action or missing params: {req.action}")

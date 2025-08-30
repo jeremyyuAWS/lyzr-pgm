@@ -135,7 +135,7 @@ class LyzrAPIClient:
                 if role_resp.get("ok") and "data" in role_resp:
                     rid = role_resp["data"].get("_id") or role_resp["data"].get("agent_id")
                     if rid:
-                        created_roles.append(role_resp["data"])
+                        created_roles.append(role_resp["data"])  # ✅ full object
                         self._log(f"✅ Created role {role_obj.get('name')} -> {rid}")
                 else:
                     self._log(f"❌ Failed to create role: {role_obj.get('name')}")
@@ -143,8 +143,8 @@ class LyzrAPIClient:
         # 2. Create the manager agent with references to roles
         manager_payload = normalize_payload(manager_def)
         if created_roles:
-            # Just store the role IDs, not full objects, in manager.managed_agents
-            manager_payload["managed_agents"] = [r.get("_id") or r.get("agent_id") for r in created_roles]
+            # ✅ Pass full role objects instead of just IDs
+            manager_payload["managed_agents"] = created_roles
 
         mgr_resp = self.create_agent(manager_payload)
 
@@ -160,9 +160,6 @@ class LyzrAPIClient:
                 "error": mgr_resp.get("data"),
                 "roles": created_roles
             }
-
-
-
 
     def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
         """Run inference for a given agent_id"""
