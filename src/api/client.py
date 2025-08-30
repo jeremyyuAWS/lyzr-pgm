@@ -103,10 +103,11 @@ class LyzrAPIClient:
             yaml_def = yaml.safe_load(yaml_input)
         payload = normalize_payload(yaml_def)
         return self.create_agent(payload)
-
+    
     def create_manager_with_roles(self, yaml_input: str, is_path: bool = True):
         """
         Deploy subordinate role agents first, then the manager agent with references.
+        Returns { ok: True, data: <manager_object>, roles: [<role_objects>] }
         """
         if is_path and Path(yaml_input).exists():
             with open(yaml_input, "r") as f:
@@ -114,7 +115,9 @@ class LyzrAPIClient:
         else:
             manager_def = yaml.safe_load(yaml_input)
 
-        role_ids = []
+        created_roles = []
+
+        # 1. Create role agents first
         for entry in manager_def.get("managed_agents", []):
             role_file = entry.get("file")
             role_yaml = None
@@ -132,19 +135,33 @@ class LyzrAPIClient:
                 if role_resp.get("ok") and "data" in role_resp:
                     rid = role_resp["data"].get("_id") or role_resp["data"].get("agent_id")
                     if rid:
-                        role_ids.append(rid)
+                        created_roles.append(role_resp["data"])
                         self._log(f"✅ Created role {role_obj.get('name')} -> {rid}")
                 else:
                     self._log(f"❌ Failed to create role: {role_obj.get('name')}")
 
-        # Normalize manager
+        # 2. Create the manager agent with references to roles
         manager_payload = normalize_payload(manager_def)
-        if role_ids:
-            manager_payload["managed_agents"] = role_ids
+        if created_roles:
+            # Just store the role IDs, not full objects, in manager.managed_agents
+            manager_payload["managed_agents"] = [r.get("_id") or r.get("agent_id") for r in created_roles]
 
         mgr_resp = self.create_agent(manager_payload)
-        self._log(f"✅ Created manager {manager_payload.get('name')} -> {mgr_resp}")
-        return mgr_resp
+
+        if mgr_resp.get("ok") and "data" in mgr_resp:
+            return {
+                "ok": True,
+                "data": mgr_resp["data"],   # manager object
+                "roles": created_roles      # full role objects
+            }
+        else:
+            return {
+                "ok": False,
+                "error": mgr_resp.get("data"),
+                "roles": created_roles
+            }
+
+
 
 
     def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
