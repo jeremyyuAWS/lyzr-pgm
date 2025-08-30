@@ -46,7 +46,7 @@ class AgentActionRequest(BaseModel):
 
 
 # --------------------
-# Cache Helpers (if you want manager caching)
+# Cache Helpers
 # --------------------
 CACHE_FILE = Path(".manager_cache.json")
 
@@ -139,15 +139,15 @@ def agent_action(req: AgentActionRequest):
             if not yaml_source:
                 raise HTTPException(status_code=400, detail="manager_yaml or yaml_input is required")
 
-            resp = client.create_manager_with_roles(yaml_source, is_path=True)
+            # ⚡ Pass raw YAML string directly, roles-first handled inside client
+            resp = client.create_manager_with_roles(yaml_source, is_path=False)
             logger.info(f"✅ {req.action} -> {resp}")
 
             # Save artifacts (manager + roles YAMLs) if successful
             if resp.get("ok") and "data" in resp:
                 manager_name = resp["data"].get("name", "Manager")
-                yaml_text = _load_yaml(yaml_source)
-                yaml_obj = yaml.safe_load(yaml_text)
-                _save_manager_and_roles(manager_name, yaml_text, yaml_obj)
+                yaml_obj = yaml.safe_load(yaml_source)
+                _save_manager_and_roles(manager_name, yaml_source, yaml_obj)
 
             return {"ok": True, "response": resp}
 
