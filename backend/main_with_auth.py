@@ -1,5 +1,5 @@
-# backend/main_with_auth.py
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
 import os, tempfile, httpx, json, yaml
@@ -13,6 +13,23 @@ from backend.auth_middleware import get_current_user
 # FastAPI app
 # -----------------------------
 app = FastAPI(title="Agent Orchestrator API with Auth")
+
+# -----------------------------
+# CORS Setup
+# -----------------------------
+origins = [
+    "http://localhost:5173",        # local Bolt dev
+    "https://*.webcontainer.io",    # Bolt preview URLs
+    "https://lyzr-pgm.onrender.com" # backend itself
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # -----------------------------
 # Supabase setup
