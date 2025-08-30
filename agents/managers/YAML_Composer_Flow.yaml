@@ -1,55 +1,45 @@
 workflow_name: YAML_Composer_Flow
 workflow_description: >
-  Generates schema-compliant Manager and Role agent YAML definitions 
-  from natural language business use cases. Packages results into 
-  structured JSON/YAML objects ready for deployment.
+  Orchestrates YAML generation by combining manager and role agents
+  to transform natural language use cases into schema-compliant YAML.
 
 manager:
   name: YAML_Composer_Manager
   description: >
-    Orchestrates the YAML composition workflow by delegating 
-    schema generation and schema validation to role agents.
+    Unified agent that accepts natural language business use cases and generates
+    schema-compliant Manager and Role YAML definitions.
   role: YAML Composer Manager
   goal: >
-    Accept natural language business use cases and generate 
-    complete Manager + Role agent definitions that conform to 
-    schema standards.
+    Convert use cases into structured JSON with workflow YAML + agent YAMLs.
   instructions: |
-    1. Accept a natural language description of a business use case.
-    2. Delegate YAML generation to the YAML_Generator role agent.
-    3. Delegate schema validation to the YAML_Validator role agent.
-    4. Aggregate results and return a structured JSON object with 
-       workflow YAML and agent definitions.
+    1. Accept natural language business use case
+    2. Generate workflow YAML
+    3. Generate manager and role agent YAMLs
+    4. Package into a single JSON object
   manages:
     - name: YAML_Generator
-      description: Generates draft YAML definitions for manager and role agents.
+      description: Generates initial agent YAMLs
     - name: YAML_Validator
-      description: Validates that YAML definitions comply with schema rules.
+      description: Validates YAML and ensures schema compliance
   version: "1.0"
 
 roles:
   - name: YAML_Generator
-    description: Generates draft YAML definitions for manager and role agents.
-    role: YAML Generator
-    goal: >
-      Transform natural language use cases into draft YAML agent 
-      definitions that include required fields.
+    description: Generates initial manager + role agent YAMLs
+    role: Generator Role
+    goal: Generate schema-compliant YAML agent definitions
     instructions: |
-      1. Parse the input use case into key agent requirements.
-      2. Generate YAML stubs for manager and role agents.
-      3. Ensure each YAML contains name, description, role, goal, instructions.
-      4. Return draft YAML for validation.
+      1. Parse business use case
+      2. Draft manager + role YAMLs
+      3. Output schema-compliant YAML
     version: "1.0"
 
   - name: YAML_Validator
-    description: Validates YAML definitions against canonical schema rules.
-    role: YAML Validator
-    goal: >
-      Ensure that generated YAML agent definitions conform to 
-      required schema fields and structure.
+    description: Validates YAML and ensures schema compliance
+    role: Validator Role
+    goal: Ensure YAML is valid, schema-compliant, and deployable
     instructions: |
-      1. Accept draft YAML definitions from the YAML_Generator.
-      2. Validate presence of required fields (name, description, role, goal, instructions, etc.).
-      3. Correct common formatting errors.
-      4. Return schema-compliant YAML definitions.
+      1. Parse generated YAML
+      2. Check schema compliance
+      3. Return validated YAML
     version: "1.0"
