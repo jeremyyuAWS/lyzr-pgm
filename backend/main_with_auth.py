@@ -74,6 +74,11 @@ async def read_me(current_user: dict = Depends(get_current_user)):
         "claims": current_user["claims"]
     }
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "Agent Orchestrator API"}
+
+
 # -----------------------------
 # 1) Create agents
 # -----------------------------
