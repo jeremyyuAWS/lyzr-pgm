@@ -18,18 +18,20 @@ app = FastAPI(title="Agent Orchestrator API with Auth")
 # CORS Setup
 # -----------------------------
 origins = [
-    "http://localhost:5173",        # local Bolt dev
+    "http://localhost:5173",        # Local dev
     "https://*.webcontainer.io",    # Bolt preview URLs
-    "https://lyzr-pgm.onrender.com" # backend itself
+    "https://lyzr-pgm.onrender.com" # Backend itself
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # for simplicity in dev; restrict in prod
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
 
 # -----------------------------
 # Supabase setup
