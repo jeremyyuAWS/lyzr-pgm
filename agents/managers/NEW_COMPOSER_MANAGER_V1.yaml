@@ -1,32 +1,57 @@
-name: NEW_COMPOSER_MANAGER_V1   # <— REQUIRED
-description: >
-  The NEW COMPOSER MANAGER orchestrates schema-compliant YAML definitions
-  for Manager and Role agents.
+manager:
+  name: NEW_COMPOSER_MANAGER_V1
+  description: >
+    The NEW COMPOSER MANAGER is a meta-orchestration agent whose sole purpose
+    is to generate schema-compliant YAML definitions for Manager and Role agents.
 
-agent_role: YAML Composer Manager
-agent_goal: |
-  Accept NL business use case and package results into structured JSON.
+  agent_role: YAML Composer Manager
+  agent_goal: |
+    Accept NL business use case and generate schema-compliant YAML for Manager + Role agents.
+  agent_instructions: |
+    Output JSON with workflow_name, workflow_yaml, and agents[].
+  
+  features:
+    - type: yaml_syntax_validation
+      config: {}
+      priority: 0
+  
+  tools: []
+  response_format:
+    type: json
 
-agent_instructions: |
-  - Output JSON with { workflow_name, workflow_yaml, agents[] }
-  - No Markdown or explanations
-  - Ensure json.loads(output) and yaml.safe_load() succeed
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  llm_credential_id: lyzr-default
 
-features:
-  - type: yaml_syntax_validation
-    config: {}
-    priority: 0
-
-tools: []
-response_format:
-  type: json
-
-provider_id: OpenAI
-model: gpt-4o-mini
-temperature: 0.7
-top_p: 0.9
-llm_credential_id: lyzr-default
-
-managed_agents:
-  - file: agents/roles/YAML_COMPOSER_ROLE_v1.yaml
-    usage_description: "Generates role YAMLs"
+  # If roles should be embedded, add like this:
+  managed_agents:
+    - id: ROLE_YAML_COMPOSER_V1
+      description: >
+        The YAML COMPOSER ROLE drafts complete Manager + Role YAML definitions
+        based on a users business use case.
+      usage_description: >
+        Drafts complete Manager + Role YAML definitions based on a users business use case.
+      name: YAML_COMPOSER_ROLE_V1
+      type: role
+      yaml: |
+        name: YAML_COMPOSER_ROLE_V1
+        description: Drafts Role YAML definitions
+        agent_role: YAML Composer Role
+        agent_goal: Generate schema-compliant Role YAMLs
+        agent_instructions: |
+          1. Accept instructions from manager
+          2. Output valid Role YAML
+        features:
+          - type: generation
+            config: {}
+            priority: 0
+        tools: []
+        response_format:
+          type: json
+        provider_id: OpenAI
+        model: gpt-4o-mini
+        temperature: 0.7
+        top_p: 0.9
+        llm_credential_id: lyzr-default
