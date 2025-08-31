@@ -1,0 +1,23 @@
+curl https://lyzr-pgm.onrender.com/list-agents/ \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6ImJzbzhwSFVaV0ZEK1piYkoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2hlZHprcmZkZnhpY2Jta2VzZXhlLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI5M2IzMDhmMi03ZWZlLTQzY2MtYTM0Mi00YTc0NjNkM2IyYjgiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU2NjI0MjI3LCJpYXQiOjE3NTY2MjA2MjcsImVtYWlsIjoiamVyZW15QGx5enIuYWkiLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsIjoiamVyZW15QGx5enIuYWkiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJzdWIiOiI5M2IzMDhmMi03ZWZlLTQzY2MtYTM0Mi00YTc0NjNkM2IyYjgifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc1NjUwODIzOH1dLCJzZXNzaW9uX2lkIjoiNjgzMzI5NWEtZWI3My00MzBhLWEwZjEtMGQ3NGFiZGQyNDMzIiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.fdlGIAKYaKKuxx6xo8Zowp9vvoLmoxCAkc8qEBMKR2M"
+
+# Get JWT token
+const { data: { session } } = await supabase.auth.getSession();
+console.log("🔑 New JWT:", session?.access_token);
+
+
+const { data: { session } } = await supabase.auth.getSession()
+console.log(session.access_token)
+
+# 1. Store your JWT token in an environment variable
+export MY_TOKEN="eyJhbGciOiJIUzI1NiIsImtpZCI6ImJzbzhwSFVaV0ZEK1piYkoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2hlZHprcmZkZnhpY2Jta2VzZXhlLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI5M2IzMDhmMi03ZWZlLTQzY2MtYTM0Mi00YTc0NjNkM2IyYjgiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzU2NjI3NzI3LCJpYXQiOjE3NTY2MjQxMjcsImVtYWlsIjoiamVyZW15QGx5enIuYWkiLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsIjoiamVyZW15QGx5enIuYWkiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJzdWIiOiI5M2IzMDhmMi03ZWZlLTQzY2MtYTM0Mi00YTc0NjNkM2IyYjgifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc1NjUwODIzOH1dLCJzZXNzaW9uX2lkIjoiNjgzMzI5NWEtZWI3My00MzBhLWEwZjEtMGQ3NGFiZGQyNDMzIiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.FmrDPx5-X2hxSjD_kwuKwt1muY9VSQCGH1z7hGdwzo0"
+
+# 2. Use it in your curl commands
+curl -X POST "https://lyzr-pgm.onrender.com/create-agents/" \
+  -H "Authorization: Bearer $MY_TOKEN" \
+  -F "file=@agents/managers/NEW_COMPOSER_MANAGER_V1.yaml"
+
+curl -X POST "https://lyzr-pgm.onrender.com/run-use-cases/" \
+  -H "Authorization: Bearer $MY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"manager_id": "68b3fb9a3134f53810d0af13"}'
