@@ -66,7 +66,7 @@ app = FastAPI(title="Agent Orchestrator API with Auth")
 # -----------------------------
 origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 if not origins or origins == [""]:
-    origins = ["https://lyzr-pgm.onrender.com"]
+    origins = ["http://localhost:5173""https://lyzr-pgm.onrender.com"]
 
 app.add_middleware(
     CORSMiddleware,
