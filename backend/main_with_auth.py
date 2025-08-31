@@ -48,7 +48,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 # Helper: Fetch decrypted Lyzr key
 # -----------------------------
 def get_lyzr_api_key_for_user(user_id: str) -> str:
-    """Fetch decrypted API key from Supabase, fallback to env if missing."""
+    """Fetch decrypted API key from Supabase view for the given user_id."""
     try:
         resp = (
             supabase.from_("user_profiles_with_decrypted_key")
@@ -56,21 +56,12 @@ def get_lyzr_api_key_for_user(user_id: str) -> str:
             .eq("id", user_id)
             .execute()
         )
-        print(f"🔍 Supabase resp for {user_id}:", resp.data)
-
-        if resp.data and "decrypted_api_key" in resp.data[0]:
-            return resp.data[0]["decrypted_api_key"]
-
-        # fallback for debugging
-        api_key = os.getenv("LYZR_API_KEY")
-        if api_key:
-            print(f"⚠️ Using fallback LYZR_API_KEY from env for user {user_id}")
-            return api_key
-
-        raise ValueError("No decrypted API key found for user")
-
+        if not resp.data or "decrypted_api_key" not in resp.data[0]:
+            raise ValueError("No decrypted API key found for user")
+        return resp.data[0]["decrypted_api_key"]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch Lyzr API key: {e}")
+
 
 # -----------------------------
 # Debug endpoints
