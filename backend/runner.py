@@ -26,7 +26,10 @@ def run_use_cases_with_manager(manager_id: str, api_key: str):
             try:
                 resp = httpx.post(f"{base_url}/v3/inference/chat/", headers=headers, json=payload, timeout=90)
                 resp.raise_for_status()
-                normalized = normalize_response(json.dumps(resp.json()))
+                normalized = normalize_inference_output(
+                    json.dumps(resp.json()),
+                    Path(f"outputs/{uc_name}")
+                )
 
                 # save YAML output
                 out_dir = Path(f"outputs/{uc_name}")
