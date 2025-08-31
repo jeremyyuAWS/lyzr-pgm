@@ -13,7 +13,7 @@ from app.services.agent_creator import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
 from backend.auth_middleware import get_current_user
 from backend.runner import run_use_cases_with_manager
-
+from backend.schemas.agent_action import AgentActionRequest
 
 
 print("🔍 Loaded SUPABASE_JWT_SECRET (first 8 chars):", os.getenv("SUPABASE_JWT_SECRET", "")[:8])
