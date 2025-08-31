@@ -1,7 +1,8 @@
 import yaml, os, json
 from pathlib import Path
 import httpx
-from src.utils.normalize_response import normalize_response
+from src.utils.normalize_output import normalize_inference_output
+
 
 USE_CASES_DIR = Path("agents/use_cases")
 
@@ -26,10 +27,7 @@ def run_use_cases_with_manager(manager_id: str, api_key: str):
             try:
                 resp = httpx.post(f"{base_url}/v3/inference/chat/", headers=headers, json=payload, timeout=90)
                 resp.raise_for_status()
-                normalized = normalize_inference_output(
-                    json.dumps(resp.json()),
-                    Path(f"outputs/{uc_name}")
-                )
+                normalized = normalize_inference_output(resp_text, Path(f"outputs/{use_case_name}"))
 
                 # save YAML output
                 out_dir = Path(f"outputs/{uc_name}")
