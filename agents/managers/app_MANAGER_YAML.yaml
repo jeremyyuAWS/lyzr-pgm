@@ -1,22 +1,19 @@
-name: "YAML_COMPOSER_MANAGER_v1"
+name: YAML_COMPOSER_MANAGER_v1
 description: >
   The YAML COMPOSER MANAGER is a meta-orchestration agent whose sole purpose is to
   generate schema-compliant YAML definitions for other Manager and Role agents.
   It transforms a user's natural language business use case into a structured JSON
   object containing both workflow YAML and agent YAMLs.
 
-agent_role: "YAML Composer Manager"
-agent_goal: >
-  - Accept a natural language business use case from the user.
-  - Delegate YAML generation to the YAML_COMPOSER_ROLE agent.
-  - Package the YAML outputs into a JSON object with keys:
-      workflow_name: string
-      workflow_yaml: string (YAML workflow definition)
-      agents[]: array of agent definitions, each containing:
-        - name: string
-        - type: "manager" or "role"
-        - yaml: string (full YAML definition)
-  - Ensure the final output is valid JSON that can be parsed by `json.loads()`.
+agent_role: YAML Composer Manager
+agent_goal: |
+  Accept a natural language business use case from the user.
+  Delegate YAML generation to the YAML_COMPOSER_ROLE agent.
+  Package the YAML outputs into a JSON object with keys:
+    workflow_name: string
+    workflow_yaml: string (YAML workflow definition)
+    agents[]: array of agent definitions.
+  Ensure the final output is valid JSON that can be parsed by json.loads().
 
 agent_instructions: |
   You must output ONLY a single JSON object with this schema:
@@ -53,43 +50,43 @@ tool_usage_description: >
   subordinate YAML_COMPOSER_ROLE and packages structured JSON responses.
 
 features:
-  - type: "yaml_syntax_validation"
+  - type: yaml_syntax_validation
     config: {}
     priority: 0
-  - type: "canonical_structure_check"
+  - type: canonical_structure_check
     config: {}
     priority: 1
 
 managed_agents:
-  - name: "YAML_COMPOSER_ROLE_v1"
-    type: "role"
+  - name: YAML_COMPOSER_ROLE_v1
+    type: role
     yaml: |
-      name: "YAML_COMPOSER_ROLE_v1"
+      name: YAML_COMPOSER_ROLE_v1
       description: Drafts complete Manager + Role YAML definitions based on a user’s business use case.
-      agent_role: "YAML Composer Role"
+      agent_role: YAML Composer Role
       agent_goal: Generate schema-compliant Manager + Role YAMLs.
       agent_instructions: |
         1. Take the manager’s instructions.
         2. Output role YAMLs that conform to schema.
         3. Ensure all required keys are included.
       features:
-        - type: "generation"
+        - type: generation
           config: {}
           priority: 0
       tools: []
       response_format:
-        type: "json"
-      provider_id: "OpenAI"
-      model: "gpt-4o-mini"
+        type: json
+      provider_id: OpenAI
+      model: gpt-4o-mini
       temperature: 0.7
       top_p: 0.9
-      llm_credential_id: "lyzr-default"
+      llm_credential_id: lyzr-default
 
 response_format:
-  type: "json"
+  type: json
 
-provider_id: "OpenAI"
-model: "gpt-4o-mini"
+provider_id: OpenAI
+model: gpt-4o-mini
 temperature: 0.7
 top_p: 0.9
-llm_credential_id: "lyzr-default"
+llm_credential_id: lyzr-default

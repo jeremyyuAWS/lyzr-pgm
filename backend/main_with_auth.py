@@ -77,7 +77,7 @@ def get_lyzr_api_key_for_user(user_id: str) -> str:
 
 
 # -----------------------------
-# Debug endpoints
+# Debug + health endpoints
 # -----------------------------
 @app.get("/debug-token")
 async def debug_token(request: Request):
@@ -86,23 +86,17 @@ async def debug_token(request: Request):
 
 @app.get("/me")
 async def read_me(current_user: dict = Depends(get_current_user)):
-    return {
-        "status": "ok",
-        "user_id": current_user["user_id"],
-        "claims": current_user["claims"],
-    }
+    return {"status": "ok", "user_id": current_user["user_id"], "claims": current_user["claims"]}
 
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "Agent Orchestrator API"}
 
 # -----------------------------
-# 1) Create agents
+# 1) Create agents (from YAML upload)
 # -----------------------------
 @app.post("/create-agents/")
-async def create_agents_from_file(
-    file: UploadFile = File(...), current_user: dict = Depends(get_current_user)
-):
+async def create_agents_from_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     user_id = current_user["user_id"]
     api_key = get_lyzr_api_key_for_user(user_id)
 
@@ -121,7 +115,7 @@ async def create_agents_from_file(
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
 
 # -----------------------------
-# 2) Run inference
+# 2) Run inference (your own deployed agents)
 # -----------------------------
 class InferencePayload(BaseModel):
     agent_id: str
@@ -132,9 +126,7 @@ async def run_inference(req: InferencePayload, current_user: dict = Depends(get_
     user_id = current_user["user_id"]
     api_key = get_lyzr_api_key_for_user(user_id)
 
-    base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai")
     headers = {"x-api-key": api_key, "Content-Type": "application/json"}
-
     payload = {
         "agent_id": req.agent_id,
         "user_id": user_id,
@@ -145,7 +137,7 @@ async def run_inference(req: InferencePayload, current_user: dict = Depends(get_
     }
 
     try:
-        resp = httpx.post(f"{base_url}/v3/inference/chat/", headers=headers, json=payload, timeout=60)
+        resp = httpx.post("https://agent-prod.studio.lyzr.ai/v3/inference/chat/", headers=headers, json=payload, timeout=60)
         resp.raise_for_status()
         raw = resp.json()
         normalized = normalize_inference_output(json.dumps(raw), Path(f"outputs/{user_id}"))
@@ -154,37 +146,61 @@ async def run_inference(req: InferencePayload, current_user: dict = Depends(get_
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
 
 # -----------------------------
-# 3) List agents
+# 3) Manage user’s Studio agents
 # -----------------------------
-@app.get("/list-agents/")
-async def list_agents(current_user: dict = Depends(get_current_user)):
-    user_id = current_user["user_id"]
-    api_key = get_lyzr_api_key_for_user(user_id)
 
-    base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai")
+# (a) List all agents
+@app.get("/studio-agents/")
+async def list_studio_agents(current_user: dict = Depends(get_current_user)):
+    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
     headers = {"x-api-key": api_key, "Content-Type": "application/json"}
 
     try:
-        resp = httpx.get(f"{base_url}/v3/agents/", headers=headers, timeout=60)
+        resp = httpx.get("https://agent-prod.studio.lyzr.ai/v3/agents/", headers=headers, timeout=60)
         resp.raise_for_status()
         return {"status": "success", "agents": resp.json()}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"List agents failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Studio list agents failed: {e}")
 
-# -----------------------------
-# 4) Get agent details
-# -----------------------------
-@app.get("/agent-details/{agent_id}")
-async def agent_details(agent_id: str, current_user: dict = Depends(get_current_user)):
-    user_id = current_user["user_id"]
-    api_key = get_lyzr_api_key_for_user(user_id)
 
-    base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai")
+# (b) Get details of one agent
+@app.get("/studio-agents/{agent_id}")
+async def get_studio_agent(agent_id: str, current_user: dict = Depends(get_current_user)):
+    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
     headers = {"x-api-key": api_key, "Content-Type": "application/json"}
 
     try:
-        resp = httpx.get(f"{base_url}/v3/agents/{agent_id}/", headers=headers, timeout=60)
+        # v2 endpoint for details
+        resp = httpx.get(f"https://agent-prod.studio.lyzr.ai/v2/agent/{agent_id}", headers=headers, timeout=60)
         resp.raise_for_status()
         return {"status": "success", "agent": resp.json()}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Get agent details failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Studio get agent failed: {e}")
+
+
+# (c) Chat with any agent
+class StudioChatPayload(BaseModel):
+    message: str
+
+@app.post("/studio-agents/{agent_id}/chat")
+async def chat_with_studio_agent(agent_id: str, body: StudioChatPayload, current_user: dict = Depends(get_current_user)):
+    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+
+    payload = {
+        "user_id": current_user["claims"].get("email", current_user["user_id"]),
+        "system_prompt_variables": {},
+        "agent_id": agent_id,
+        "session_id": f"{agent_id}-{os.urandom(6).hex()}",
+        "message": body.message,
+        "filter_variables": {},
+        "features": [],
+        "assets": []
+    }
+
+    try:
+        resp = httpx.post("https://agent-prod.studio.lyzr.ai/v3/inference/chat/", headers=headers, json=payload, timeout=60)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Studio chat failed: {e}")
