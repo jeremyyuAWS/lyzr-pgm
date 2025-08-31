@@ -1,11 +1,13 @@
-import os, tempfile, json, yaml, logging, uuid
-from pathlib import Path
 from dotenv import load_dotenv
+load_dotenv()
+
+
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from pathlib import Path
+import os, tempfile, httpx, json, yaml
 from supabase import create_client, Client
-import httpx
 
 from app.services.agent_creator import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
@@ -13,28 +15,8 @@ from backend.auth_middleware import get_current_user
 from backend.runner import run_use_cases_with_manager
 from backend.schemas.agent_action import AgentActionRequest
 
-# -----------------------------
-# Environment
-# -----------------------------
-load_dotenv()
+
 print("🔍 Loaded SUPABASE_JWT_SECRET (first 8 chars):", os.getenv("SUPABASE_JWT_SECRET", "")[:8])
-
-# -----------------------------
-# Logging Setup
-# -----------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
-)
-logger = logging.getLogger("agent-api")
-
-def trace(msg: str, extra: dict = None):
-    """Helper for structured trace logging with request_id."""
-    rid = extra.get("request_id") if extra else None
-    if rid:
-        logger.info(f"[trace][rid={rid}] {msg}")
-    else:
-        logger.info(f"[trace] {msg}")
 
 # -----------------------------
 # FastAPI app
@@ -42,15 +24,18 @@ def trace(msg: str, extra: dict = None):
 app = FastAPI(title="Agent Orchestrator API with Auth")
 
 # -----------------------------
-# CORS
+# CORS Setup
 # -----------------------------
 origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 if not origins or origins == [""]:
-    origins = ["http://localhost:5173", "https://lyzr-pgm.onrender.com"]
+    origins = [
+        "http://localhost:5173",       # Local dev
+        "https://lyzr-pgm.onrender.com"  # Render backend
+    ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # 🔑 open for now, restrict later
+    allow_origins=["*"],   # 🔑 open for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -67,15 +52,12 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 # -----------------------------
-# Helpers
+# Helper: Fetch decrypted Lyzr key
 # -----------------------------
-def get_request_id() -> str:
-    return uuid.uuid4().hex[:8]
-
 def get_lyzr_api_key_for_user(user_id: str) -> str:
     """Fetch decrypted API key if available, fallback to encrypted key."""
-    trace(f"Fetching API key for user {user_id}")
     try:
+        # Try the decrypted view first
         resp = (
             supabase.from_("user_profiles_with_decrypted_key")
             .select("decrypted_api_key")
@@ -85,6 +67,7 @@ def get_lyzr_api_key_for_user(user_id: str) -> str:
         if resp.data and resp.data[0].get("decrypted_api_key"):
             return resp.data[0]["decrypted_api_key"]
 
+        # Fallback: get encrypted key from user_profiles
         fallback = (
             supabase.from_("user_profiles")
             .select("lyzr_api_key")
@@ -97,15 +80,16 @@ def get_lyzr_api_key_for_user(user_id: str) -> str:
         raise ValueError(f"No decrypted or encrypted API key found for user {user_id}")
 
     except Exception as e:
-        logger.exception("❌ Failed fetching Lyzr API key")
         raise HTTPException(status_code=400, detail=f"Failed to fetch Lyzr API key: {e}")
 
+
 # -----------------------------
-# Debug + health
+# Debug + health endpoints
 # -----------------------------
 @app.get("/debug-token")
 async def debug_token(request: Request):
-    return {"auth_header": request.headers.get("Authorization")}
+    auth = request.headers.get("Authorization")
+    return {"auth_header": auth}
 
 @app.get("/me")
 async def read_me(current_user: dict = Depends(get_current_user)):
@@ -116,43 +100,38 @@ async def health_check():
     return {"status": "ok", "service": "Agent Orchestrator API"}
 
 # -----------------------------
-# Endpoints
+# 1) Create agents (from YAML upload)
 # -----------------------------
 @app.post("/agent-action/")
 async def agent_action(request: AgentActionRequest):
-    """Legacy: Create agents directly from provided YAML path or file string."""
-    rid = get_request_id()
-    trace("Received /agent-action request", {"request_id": rid})
-    trace(f"Payload: {request.dict()}", {"request_id": rid})
+    result = manager.create_manager_with_roles(request.file)
+    return {
+        "status": "success",
+        "created": {
+            "manager": result,
+            "roles": result.get("roles", [])
+        }
+    }
 
-    try:
-        result = create_manager_with_roles(request.file)
-        trace(f"Manager + roles created successfully", {"request_id": rid})
-        return {"status": "success", "created": {"manager": result, "roles": result.get("roles", [])}}
-    except Exception as e:
-        logger.exception("❌ agent_action failed")
-        raise HTTPException(status_code=500, detail=f"agent_action failed: {e}")
+
 
 @app.post("/run-use-cases/")
 async def run_use_cases(manager_id: str, current_user: dict = Depends(get_current_user)):
-    rid = get_request_id()
-    trace(f"Run use cases with manager_id={manager_id}", {"request_id": rid})
+    user_id = current_user["user_id"]
+    api_key = get_lyzr_api_key_for_user(user_id)
 
-    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
     try:
         results = run_use_cases_with_manager(manager_id, api_key)
-        trace(f"Use cases completed. Count={len(results)}", {"request_id": rid})
         return {"status": "success", "results": results}
     except Exception as e:
-        logger.exception("❌ run_use_cases failed")
         raise HTTPException(status_code=500, detail=f"Run use cases failed: {e}")
+
 
 @app.post("/create-agents/")
 async def create_agents_from_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
-    rid = get_request_id()
-    trace(f"Uploading YAML file {file.filename}", {"request_id": rid})
+    user_id = current_user["user_id"]
+    api_key = get_lyzr_api_key_for_user(user_id)
 
-    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
     base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai") + "/v3/agents/"
     headers = {"x-api-key": api_key, "Content-Type": "application/json"}
     log_file = Path("logs/created_agents.jsonl")
@@ -163,14 +142,12 @@ async def create_agents_from_file(file: UploadFile = File(...), current_user: di
 
     try:
         result = create_manager_with_roles(yaml_path, headers, base_url, log_file)
-        trace(f"Agents created successfully", {"request_id": rid})
         return {"status": "success", "created": result}
     except Exception as e:
-        logger.exception("❌ create_agents_from_file failed")
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
 
 # -----------------------------
-# Inference
+# 2) Run inference (your own deployed agents)
 # -----------------------------
 class InferencePayload(BaseModel):
     agent_id: str
@@ -178,14 +155,13 @@ class InferencePayload(BaseModel):
 
 @app.post("/run-inference/")
 async def run_inference(req: InferencePayload, current_user: dict = Depends(get_current_user)):
-    rid = get_request_id()
-    trace(f"Run inference for agent_id={req.agent_id}", {"request_id": rid})
+    user_id = current_user["user_id"]
+    api_key = get_lyzr_api_key_for_user(user_id)
 
-    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
     headers = {"x-api-key": api_key, "Content-Type": "application/json"}
     payload = {
         "agent_id": req.agent_id,
-        "user_id": current_user["user_id"],
+        "user_id": user_id,
         "session_id": f"{req.agent_id}-{os.urandom(4).hex()}",
         "message": req.message,
         "features": [],
@@ -193,39 +169,70 @@ async def run_inference(req: InferencePayload, current_user: dict = Depends(get_
     }
 
     try:
-        resp = httpx.post(
-            "https://agent-prod.studio.lyzr.ai/v3/inference/chat/",
-            headers=headers,
-            json=payload,
-            timeout=60,
-        )
-        trace(f"Studio response status={resp.status_code}", {"request_id": rid})
+        resp = httpx.post("https://agent-prod.studio.lyzr.ai/v3/inference/chat/", headers=headers, json=payload, timeout=60)
         resp.raise_for_status()
-
         raw = resp.json()
-        normalized = normalize_inference_output(json.dumps(raw), Path(f"outputs/{current_user['user_id']}"))
+        normalized = normalize_inference_output(json.dumps(raw), Path(f"outputs/{user_id}"))
         return {"status": "success", "agent_id": req.agent_id, "raw": raw, "normalized": normalized}
     except Exception as e:
-        logger.exception("❌ run_inference failed")
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
 
 # -----------------------------
-# Studio agent management
+# 3) Manage user’s Studio agents
 # -----------------------------
-# (a) List agents
+
+# (a) List all agents
 @app.get("/studio-agents/")
 async def list_studio_agents(current_user: dict = Depends(get_current_user)):
-    rid = get_request_id()
-    trace("Listing Studio agents", {"request_id": rid})
-
     api_key = get_lyzr_api_key_for_user(current_user["user_id"])
     headers = {"x-api-key": api_key, "Content-Type": "application/json"}
 
     try:
         resp = httpx.get("https://agent-prod.studio.lyzr.ai/v3/agents/", headers=headers, timeout=60)
-        trace(f"Studio agents response {resp.status_code}", {"request_id": rid})
         resp.raise_for_status()
         return {"status": "success", "agents": resp.json()}
     except Exception as e:
-        logger.exception("❌ list_studio_agents failed")
         raise HTTPException(status_code=500, detail=f"Studio list agents failed: {e}")
+
+
+# (b) Get details of one agent
+@app.get("/studio-agents/{agent_id}")
+async def get_studio_agent(agent_id: str, current_user: dict = Depends(get_current_user)):
+    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+
+    try:
+        # v2 endpoint for details
+        resp = httpx.get(f"https://agent-prod.studio.lyzr.ai/v2/agent/{agent_id}", headers=headers, timeout=60)
+        resp.raise_for_status()
+        return {"status": "success", "agent": resp.json()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Studio get agent failed: {e}")
+
+
+# (c) Chat with any agent
+class StudioChatPayload(BaseModel):
+    message: str
+
+@app.post("/studio-agents/{agent_id}/chat")
+async def chat_with_studio_agent(agent_id: str, body: StudioChatPayload, current_user: dict = Depends(get_current_user)):
+    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+
+    payload = {
+        "user_id": current_user["claims"].get("email", current_user["user_id"]),
+        "system_prompt_variables": {},
+        "agent_id": agent_id,
+        "session_id": f"{agent_id}-{os.urandom(6).hex()}",
+        "message": body.message,
+        "filter_variables": {},
+        "features": [],
+        "assets": []
+    }
+
+    try:
+        resp = httpx.post("https://agent-prod.studio.lyzr.ai/v3/inference/chat/", headers=headers, json=payload, timeout=60)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Studio chat failed: {e}")
