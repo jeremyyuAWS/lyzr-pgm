@@ -64,6 +64,11 @@ def get_api_client() -> LyzrAPIClient:
 # -----------------------------
 # Debug + health
 # -----------------------------
+@app.get("/me")
+async def read_me():
+    return {"status": "ok", "user_id": "demo-user", "claims": {"role": "tester"}}
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "Agent Orchestrator API (No-Auth Dev Mode)"}
