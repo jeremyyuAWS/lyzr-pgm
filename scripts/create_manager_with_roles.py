@@ -70,18 +70,18 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
         client._request("PUT", f"/v3/agents/{role_id}", payload=payload)
 
 
-            created_roles.append({
-                "id": role_id,
-                "name": rich_role_name,
-                "description": role_yaml.get("description", ""),
-                "agent_role": role_yaml.get("agent_role", ""),
-                "agent_goal": role_yaml.get("agent_goal", ""),
-                "agent_instructions": role_yaml.get("agent_instructions", ""),
-                "usage_description": f"Manager delegates tasks related to '{role_yaml.get('name')}'."
-            })
-        else:
-            print(f"❌ Failed to create role {role_yaml.get('name')}")
-            print(role_resp)
+        created_roles.append({
+            "id": role_id,
+            "name": rich_role_name,
+            "description": role_yaml.get("description", ""),
+            "agent_role": role_yaml.get("agent_role", ""),
+            "agent_goal": role_yaml.get("agent_goal", ""),
+            "agent_instructions": role_yaml.get("agent_instructions", ""),
+            "usage_description": f"Manager delegates tasks related to '{role_yaml.get('name')}'."
+        })
+    else:
+        print(f"❌ Failed to create role {role_yaml.get('name')}")
+        print(role_resp)
 
     # --- Create the manager ---
     print(f"👑 Creating manager agent: {manager_def.get('name')}")
