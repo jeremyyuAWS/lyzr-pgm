@@ -66,15 +66,20 @@ app = FastAPI(title="Agent Orchestrator API with Auth")
 # -----------------------------
 origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 if not origins or origins == [""]:
-    origins = ["http://localhost:5173""https://lyzr-pgm.onrender.com"]
+    origins = [
+        "http://localhost:5173",
+        "https://lyzr-pgm.onrender.com",
+        "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3-yxiqydlw--5173--96435430.local-credentialless.webcontainer-api.io",
+    ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # 🔑 open for now, restrict later
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # -----------------------------
 # Supabase setup
