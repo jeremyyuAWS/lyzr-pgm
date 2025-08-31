@@ -7,12 +7,16 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 import httpx
 
-from app.services.agent_creator import create_manager_with_roles
+# from app.services.agent_creator import create_manager_with_roles
+from scripts.create_manager_with_roles import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
 from backend.auth_middleware import get_current_user
 from backend.runner import run_use_cases_with_manager
 from fastapi import Body
 from backend.schemas.agent_action import AgentActionRequest
+from fastapi import UploadFile, File, HTTPException, Depends
+import yaml
+from src.api.client import LyzrAPIClient
 
 # -----------------------------
 # Environment
@@ -154,25 +158,34 @@ async def run_use_cases(manager_id: str, current_user: dict = Depends(get_curren
         raise HTTPException(status_code=500, detail=f"Run use cases failed: {e}")
 
 @app.post("/create-agents/")
-async def create_agents_from_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
-    rid = get_request_id()
-    trace(f"Uploading YAML file {file.filename}", {"request_id": rid})
-
-    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
-    base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai") + "/v3/agents/"
-    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
-    log_file = Path("logs/created_agents.jsonl")
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".yaml") as tmp:
-        tmp.write(await file.read())
-        yaml_path = Path(tmp.name)
+async def create_agents_from_file(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Create manager + roles from uploaded YAML definition."""
+    user_id = current_user["user_id"]
+    api_key = get_lyzr_api_key_for_user(user_id)
 
     try:
-        result = create_manager_with_roles(yaml_path, headers, base_url, log_file, api_key)
-        trace(f"Agents created successfully", {"request_id": rid})
+        # Load YAML from uploaded file
+        raw_content = await file.read()
+        yaml_dict = yaml.safe_load(raw_content)
+
+        if not yaml_dict or "manager" not in yaml_dict:
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded YAML must contain a top-level 'manager' key"
+            )
+
+        debug = os.getenv("LYZR_DEBUG", "0") == "1"
+        client = LyzrAPIClient(api_key=api_key, debug=debug, timeout=180)
+
+        # Pass dict instead of Path
+        result = create_manager_with_roles(client, yaml_dict)
+
         return {"status": "success", "created": result}
+
     except Exception as e:
-        logger.exception("❌ create_agents_from_file failed")
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
 
 # -----------------------------

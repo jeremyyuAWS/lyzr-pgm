@@ -1,29 +1,34 @@
 # scripts/create_manager_with_roles.py
-#  Used in api/main_with_auth.py
+# Used in api/main_with_auth.py
 
 import sys
 import os
 import yaml
 from pathlib import Path
 from datetime import datetime
+from typing import Union
 from src.api.client import LyzrAPIClient
 from scripts.create_agent_from_yaml import create_agent_from_yaml
 
 
-def create_manager_with_roles(client: LyzrAPIClient, manager_yaml_path: Path):
+def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict]):
     """Create role agents first, then create a manager agent referencing them."""
 
-    if not manager_yaml_path.exists():
-        raise FileNotFoundError(f"Manager YAML not found: {manager_yaml_path}")
+    # If a Path is passed, load YAML from disk
+    if isinstance(manager_yaml, Path):
+        if not manager_yaml.exists():
+            raise FileNotFoundError(f"Manager YAML not found: {manager_yaml}")
+        with open(manager_yaml, "r") as f:
+            manager_yaml = yaml.safe_load(f)
 
-    with open(manager_yaml_path, "r") as f:
-        manager_yaml = yaml.safe_load(f)
+    if not isinstance(manager_yaml, dict):
+        raise ValueError("manager_yaml must be a dict or Path")
 
     manager_def = manager_yaml.get("manager")
     if not manager_def:
         raise ValueError("YAML must contain a top-level 'manager' key")
 
-    # Create roles first
+    # --- Create roles first ---
     created_roles = []
     for role in manager_def.get("managed_agents", []):
         if "yaml" not in role:
@@ -48,13 +53,34 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml_path: Path):
             print(f"❌ Failed to create role {role_yaml.get('name')}")
             print(role_resp)
 
-    # Attach created roles to manager
+    # --- Attach created roles to manager ---
     if created_roles:
         manager_def["managed_agents"] = [
-            {"id": r["id"], "name": r["name"]} for r in created_roles
+            {
+                "id": r["id"],
+                "name": r["name"],
+                "description": r["description"],
+                "agent_role": r["agent_role"],
+                "agent_goal": r["agent_goal"],
+                "agent_instructions": r["agent_instructions"],
+            }
+            for r in created_roles
         ]
 
-    # Create the manager last
+        # ✨ Enhance manager instructions with role summaries
+        role_summaries = [
+            f"- Role '{r['name']}': {r['agent_goal'] or r['description']}"
+            for r in created_roles
+        ]
+        extra_instructions = "\n\nManage these attached roles:\n" + "\n".join(role_summaries)
+
+        manager_def["agent_instructions"] = (
+            (manager_def.get("agent_instructions") or "").strip()
+            + "\n\n"
+            + extra_instructions
+        )
+
+    # --- Create the manager last ---
     print(f"👑 Creating manager agent: {manager_def.get('name')}")
     manager_resp = create_agent_from_yaml(client, manager_def)
 
@@ -80,8 +106,14 @@ def main():
         sys.exit(1)
 
     yaml_path = Path(sys.argv[1])
+
+    api_key = os.getenv("LYZR_API_KEY")
+    if not api_key:
+        print("❌ Missing LYZR_API_KEY in environment")
+        sys.exit(1)
+
     debug = os.getenv("LYZR_DEBUG", "0") == "1"
-    client = LyzrAPIClient(debug=debug, timeout=180)
+    client = LyzrAPIClient(api_key=api_key, debug=debug, timeout=180)
 
     result = create_manager_with_roles(client, yaml_path)
     if not result:
