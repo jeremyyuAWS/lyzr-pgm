@@ -1,7 +1,7 @@
 import yaml, os, json
 from pathlib import Path
 import httpx
-from src.parsers.normalize_response import normalize_response
+from src.utils.normalize_response import normalize_response
 
 USE_CASES_DIR = Path("agents/use_cases")
 
