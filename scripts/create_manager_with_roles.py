@@ -1,6 +1,3 @@
-# scripts/create_manager_with_roles.py
-# Used in api/main_with_auth.py
-
 import sys
 import os
 import yaml
@@ -12,7 +9,7 @@ from scripts.create_agent_from_yaml import create_agent_from_yaml
 
 
 def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict]):
-    """Create role agents first, then create a manager agent referencing them."""
+    """Create role agents first, then create a manager agent referencing them, and update manager metadata."""
 
     # If a Path is passed, load YAML from disk
     if isinstance(manager_yaml, Path):
@@ -48,39 +45,13 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
                 "agent_role": role_yaml.get("agent_role", ""),
                 "agent_goal": role_yaml.get("agent_goal", ""),
                 "agent_instructions": role_yaml.get("agent_instructions", ""),
+                "usage_description": f"This is how manager manages role '{role_yaml.get('name')}'."
             })
         else:
             print(f"❌ Failed to create role {role_yaml.get('name')}")
             print(role_resp)
 
-    # --- Attach created roles to manager ---
-    if created_roles:
-        manager_def["managed_agents"] = [
-            {
-                "id": r["id"],
-                "name": r["name"],
-                "description": r["description"],
-                "agent_role": r["agent_role"],
-                "agent_goal": r["agent_goal"],
-                "agent_instructions": r["agent_instructions"],
-            }
-            for r in created_roles
-        ]
-
-        # ✨ Enhance manager instructions with role summaries
-        role_summaries = [
-            f"- Role '{r['name']}': {r['agent_goal'] or r['description']}"
-            for r in created_roles
-        ]
-        extra_instructions = "\n\nManage these attached roles:\n" + "\n".join(role_summaries)
-
-        manager_def["agent_instructions"] = (
-            (manager_def.get("agent_instructions") or "").strip()
-            + "\n\n"
-            + extra_instructions
-        )
-
-    # --- Create the manager last ---
+    # --- Create the manager ---
     print(f"👑 Creating manager agent: {manager_def.get('name')}")
     manager_resp = create_agent_from_yaml(client, manager_def)
 
@@ -90,11 +61,49 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
         return None
 
     manager_id = manager_resp["data"].get("agent_id")
-    timestamp = datetime.now().strftime("%Y-%m-%d %I:%M %p %Z")
+    timestamp = datetime.now().strftime("%d%b%Y-%I:%M%p").upper()
+
+    # Generate rich manager name
+    rich_name = f"{manager_def['name']}_v1.0_{manager_id[-6:]}_{timestamp}"
+
+    # Append role summaries into manager instructions
+    role_summaries = [
+        f"- Role '{r['name']}': {r['agent_goal'] or r['description']}"
+        for r in created_roles
+    ]
+    extra_instructions = "\n\nManage these attached roles:\n" + "\n".join(role_summaries)
+
+    new_instructions = (manager_def.get("agent_instructions") or "").strip() + extra_instructions
+
+    # --- Update manager with PUT ---
+    payload = {
+        "name": rich_name,
+        "description": manager_def.get("description", ""),
+        "system_prompt": new_instructions,
+        "features": manager_def.get("features", []),
+        "tools": manager_def.get("tools", []),
+        "llm_credential_id": manager_def.get("llm_credential_id", "lyzr_openai"),
+        "provider_id": manager_def.get("provider_id", "OpenAI"),
+        "model": manager_def.get("model", "gpt-4o-mini"),
+        "top_p": float(manager_def.get("top_p", 0.9)),
+        "temperature": float(manager_def.get("temperature", 0.7)),
+        "response_format": manager_def.get("response_format", {"type": "json"}),
+        "managed_agents": [
+            {"id": r["id"], "name": r["name"], "usage_description": r["usage_description"]}
+            for r in created_roles
+        ]
+    }
+
+    print(f"🔄 Updating manager {manager_id} with role associations + rich name")
+    update_resp = client._request("PUT", f"/v3/agents/{manager_id}", payload=payload)
+
+    if not update_resp.get("ok"):
+        print("❌ Failed to update manager with role associations")
+        print(update_resp)
 
     return {
         "agent_id": manager_id,
-        "name": manager_def.get("name"),
+        "name": rich_name,
         "roles": created_roles,
         "timestamp": timestamp,
     }
