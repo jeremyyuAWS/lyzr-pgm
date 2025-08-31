@@ -183,7 +183,6 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, D
             continue
 
         # Rename + set system_prompt + examples (PUT)
-                # Rename + set system_prompt + examples (PUT)
         role_renamed = _rich_role_name(role_name, role_id)
         role_updates = {
             "name": role_renamed,
@@ -206,29 +205,7 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, D
         upd = update_agent(client, role_id, role_updates)
         if not upd.get("ok"):
             print(f"⚠️ PUT update failed for role {role_name}: {upd}")
-        # Rename + set system_prompt + examples (PUT)
-        role_renamed = _rich_role_name(role_name, role_id)
-        role_updates = {
-            "name": role_renamed,
-            "system_prompt": _compose_system_prompt(role_yaml),
-            "examples": role_yaml["examples"],
-            "description": role_yaml.get("description", ""),
-            "features": role_yaml.get("features", []),
-            "tools": role_yaml.get("tools", []),
-            "llm_credential_id": role_yaml.get("llm_credential_id", "lyzr_openai"),
-            "provider_id": role_yaml.get("provider_id", "OpenAI"),
-            "model": role_yaml.get("model", "gpt-4o-mini"),
-            "top_p": role_yaml.get("top_p", 0.9),
-            "temperature": role_yaml.get("temperature", 0.3),
-            "response_format": role_yaml.get("response_format", {"type": "json"}),
-            # keep backfills
-            "agent_role": role_yaml.get("agent_role", ""),
-            "agent_goal": role_yaml.get("agent_goal", ""),
-            "agent_instructions": role_yaml.get("agent_instructions", ""),
-        }
-        upd = update_agent(client, role_id, role_updates)
-        if not upd.get("ok"):
-            print(f"⚠️ PUT update failed for role {role_name}: {upd}")
+
 
 
     # ----- Create manager -----
