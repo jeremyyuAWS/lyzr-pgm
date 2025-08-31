@@ -56,9 +56,16 @@ def get_lyzr_api_key_for_user(user_id: str) -> str:
             .eq("id", user_id)
             .execute()
         )
-        if not resp.data or "decrypted_api_key" not in resp.data[0]:
-            raise ValueError("No decrypted API key found for user")
+
+        # Better error handling
+        if not resp.data or not resp.data[0].get("decrypted_api_key"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"No decrypted API key found for user {user_id}. Did you save one in Settings?"
+            )
+
         return resp.data[0]["decrypted_api_key"]
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch Lyzr API key: {e}")
 
