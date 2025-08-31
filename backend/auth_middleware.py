@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 import os
@@ -16,4 +16,5 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
         claims = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return {"user_id": claims.get("sub"), "claims": claims}
     except JWTError as e:
+        print(f"❌ JWT decode failed: {e}")
         raise HTTPException(status_code=401, detail=f"Invalid JWT: {str(e)}")
