@@ -90,7 +90,7 @@ async def create_agents_from_file(
         yaml_path = Path(tmp.name)
 
     try:
-        result = create_manager_with_roles(client, yaml_path, tz_name=tz_name)
+        result = create_manager_with_roles(client, yaml_path)
         return {"status": "success", "created": result}
     except Exception as e:
         logger.exception("❌ create_agents_from_file failed")
