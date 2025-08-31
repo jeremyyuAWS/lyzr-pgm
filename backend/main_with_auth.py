@@ -17,6 +17,21 @@ from backend.schemas.agent_action import AgentActionRequest
 from fastapi import UploadFile, File, HTTPException, Depends
 import yaml
 from src.api.client import LyzrAPIClient
+import pytz
+from datetime import datetime
+from supabase import create_client
+
+def get_user_timezone(user_id: str) -> str:
+    resp = (
+        supabase.from_("user_profiles")
+        .select("timezone")
+        .eq("id", user_id)
+        .single()
+        .execute()
+    )
+    tz = resp.data.get("timezone") if resp.data else None
+    return tz or "America/Los_Angeles"  # default PST
+
 
 # -----------------------------
 # Environment
@@ -158,33 +173,19 @@ async def run_use_cases(manager_id: str, current_user: dict = Depends(get_curren
         raise HTTPException(status_code=500, detail=f"Run use cases failed: {e}")
 
 @app.post("/create-agents/")
-async def create_agents_from_file(
-    file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
-):
-    """Create manager + roles from uploaded YAML definition."""
+async def create_agents_from_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     user_id = current_user["user_id"]
     api_key = get_lyzr_api_key_for_user(user_id)
+    user_tz = get_user_timezone(user_id)  # 👈 fetch preferred timezone
+
+    client = LyzrAPIClient(api_key=api_key)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".yaml") as tmp:
+        tmp.write(await file.read())
+        yaml_path = Path(tmp.name)
 
     try:
-        # Load YAML from uploaded file
-        raw_content = await file.read()
-        yaml_dict = yaml.safe_load(raw_content)
-
-        if not yaml_dict or "manager" not in yaml_dict:
-            raise HTTPException(
-                status_code=400,
-                detail="Uploaded YAML must contain a top-level 'manager' key"
-            )
-
-        debug = os.getenv("LYZR_DEBUG", "0") == "1"
-        client = LyzrAPIClient(api_key=api_key, debug=debug, timeout=180)
-
-        # Pass dict instead of Path
-        result = create_manager_with_roles(client, yaml_dict)
-
+        result = create_manager_with_roles(client, yaml_path, tz_name=user_tz)  # 👈 pass it
         return {"status": "success", "created": result}
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
 

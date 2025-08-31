@@ -138,7 +138,7 @@ agents:
 
 # ---------- Main orchestration ----------
 
-def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]) -> Dict[str, Any]:
+def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict], tz_name: str = "America/Los_Angeles"):
     """
     Create role agents first, then manager, then:
       - rename both with PST timestamp and id suffix,
@@ -229,8 +229,11 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, D
         print("❌ Manager created but missing agent_id in response")
         return {}
 
-        # Rich rename + PUT update for manager
-    manager_renamed = _rich_manager_name(manager_def.get("name"), manager_id)
+    # Rich rename + PUT update for manager
+    tz = pytz.timezone(tz_name)
+    timestamp = datetime.now(tz).strftime("%d%b%Y-%I:%M%p %Z")  # 31Aug2025-12:03PM PDT
+
+    manager_renamed = f"{manager_def['name']}_v1.0_{manager_id[-6:]}_{timestamp}"
 
     # Build updated managed_agents from the renamed roles
     managed_agents = [
