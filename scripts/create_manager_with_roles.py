@@ -1,5 +1,5 @@
 # scripts/create_manager_with_roles.py
-# Used in api/main_with_auth.py
+# Used in backend/main_with_auth.py
 
 import sys
 import os
@@ -23,6 +23,15 @@ def build_system_prompt(agent_def: dict) -> str:
     if agent_def.get("agent_instructions"):
         parts.append(f"Instructions:\n{agent_def['agent_instructions']}")
     return "\n\n".join(parts).strip()
+
+
+def timestamped_name(base_name: str, tz_name: str = "US/Pacific", prefix: str = "") -> str:
+    """Return a rich name with timestamp (default PST)."""
+    tz = pytz.timezone(tz_name)
+    now_str = datetime.now(tz).strftime("%d%b%Y-%I:%M%p %Z")
+    if prefix:
+        return f"{prefix}{base_name}_v1.0_{now_str}"
+    return f"{base_name}_v1.0_{now_str}"
 
 
 def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict], tz_name: str = "US/Pacific"):
@@ -51,10 +60,10 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
             continue
 
         role_yaml = yaml.safe_load(role["yaml"])
-        role_name = role_yaml.get("name", "UnnamedRole")
+        base_role_name = role_yaml.get("name", "UnnamedRole")
 
-        # Prefix role name with (R)
-        rich_role_name = f"(R) {role_name}"
+        # Prefix and timestamp role names
+        rich_role_name = timestamped_name(base_role_name, tz_name, prefix="(R) ")
         role_yaml["name"] = rich_role_name
 
         print(f"🎭 Creating role agent: {rich_role_name}")
@@ -73,7 +82,7 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
                 "agent_role": role_yaml.get("agent_role", ""),
                 "agent_goal": role_yaml.get("agent_goal", ""),
                 "agent_instructions": role_yaml.get("agent_instructions", ""),
-                "usage_description": f"This is how manager manages role {rich_role_name}."
+                "usage_description": f"Manager delegates tasks to {rich_role_name} for: {role_yaml.get('agent_goal','')}"
             })
         else:
             print(f"❌ Failed to create role {rich_role_name}")
@@ -92,16 +101,8 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
 
     manager_def["system_prompt"] = system_prompt
 
-    if created_roles:
-        manager_def["managed_agents"] = [
-            {"id": r["id"], "name": r["name"], "usage_description": r["usage_description"]}
-            for r in created_roles
-        ]
-
-    # Append timestamp to manager name
-    tz = pytz.timezone(tz_name)
-    now_str = datetime.now(tz).strftime("%d%b%Y-%I:%M%p %Z")
-    rich_manager_name = f"{manager_def.get('name')}_v1.0_{now_str}"
+    # Timestamp manager name
+    rich_manager_name = timestamped_name(manager_def.get("name"), tz_name)
     manager_def["name"] = rich_manager_name
 
     # --- Create the manager last ---
@@ -115,11 +116,34 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
 
     manager_id = manager_resp["data"].get("agent_id")
 
+    # --- PUT update to attach roles to manager ---
+    if created_roles:
+        update_payload = {
+            "name": rich_manager_name,
+            "system_prompt": system_prompt,
+            "description": manager_def.get("description", ""),
+            "features": manager_def.get("features", []),
+            "tools": manager_def.get("tools", []),
+            "llm_credential_id": manager_def.get("llm_credential_id", "lyzr_openai"),
+            "provider_id": manager_def.get("provider_id", "OpenAI"),
+            "model": manager_def.get("model", "gpt-4o-mini"),
+            "top_p": manager_def.get("top_p", 0.9),
+            "temperature": manager_def.get("temperature", 0.7),
+            "response_format": manager_def.get("response_format", {"type": "json"}),
+            "managed_agents": [
+                {"id": r["id"], "name": r["name"], "usage_description": r["usage_description"]}
+                for r in created_roles
+            ],
+        }
+
+        print(f"🔄 Updating manager {manager_id} with attached roles…")
+        client._request("PUT", f"/v3/agents/{manager_id}", payload=update_payload)
+
     return {
         "agent_id": manager_id,
         "name": rich_manager_name,
         "roles": created_roles,
-        "timestamp": now_str,
+        "timestamp": datetime.now(pytz.timezone(tz_name)).strftime("%d%b%Y-%I:%M%p %Z"),
     }
 
 
