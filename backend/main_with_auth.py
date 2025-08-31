@@ -168,7 +168,7 @@ async def create_agents_from_file(file: UploadFile = File(...), current_user: di
         yaml_path = Path(tmp.name)
 
     try:
-        result = create_manager_with_roles(yaml_path, headers, base_url, log_file)
+        result = create_manager_with_roles(yaml_path, headers, base_url, log_file, api_key)
         trace(f"Agents created successfully", {"request_id": rid})
         return {"status": "success", "created": result}
     except Exception as e:
