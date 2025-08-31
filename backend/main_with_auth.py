@@ -48,26 +48,32 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 # Helper: Fetch decrypted Lyzr key
 # -----------------------------
 def get_lyzr_api_key_for_user(user_id: str) -> str:
-    """Fetch decrypted API key from Supabase view for the given user_id."""
+    """Fetch decrypted API key if available, fallback to encrypted key."""
     try:
+        # Try the decrypted view first
         resp = (
             supabase.from_("user_profiles_with_decrypted_key")
             .select("decrypted_api_key")
             .eq("id", user_id)
             .execute()
         )
+        if resp.data and resp.data[0].get("decrypted_api_key"):
+            return resp.data[0]["decrypted_api_key"]
 
-        # Better error handling
-        if not resp.data or not resp.data[0].get("decrypted_api_key"):
-            raise HTTPException(
-                status_code=400,
-                detail=f"No decrypted API key found for user {user_id}. Did you save one in Settings?"
-            )
+        # Fallback: get encrypted key from user_profiles
+        fallback = (
+            supabase.from_("user_profiles")
+            .select("lyzr_api_key")
+            .eq("id", user_id)
+            .execute()
+        )
+        if fallback.data and fallback.data[0].get("lyzr_api_key"):
+            return fallback.data[0]["lyzr_api_key"]
 
-        return resp.data[0]["decrypted_api_key"]
+        raise ValueError(f"No decrypted or encrypted API key found for user {user_id}")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch Lyzr API key: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to fetch Lyzr API key: {e}")
 
 
 # -----------------------------
