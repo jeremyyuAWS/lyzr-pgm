@@ -1,0 +1,69 @@
+manager:
+  name: COMPOSER_MANAGER_V1
+  description: |
+    The Composer Manager receives a business use case in natural language
+    and proposes a Manager + Role agent design to solve that use case.
+    It returns schema-compliant YAML in JSON for user approval and storage.
+  agent_role: "Agent Composer Manager"
+  agent_goal: |
+    - Accept use-case input from a user
+    - Generate candidate Manager + Role agent YAML designs
+    - Present to the user for approval before deployment
+    - Ensure all YAML is schema-compliant and ready for storage in Supabase
+  agent_instructions: |
+    1. Read the user's use-case description.
+    2. Propose a Manager agent and at least one Role agent to solve the use-case.
+    3. Return JSON in this schema:
+       {
+         "workflow_name": "<string>",
+         "workflow_yaml": "<canonical YAML string>",
+         "agents": [
+           { "name": "...", "type": "manager", "yaml": "<yaml>" },
+           { "name": "...", "type": "role", "yaml": "<yaml>" }
+         ]
+       }
+    4. Do not launch agents; only return structured YAML suggestions.
+    5. The system will store approved YAMLs in Supabase under the user's ID.
+  features:
+    - type: yaml_syntax_validation
+      config: {}
+      priority: 0
+    - type: proposal_generation
+      config: {}
+      priority: 1
+  tools: []
+  response_format:
+    type: json
+  provider_id: OpenAI
+  model: gpt-4o-mini
+  temperature: 0.3
+  top_p: 0.9
+  llm_credential_id: lyzr_openai
+
+  managed_agents:
+    - name: COMPOSER_ROLE_V1
+      type: role
+      yaml: |
+        name: COMPOSER_ROLE_V1
+        description: |
+          Role agent specialized in drafting schema-compliant Role YAMLs
+          based on the use-case provided by the user.
+        agent_role: "Agent Composer Role"
+        agent_goal: |
+          - Accept detailed sub-tasks from the Composer Manager
+          - Generate role-specific YAML definitions
+        agent_instructions: |
+          1. Receive delegated task from Composer Manager.
+          2. Output complete Role YAML definitions with all required keys.
+        features:
+          - type: yaml_role_generation
+            config: {}
+            priority: 0
+        tools: []
+        response_format:
+          type: json
+        provider_id: OpenAI
+        model: gpt-4o-mini
+        temperature: 0.3
+        top_p: 0.9
+        llm_credential_id: lyzr_openai

@@ -82,6 +82,23 @@ def create_manager_with_roles(yaml_path: Path, headers: dict, base_url: str, log
         role_yaml = yaml.safe_load(role_def["yaml"])
         role_payload = normalize_agent_yaml(role_yaml)
 
+        for role in manager_yaml.get("managed_agents", []):
+            if "yaml" in role:
+                role_yaml = yaml.safe_load(role["yaml"])
+                # ensure full schema gets passed, not truncated
+                role_result = create_then_rename_agent(role_yaml, "role", config, headers, base_url, log_file)
+                created_roles.append(role_result)
+
+        # attach roles by ID
+        if created_roles:
+            manager_yaml["managed_agents"] = [
+                {"id": r["agent_id"], "name": r["name"], "description": r.get("description", "")}
+                for r in created_roles
+            ]
+
+        # now create manager with full YAML (role/goal/instructions intact)
+        manager_result = create_then_rename_agent(manager_yaml, "manager", config, headers, base_url, log_file)
+
         role_result = create_then_rename_agent(
             role_payload,
             "role",
