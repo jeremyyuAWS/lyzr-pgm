@@ -8,6 +8,9 @@ from supabase import create_client, Client
 from app.services.agent_creator import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
 from backend.auth_middleware import get_current_user
+from backend.runner import run_use_cases_with_manager
+
+
 
 print("🔍 Loaded SUPABASE_JWT_SECRET (first 8 chars):", os.getenv("SUPABASE_JWT_SECRET", "")[:8])
 
@@ -95,6 +98,18 @@ async def health_check():
 # -----------------------------
 # 1) Create agents (from YAML upload)
 # -----------------------------
+@app.post("/run-use-cases/")
+async def run_use_cases(manager_id: str, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["user_id"]
+    api_key = get_lyzr_api_key_for_user(user_id)
+
+    try:
+        results = run_use_cases_with_manager(manager_id, api_key)
+        return {"status": "success", "results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Run use cases failed: {e}")
+
+
 @app.post("/create-agents/")
 async def create_agents_from_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     user_id = current_user["user_id"]
