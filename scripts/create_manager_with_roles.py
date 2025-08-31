@@ -138,7 +138,7 @@ agents:
 
 # ---------- Main orchestration ----------
 
-def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict], tz_name: str = "America/Los_Angeles"):
+def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]) -> Dict[str, Any]:
     """
     Create role agents first, then manager, then:
       - rename both with PST timestamp and id suffix,
@@ -188,16 +188,7 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
             "name": role_renamed,
             "system_prompt": _compose_system_prompt(role_yaml),
             "examples": role_yaml["examples"],
-            "description": role_yaml.get("description", ""),
-            "features": role_yaml.get("features", []),
-            "tools": role_yaml.get("tools", []),
-            "llm_credential_id": role_yaml.get("llm_credential_id", "lyzr_openai"),
-            "provider_id": role_yaml.get("provider_id", "OpenAI"),
-            "model": role_yaml.get("model", "gpt-4o-mini"),
-            "top_p": role_yaml.get("top_p", 0.9),
-            "temperature": role_yaml.get("temperature", 0.3),
-            "response_format": role_yaml.get("response_format", {"type": "json"}),
-            # keep backfills
+            # also backfill these where supported
             "agent_role": role_yaml.get("agent_role", ""),
             "agent_goal": role_yaml.get("agent_goal", ""),
             "agent_instructions": role_yaml.get("agent_instructions", ""),
@@ -206,7 +197,15 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
         if not upd.get("ok"):
             print(f"⚠️ PUT update failed for role {role_name}: {upd}")
 
-
+        created_roles.append({
+            "id": role_id,
+            "name": role_renamed,  # store the final name
+            "base_name": role_name,
+            "description": role_yaml.get("description", ""),
+            "agent_role": role_yaml.get("agent_role", ""),
+            "agent_goal": role_yaml.get("agent_goal", ""),
+            "agent_instructions": role_yaml.get("agent_instructions", ""),
+        })
 
     # ----- Create manager -----
     manager_base_name = manager_def.get("name", "MANAGER")
@@ -229,32 +228,34 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
         print("❌ Manager created but missing agent_id in response")
         return {}
 
-    # Rich rename + PUT update for manager
-    tz = pytz.timezone(tz_name)
-    timestamp = datetime.now(tz).strftime("%d%b%Y-%I:%M%p %Z")  # 31Aug2025-12:03PM PDT
+    # Rename + attach roles + set prompts/examples
+    manager_renamed = _rich_manager_name(manager_base_name, manager_id)
 
-    manager_renamed = f"{manager_def['name']}_v1.0_{manager_id[-6:]}_{timestamp}"
-
-    # Build updated managed_agents from the renamed roles
-    managed_agents = [
-        {"id": r["id"], "name": r["name"], "usage_description": f"Managed role: {r['agent_goal']}"}
+    # Manager managed_agents payload with usage descriptors
+    managed_agents_payload = [
+        {
+            "id": r["id"],
+            "name": r["name"],
+            "usage_description": f"Manager delegates YAML-subtasks to '{r['name']}'."
+        }
         for r in created_roles
     ]
 
-    # Enrich manager instructions with final role summaries
-    role_summaries = "\n".join(
-        [f"- Role '{r['name']}': {r['agent_goal']}" for r in created_roles if r.get("agent_goal")]
-    )
-    manager_instructions = (
-        manager_def.get("agent_instructions", "")
-        + "\n\nManage these attached roles:\n"
-        + role_summaries
-    )
-
     manager_updates = {
         "name": manager_renamed,
-        "system_prompt": _compose_system_prompt(manager_def),
-        "examples": manager_def.get("examples"),
+        "system_prompt": _compose_system_prompt({
+            "agent_role": manager_def.get("agent_role", ""),
+            "agent_goal": manager_def.get("agent_goal", ""),
+            "agent_instructions": mgr_instr_with_supervision,
+        }),
+        "examples": mgr_examples,
+        # best-effort backfill
+        "agent_role": manager_def.get("agent_role", ""),
+        "agent_goal": manager_def.get("agent_goal", ""),
+        "agent_instructions": mgr_instr_with_supervision,
+        # association
+        "managed_agents": managed_agents_payload,
+        # keep existing model config in case PUT requires full object in your deployment
         "description": manager_def.get("description", ""),
         "features": manager_def.get("features", []),
         "tools": manager_def.get("tools", []),
@@ -264,16 +265,10 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
         "top_p": manager_def.get("top_p", 0.9),
         "temperature": manager_def.get("temperature", 0.3),
         "response_format": manager_def.get("response_format", {"type": "json"}),
-        "agent_role": manager_def.get("agent_role", ""),
-        "agent_goal": manager_def.get("agent_goal", ""),
-        "agent_instructions": manager_instructions,
-        "managed_agents": managed_agents,  # <-- updated after roles renamed
     }
-
-    upd = update_agent(client, manager_id, manager_updates)
-    if not upd.get("ok"):
-        print(f"⚠️ Final PUT update failed for manager: {upd}")
-
+    mgr_upd = update_agent(client, manager_id, manager_updates)
+    if not mgr_upd.get("ok"):
+        print(f"⚠️ PUT update failed for manager {manager_base_name}: {mgr_upd}")
 
     return {
         "agent_id": manager_id,
