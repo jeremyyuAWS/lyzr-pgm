@@ -212,6 +212,19 @@ async def run_inference(req: InferencePayload, current_user: dict = Depends(get_
 # -----------------------------
 # Studio agent management
 # -----------------------------
+@app.get("/list-agents/")
+async def list_agents(current_user: dict = Depends(get_current_user)):
+    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
+    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+
+    try:
+        resp = httpx.get("https://agent-prod.studio.lyzr.ai/v3/agents/", headers=headers, timeout=60)
+        resp.raise_for_status()
+        return {"status": "success", "agents": resp.json()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"List agents failed: {e}")
+
+
 # (a) List agents
 @app.get("/studio-agents/")
 async def list_studio_agents(current_user: dict = Depends(get_current_user)):
@@ -229,3 +242,11 @@ async def list_studio_agents(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.exception("❌ list_studio_agents failed")
         raise HTTPException(status_code=500, detail=f"Studio list agents failed: {e}")
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    body = await request.body()
+    print(f"📥 Incoming {request.method} {request.url} - Body: {body.decode()}")
+    response = await call_next(request)
+    print(f"📤 Response {response.status_code}")
+    return response
