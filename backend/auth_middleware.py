@@ -13,7 +13,13 @@ if not JWT_SECRET:
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     token = credentials.credentials
     try:
-        claims = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        # 👇 Do NOT require audience, just verify signature + expiry
+        claims = jwt.decode(
+            token,
+            JWT_SECRET,
+            algorithms=[JWT_ALGORITHM],
+            options={"verify_aud": False}   # ✅ ignore audience
+        )
         return {"user_id": claims.get("sub"), "claims": claims}
     except JWTError as e:
         print(f"❌ JWT decode failed: {e}")
