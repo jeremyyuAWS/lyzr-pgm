@@ -102,6 +102,12 @@ async def health_check():
 # -----------------------------
 # 1) Create agents (from YAML upload)
 # -----------------------------
+@app.post("/agent-action/")
+async def agent_action_proxy(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    # Just delegate to the existing /create-agents/
+    return await create_agents_from_file(file, current_user)
+
+
 @app.post("/run-use-cases/")
 async def run_use_cases(manager_id: str, current_user: dict = Depends(get_current_user)):
     user_id = current_user["user_id"]
