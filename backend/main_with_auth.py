@@ -1,36 +1,20 @@
 import os, tempfile, json, yaml, logging, uuid
 from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
 import httpx
+import pytz
+from datetime import datetime
 
-# from app.services.agent_creator import create_manager_with_roles
 from scripts.create_manager_with_roles import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
 from backend.auth_middleware import get_current_user
 from backend.runner import run_use_cases_with_manager
-from fastapi import Body
 from backend.schemas.agent_action import AgentActionRequest
-from fastapi import UploadFile, File, HTTPException, Depends
-import yaml
 from src.api.client import LyzrAPIClient
-import pytz
-from datetime import datetime
-from supabase import create_client
-
-def get_user_timezone(user_id: str) -> str:
-    resp = (
-        supabase.from_("user_profiles")
-        .select("timezone")
-        .eq("id", user_id)
-        .single()
-        .execute()
-    )
-    tz = resp.data.get("timezone") if resp.data else None
-    return tz or "America/Los_Angeles"  # default PST
 
 
 # -----------------------------
@@ -69,18 +53,18 @@ if not origins or origins == [""]:
     origins = [
         "http://localhost:5173",
         "https://lyzr-pgm.onrender.com",
-        "https://lyzr-agent-composer-cemn.bolt.host"
+        "https://lyzr-agent-composer-cemn.bolt.host",
         "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3-yxiqydlw--5173--96435430.local-credentialless.webcontainer-api.io",
     ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=origins,
+    allow_origin_regex=r"https://.*\.bolt\.host$|https://.*\.webcontainer-api\.io$",
+    allow_credentials=True,   # auth requires this
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # -----------------------------
 # Supabase setup
@@ -97,6 +81,17 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 # -----------------------------
 def get_request_id() -> str:
     return uuid.uuid4().hex[:8]
+
+def get_user_timezone(user_id: str) -> str:
+    resp = (
+        supabase.from_("user_profiles")
+        .select("timezone")
+        .eq("id", user_id)
+        .single()
+        .execute()
+    )
+    tz = resp.data.get("timezone") if resp.data else None
+    return tz or "America/Los_Angeles"  # default PST
 
 def get_lyzr_api_key_for_user(user_id: str) -> str:
     """Fetch decrypted API key if available, fallback to encrypted key."""
@@ -146,9 +141,6 @@ async def health_check():
 # -----------------------------
 @app.post("/agent-action/")
 async def agent_action(request: AgentActionRequest):
-    """
-    Legacy: Create manager + roles from a YAML path/string
-    """
     rid = get_request_id()
     trace("Received /agent-action request", {"request_id": rid})
     trace(f"Payload: {request.dict()}", {"request_id": rid})
@@ -162,7 +154,6 @@ async def agent_action(request: AgentActionRequest):
     except Exception as e:
         logger.exception("❌ agent_action failed")
         raise HTTPException(status_code=500, detail=f"agent_action failed: {e}")
-
 
 @app.post("/run-use-cases/")
 async def run_use_cases(manager_id: str, current_user: dict = Depends(get_current_user)):
@@ -182,7 +173,7 @@ async def run_use_cases(manager_id: str, current_user: dict = Depends(get_curren
 async def create_agents_from_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     user_id = current_user["user_id"]
     api_key = get_lyzr_api_key_for_user(user_id)
-    user_tz = get_user_timezone(user_id)  # 👈 fetch preferred timezone
+    user_tz = get_user_timezone(user_id)
 
     client = LyzrAPIClient(api_key=api_key)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".yaml") as tmp:
@@ -190,7 +181,7 @@ async def create_agents_from_file(file: UploadFile = File(...), current_user: di
         yaml_path = Path(tmp.name)
 
     try:
-        result = create_manager_with_roles(client, yaml_path, tz_name=user_tz)  # 👈 pass it
+        result = create_manager_with_roles(client, yaml_path, tz_name=user_tz)
         return {"status": "success", "created": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
@@ -242,11 +233,8 @@ async def run_inference(req: InferencePayload, current_user: dict = Depends(get_
 async def list_agents(current_user: dict = Depends(get_current_user)):
     rid = get_request_id()
     trace("Received /list-agents request", {"request_id": rid})
-    # TODO: Replace with real lookup logic
     return {"status": "success", "agents": ["agent-1", "agent-2"]}
 
-
-# (a) List agents
 @app.get("/studio-agents/")
 async def list_studio_agents(current_user: dict = Depends(get_current_user)):
     rid = get_request_id()
@@ -264,6 +252,9 @@ async def list_studio_agents(current_user: dict = Depends(get_current_user)):
         logger.exception("❌ list_studio_agents failed")
         raise HTTPException(status_code=500, detail=f"Studio list agents failed: {e}")
 
+# -----------------------------
+# Middleware
+# -----------------------------
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     body = await request.body()
