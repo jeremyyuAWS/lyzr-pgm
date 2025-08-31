@@ -12,6 +12,7 @@ from src.utils.normalize_output import normalize_inference_output
 from backend.auth_middleware import get_current_user
 from backend.runner import run_use_cases_with_manager
 from backend.schemas.agent_action import AgentActionRequest
+from fastapi import Body
 
 # -----------------------------
 # Environment
@@ -120,18 +121,23 @@ async def health_check():
 # -----------------------------
 @app.post("/agent-action/")
 async def agent_action(request: AgentActionRequest):
-    """Legacy: Create agents directly from provided YAML path or file string."""
+    """
+    Legacy: Create manager + roles from a YAML path/string
+    """
     rid = get_request_id()
     trace("Received /agent-action request", {"request_id": rid})
     trace(f"Payload: {request.dict()}", {"request_id": rid})
 
     try:
         result = create_manager_with_roles(request.file)
-        trace(f"Manager + roles created successfully", {"request_id": rid})
-        return {"status": "success", "created": {"manager": result, "roles": result.get("roles", [])}}
+        return {
+            "status": "success",
+            "created": {"manager": result, "roles": result.get("roles", [])}
+        }
     except Exception as e:
         logger.exception("❌ agent_action failed")
         raise HTTPException(status_code=500, detail=f"agent_action failed: {e}")
+
 
 @app.post("/run-use-cases/")
 async def run_use_cases(manager_id: str, current_user: dict = Depends(get_current_user)):
@@ -214,15 +220,10 @@ async def run_inference(req: InferencePayload, current_user: dict = Depends(get_
 # -----------------------------
 @app.get("/list-agents/")
 async def list_agents(current_user: dict = Depends(get_current_user)):
-    api_key = get_lyzr_api_key_for_user(current_user["user_id"])
-    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
-
-    try:
-        resp = httpx.get("https://agent-prod.studio.lyzr.ai/v3/agents/", headers=headers, timeout=60)
-        resp.raise_for_status()
-        return {"status": "success", "agents": resp.json()}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"List agents failed: {e}")
+    rid = get_request_id()
+    trace("Received /list-agents request", {"request_id": rid})
+    # TODO: Replace with real lookup logic
+    return {"status": "success", "agents": ["agent-1", "agent-2"]}
 
 
 # (a) List agents
