@@ -7,4 +7,4 @@ pytz
 supabase
 python-dotenv
 python-multipart
-python-jose[cryptography]
+python-jose
