@@ -1,40 +1,95 @@
 # scripts/create_manager_with_roles.py
-# Used in backend/main_with_auth.py
+# Used in api/main_with_auth.py
 
 import sys
 import os
 import yaml
 from pathlib import Path
 from datetime import datetime
-import pytz
 from typing import Union
-
 from src.api.client import LyzrAPIClient
 from scripts.create_agent_from_yaml import create_agent_from_yaml
 
 
-def build_system_prompt(agent_def: dict) -> str:
-    """Combine role, goal, and instructions into a single system_prompt string."""
-    parts = []
-    if agent_def.get("agent_role"):
-        parts.append(f"Role: {agent_def['agent_role']}")
-    if agent_def.get("agent_goal"):
-        parts.append(f"Goal:\n{agent_def['agent_goal']}")
-    if agent_def.get("agent_instructions"):
-        parts.append(f"Instructions:\n{agent_def['agent_instructions']}")
-    return "\n\n".join(parts).strip()
+def canonical_role_examples(role_name: str) -> str:
+    """Return canonical YAML schema string for a Role agent."""
+    return f"""Expected canonical YAML format for Role agents:
+
+workflow_name: {role_name}_Flow
+workflow_yaml: |
+  flow_name: {role_name}_Flow
+  flow_data:
+    tasks:
+      - name: {role_name.lower()}_task
+        function: call_agent
+        agent: {role_name}
+agents:
+  - name: {role_name}
+    type: role
+    yaml: |
+      name: {role_name}
+      description: Example Role description
+      agent_role: Example Role
+      agent_goal: Example goal
+      agent_instructions: Example instructions
+      features:
+        - type: yaml_role_generation
+          config: {{}}
+          priority: 0
+      tools: []
+      response_format:
+        type: json
+      provider_id: OpenAI
+      model: gpt-4o-mini
+      temperature: 0.3
+      top_p: 0.9
+      llm_credential_id: lyzr_openai
+"""
 
 
-def timestamped_name(base_name: str, tz_name: str = "US/Pacific", prefix: str = "") -> str:
-    """Return a rich name with timestamp (default PST)."""
-    tz = pytz.timezone(tz_name)
-    now_str = datetime.now(tz).strftime("%d%b%Y-%I:%M%p %Z")
-    if prefix:
-        return f"{prefix}{base_name}_v1.0_{now_str}"
-    return f"{base_name}_v1.0_{now_str}"
+def canonical_manager_examples(manager_name: str, role_names: list[str]) -> str:
+    """Return canonical YAML schema string for a Manager + Role setup."""
+    roles_block = "\n".join(
+        [f"  - name: {r}\n    type: role\n    yaml: |\n      name: {r}\n      description: Example Role description\n      agent_role: Example Role\n      agent_goal: Example goal\n      agent_instructions: Example instructions\n      features:\n        - type: yaml_role_generation\n          config: {{}}\n          priority: 0\n      tools: []\n      response_format:\n        type: json\n      provider_id: OpenAI\n      model: gpt-4o-mini\n      temperature: 0.3\n      top_p: 0.9\n      llm_credential_id: lyzr_openai"
+         for r in role_names]
+    )
+
+    return f"""Expected canonical YAML format for Manager + Roles:
+
+workflow_name: {manager_name}_Flow
+workflow_yaml: |
+  flow_name: {manager_name}_Flow
+  flow_data:
+    tasks:
+      - name: {manager_name.lower()}_task
+        function: call_agent
+        agent: {manager_name}
+agents:
+  - name: {manager_name}
+    type: manager
+    yaml: |
+      name: {manager_name}
+      description: Example Composer Manager description
+      agent_role: Composer Manager
+      agent_goal: Example manager goal
+      agent_instructions: Example instructions
+      features:
+        - type: proposal_generation
+          config: {{}}
+          priority: 1
+      tools: []
+      response_format:
+        type: json
+      provider_id: OpenAI
+      model: gpt-4o-mini
+      temperature: 0.3
+      top_p: 0.9
+      llm_credential_id: lyzr_openai
+{roles_block if roles_block else ""}
+"""
 
 
-def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict], tz_name: str = "US/Pacific"):
+def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict]):
     """Create role agents first, then create a manager agent referencing them."""
 
     # If a Path is passed, load YAML from disk
@@ -55,58 +110,48 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
     created_roles = []
     for role in manager_def.get("managed_agents", []):
         if "yaml" not in role:
-            role_name = role.get("name", "UnnamedRole")
-            print(f"⚠️ Skipping role {role_name} (no inline YAML)")
+            print(f"⚠️ Skipping role {role.get('name')} (no inline YAML)")
             continue
 
         role_yaml = yaml.safe_load(role["yaml"])
-        base_role_name = role_yaml.get("name", "UnnamedRole")
 
-        # Prefix and timestamp role names
-        rich_role_name = timestamped_name(base_role_name, tz_name, prefix="(R) ")
-        role_yaml["name"] = rich_role_name
+        # ✅ Inject canonical examples
+        role_yaml["examples"] = canonical_role_examples(role_yaml.get("name"))
 
-        print(f"🎭 Creating role agent: {rich_role_name}")
-
-        # Build system_prompt for role
-        role_yaml["system_prompt"] = build_system_prompt(role_yaml)
-
+        print(f"🎭 Creating role agent: {role_yaml.get('name')}")
         role_resp = create_agent_from_yaml(client, role_yaml)
 
         if role_resp.get("ok"):
             role_id = role_resp["data"].get("agent_id")
             created_roles.append({
                 "id": role_id,
-                "name": rich_role_name,
+                "name": role_yaml.get("name"),
                 "description": role_yaml.get("description", ""),
                 "agent_role": role_yaml.get("agent_role", ""),
                 "agent_goal": role_yaml.get("agent_goal", ""),
                 "agent_instructions": role_yaml.get("agent_instructions", ""),
-                "usage_description": f"Manager delegates tasks to {rich_role_name} for: {role_yaml.get('agent_goal','')}"
             })
         else:
-            print(f"❌ Failed to create role {rich_role_name}")
+            print(f"❌ Failed to create role {role_yaml.get('name')}")
             print(role_resp)
 
     # --- Attach created roles to manager ---
-    role_summaries = [
-        f"- Role '{r['name']}': {r['agent_goal'] or r['description']}"
-        for r in created_roles
-    ]
+    if created_roles:
+        manager_def["managed_agents"] = [
+            {
+                "id": r["id"],
+                "name": r["name"],
+                "usage_description": f"Manager coordinates role '{r['name']}'"
+            }
+            for r in created_roles
+        ]
 
-    # Build manager system prompt
-    system_prompt = build_system_prompt(manager_def)
-    if role_summaries:
-        system_prompt += "\n\nManage these attached roles:\n" + "\n".join(role_summaries)
-
-    manager_def["system_prompt"] = system_prompt
-
-    # Timestamp manager name
-    rich_manager_name = timestamped_name(manager_def.get("name"), tz_name)
-    manager_def["name"] = rich_manager_name
+    # ✅ Inject canonical examples into manager
+    role_names = [r["name"] for r in created_roles]
+    manager_def["examples"] = canonical_manager_examples(manager_def.get("name"), role_names)
 
     # --- Create the manager last ---
-    print(f"👑 Creating manager agent: {rich_manager_name}")
+    print(f"👑 Creating manager agent: {manager_def.get('name')}")
     manager_resp = create_agent_from_yaml(client, manager_def)
 
     if not manager_resp.get("ok"):
@@ -115,35 +160,13 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
         return None
 
     manager_id = manager_resp["data"].get("agent_id")
-
-    # --- PUT update to attach roles to manager ---
-    if created_roles:
-        update_payload = {
-            "name": rich_manager_name,
-            "system_prompt": system_prompt,
-            "description": manager_def.get("description", ""),
-            "features": manager_def.get("features", []),
-            "tools": manager_def.get("tools", []),
-            "llm_credential_id": manager_def.get("llm_credential_id", "lyzr_openai"),
-            "provider_id": manager_def.get("provider_id", "OpenAI"),
-            "model": manager_def.get("model", "gpt-4o-mini"),
-            "top_p": manager_def.get("top_p", 0.9),
-            "temperature": manager_def.get("temperature", 0.7),
-            "response_format": manager_def.get("response_format", {"type": "json"}),
-            "managed_agents": [
-                {"id": r["id"], "name": r["name"], "usage_description": r["usage_description"]}
-                for r in created_roles
-            ],
-        }
-
-        print(f"🔄 Updating manager {manager_id} with attached roles…")
-        client._request("PUT", f"/v3/agents/{manager_id}", payload=update_payload)
+    timestamp = datetime.now().strftime("%Y-%m-%d %I:%M %p %Z")
 
     return {
         "agent_id": manager_id,
-        "name": rich_manager_name,
+        "name": manager_def.get("name"),
         "roles": created_roles,
-        "timestamp": datetime.now(pytz.timezone(tz_name)).strftime("%d%b%Y-%I:%M%p %Z"),
+        "timestamp": timestamp,
     }
 
 
