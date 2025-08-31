@@ -69,6 +69,7 @@ if not origins or origins == [""]:
     origins = [
         "http://localhost:5173",
         "https://lyzr-pgm.onrender.com",
+        "https://lyzr-agent-composer-cemn.bolt.host"
         "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3-yxiqydlw--5173--96435430.local-credentialless.webcontainer-api.io",
     ]
 
