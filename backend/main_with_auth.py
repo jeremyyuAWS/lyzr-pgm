@@ -110,13 +110,12 @@ async def run_inference(req: InferencePayload):
 
     client = get_api_client()
     headers = {"x-api-key": client.api_key, "Content-Type": "application/json"}
+
+    # Minimal payload
     payload = {
         "agent_id": req.agent_id,
-        "user_id": "demo-user",
         "session_id": f"{req.agent_id}-{os.urandom(4).hex()}",
         "message": req.message,
-        "features": [],
-        "tools": [],
     }
 
     try:
@@ -127,14 +126,23 @@ async def run_inference(req: InferencePayload):
             timeout=60,
         )
         trace(f"Studio response status={resp.status_code}", {"request_id": rid})
-        resp.raise_for_status()
+
+        if resp.status_code != 200:
+            # 🔎 Log the actual error from Studio
+            error_text = resp.text
+            logger.error(f"Studio error response: {error_text}")
+            raise HTTPException(status_code=resp.status_code, detail=error_text)
 
         raw = resp.json()
         normalized = normalize_inference_output(json.dumps(raw), Path("outputs/demo-user"))
         return {"status": "success", "agent_id": req.agent_id, "raw": raw, "normalized": normalized}
+    except httpx.RequestError as re:
+        logger.exception("❌ HTTP request to Studio failed")
+        raise HTTPException(status_code=500, detail=f"Network error contacting Studio: {re}")
     except Exception as e:
         logger.exception("❌ run_inference failed")
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
+
 
 # -----------------------------
 # Middleware (logs)
