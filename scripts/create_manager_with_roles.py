@@ -8,6 +8,17 @@ from typing import Union
 from src.api.client import LyzrAPIClient
 from scripts.create_agent_from_yaml import create_agent_from_yaml
 
+def build_system_prompt(agent_def: dict) -> str:
+    """Combine role, goal, and instructions into a single system_prompt string."""
+    parts = []
+    if agent_def.get("agent_role"):
+        parts.append(f"Role: {agent_def['agent_role']}")
+    if agent_def.get("agent_goal"):
+        parts.append(f"Goal:\n{agent_def['agent_goal']}")
+    if agent_def.get("agent_instructions"):
+        parts.append(f"Instructions:\n{agent_def['agent_instructions']}")
+    return "\n\n".join(parts).strip()
+
 
 def format_timestamp(tz_str: str = "America/Los_Angeles") -> str:
     """Format timestamp in user timezone (default PST)."""
@@ -41,29 +52,23 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
             continue
 
         role_yaml = yaml.safe_load(role["yaml"])
-        print(f"🎭 Creating role agent: {role_yaml.get('name')}")
-        role_resp = create_agent_from_yaml(client, role_yaml)
+        system_prompt = build_system_prompt(role_yaml)
 
-        if role_resp.get("ok"):
-            role_id = role_resp["data"].get("agent_id")
-            timestamp = format_timestamp(tz_str)
-            rich_role_name = f"(R) {role_yaml.get('name')}_v1.0_{role_id[-6:]}_{timestamp}"
+        payload = {
+            "name": rich_role_name,
+            "description": role_yaml.get("description", ""),
+            "system_prompt": system_prompt,
+            "features": role_yaml.get("features", []),
+            "tools": role_yaml.get("tools", []),
+            "llm_credential_id": role_yaml.get("llm_credential_id", "lyzr_openai"),
+            "provider_id": role_yaml.get("provider_id", "OpenAI"),
+            "model": role_yaml.get("model", "gpt-4o-mini"),
+            "top_p": float(role_yaml.get("top_p", 0.9)),
+            "temperature": float(role_yaml.get("temperature", 0.7)),
+            "response_format": role_yaml.get("response_format", {"type": "json"}),
+        }
+        client._request("PUT", f"/v3/agents/{role_id}", payload=payload)
 
-            # Update role with PUT
-            payload = {
-                "name": rich_role_name,
-                "description": role_yaml.get("description", ""),
-                "system_prompt": role_yaml.get("agent_instructions", ""),
-                "features": role_yaml.get("features", []),
-                "tools": role_yaml.get("tools", []),
-                "llm_credential_id": role_yaml.get("llm_credential_id", "lyzr_openai"),
-                "provider_id": role_yaml.get("provider_id", "OpenAI"),
-                "model": role_yaml.get("model", "gpt-4o-mini"),
-                "top_p": float(role_yaml.get("top_p", 0.9)),
-                "temperature": float(role_yaml.get("temperature", 0.7)),
-                "response_format": role_yaml.get("response_format", {"type": "json"}),
-            }
-            client._request("PUT", f"/v3/agents/{role_id}", payload=payload)
 
             created_roles.append({
                 "id": role_id,
