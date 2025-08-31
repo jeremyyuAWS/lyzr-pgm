@@ -3,13 +3,21 @@ import os
 import yaml
 from pathlib import Path
 from datetime import datetime
+import pytz
 from typing import Union
 from src.api.client import LyzrAPIClient
 from scripts.create_agent_from_yaml import create_agent_from_yaml
 
 
-def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict]):
-    """Create role agents first, then create a manager agent referencing them, and update manager metadata."""
+def format_timestamp(tz_str: str = "America/Los_Angeles") -> str:
+    """Format timestamp in user timezone (default PST)."""
+    tz = pytz.timezone(tz_str)
+    now = datetime.now(tz)
+    return now.strftime("%d%b%Y-%I:%M%p %Z").upper()
+
+
+def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, dict], tz_str: str = "America/Los_Angeles"):
+    """Create role agents first, then create a manager agent referencing them, update manager metadata."""
 
     # If a Path is passed, load YAML from disk
     if isinstance(manager_yaml, Path):
@@ -38,14 +46,33 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
 
         if role_resp.get("ok"):
             role_id = role_resp["data"].get("agent_id")
+            timestamp = format_timestamp(tz_str)
+            rich_role_name = f"(R) {role_yaml.get('name')}_v1.0_{role_id[-6:]}_{timestamp}"
+
+            # Update role with PUT
+            payload = {
+                "name": rich_role_name,
+                "description": role_yaml.get("description", ""),
+                "system_prompt": role_yaml.get("agent_instructions", ""),
+                "features": role_yaml.get("features", []),
+                "tools": role_yaml.get("tools", []),
+                "llm_credential_id": role_yaml.get("llm_credential_id", "lyzr_openai"),
+                "provider_id": role_yaml.get("provider_id", "OpenAI"),
+                "model": role_yaml.get("model", "gpt-4o-mini"),
+                "top_p": float(role_yaml.get("top_p", 0.9)),
+                "temperature": float(role_yaml.get("temperature", 0.7)),
+                "response_format": role_yaml.get("response_format", {"type": "json"}),
+            }
+            client._request("PUT", f"/v3/agents/{role_id}", payload=payload)
+
             created_roles.append({
                 "id": role_id,
-                "name": role_yaml.get("name"),
+                "name": rich_role_name,
                 "description": role_yaml.get("description", ""),
                 "agent_role": role_yaml.get("agent_role", ""),
                 "agent_goal": role_yaml.get("agent_goal", ""),
                 "agent_instructions": role_yaml.get("agent_instructions", ""),
-                "usage_description": f"This is how manager manages role '{role_yaml.get('name')}'."
+                "usage_description": f"Manager delegates tasks related to '{role_yaml.get('name')}'."
             })
         else:
             print(f"❌ Failed to create role {role_yaml.get('name')}")
@@ -61,9 +88,7 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
         return None
 
     manager_id = manager_resp["data"].get("agent_id")
-    timestamp = datetime.now().strftime("%d%b%Y-%I:%M%p").upper()
-
-    # Generate rich manager name
+    timestamp = format_timestamp(tz_str)
     rich_name = f"{manager_def['name']}_v1.0_{manager_id[-6:]}_{timestamp}"
 
     # Append role summaries into manager instructions
@@ -72,7 +97,6 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
         for r in created_roles
     ]
     extra_instructions = "\n\nManage these attached roles:\n" + "\n".join(role_summaries)
-
     new_instructions = (manager_def.get("agent_instructions") or "").strip() + extra_instructions
 
     # --- Update manager with PUT ---
@@ -95,11 +119,7 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, d
     }
 
     print(f"🔄 Updating manager {manager_id} with role associations + rich name")
-    update_resp = client._request("PUT", f"/v3/agents/{manager_id}", payload=payload)
-
-    if not update_resp.get("ok"):
-        print("❌ Failed to update manager with role associations")
-        print(update_resp)
+    client._request("PUT", f"/v3/agents/{manager_id}", payload=payload)
 
     return {
         "agent_id": manager_id,
@@ -121,10 +141,12 @@ def main():
         print("❌ Missing LYZR_API_KEY in environment")
         sys.exit(1)
 
+    tz_str = os.getenv("LYZR_TZ", "America/Los_Angeles")  # customizable timezone
+
     debug = os.getenv("LYZR_DEBUG", "0") == "1"
     client = LyzrAPIClient(api_key=api_key, debug=debug, timeout=180)
 
-    result = create_manager_with_roles(client, yaml_path)
+    result = create_manager_with_roles(client, yaml_path, tz_str=tz_str)
     if not result:
         sys.exit(1)
 
