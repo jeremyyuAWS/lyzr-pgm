@@ -1,7 +1,7 @@
 # src/utils/auth.py
 
 import os
-import jwt
+from jose import jwt, JWTError, ExpiredSignatureError
 from pydantic import BaseModel
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -9,7 +9,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 # -----------------------------
 # Config
 # -----------------------------
-SECRET = os.getenv("JWT_SECRET", "super-secret")  # set in Render env vars
+SECRET = os.getenv("JWT_SECRET", "changeme")  # set in Render env vars
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 # -----------------------------
@@ -33,9 +33,9 @@ def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) ->
     try:
         payload = jwt.decode(token.credentials, SECRET, algorithms=[ALGORITHM])
         return UserClaims(**payload)
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
+    except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Auth failed: {str(e)}")
