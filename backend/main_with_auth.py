@@ -1,4 +1,3 @@
-# backend/main_with_auth.py
 import os
 import tempfile
 import json
@@ -95,14 +94,25 @@ def extract_api_key_from_user(user) -> str | None:
     """
     Extract API key from Supabase user profile claims.
     Supports both 'lyzr_api_key' and 'encrypted_api_key'.
+    Falls back to env LYZR_API_KEY if not present.
     """
+    key = None
     if isinstance(user, dict):
-        return user.get("lyzr_api_key") or user.get("encrypted_api_key")
-    if hasattr(user, "lyzr_api_key"):
-        return getattr(user, "lyzr_api_key")
-    if hasattr(user, "encrypted_api_key"):
-        return getattr(user, "encrypted_api_key")
-    return None
+        key = user.get("lyzr_api_key") or user.get("encrypted_api_key")
+    else:
+        if hasattr(user, "lyzr_api_key"):
+            key = getattr(user, "lyzr_api_key")
+        elif hasattr(user, "encrypted_api_key"):
+            key = getattr(user, "encrypted_api_key")
+
+    if key:
+        return key
+
+    # 🔑 fallback
+    env_key = os.getenv("LYZR_API_KEY")
+    if env_key:
+        logger.warning("⚠️ Using fallback LYZR_API_KEY from environment")
+    return env_key
 
 
 # -----------------------------
@@ -137,7 +147,6 @@ async def create_agents_from_file(
         {"request_id": rid},
     )
 
-    # 🔑 Pull API key from Supabase profile claims
     api_key = extract_api_key_from_user(user)
     if not api_key:
         raise HTTPException(status_code=401, detail="No API key found in user profile")
@@ -157,11 +166,7 @@ async def create_agents_from_file(
             yaml_path = Path(tmp.name)
 
         result = create_manager_with_roles(client, yaml_path)
-        return {
-            "status": "success",
-            "created": result,
-            "user": user_to_dict(user),
-        }
+        return {"status": "success", "created": result, "user": user_to_dict(user)}
 
     except yaml.YAMLError as ye:
         logger.error(f"YAML parse failed: {ye}")
@@ -196,7 +201,6 @@ async def run_inference(
         {"request_id": rid},
     )
 
-    # 🔑 Pull API key from Supabase profile claims
     api_key = extract_api_key_from_user(user)
     if not api_key:
         raise HTTPException(status_code=401, detail="No API key found in user profile")
@@ -213,17 +217,18 @@ async def run_inference(
     }
 
     try:
-        logger.info(f"[trace][rid={rid}] ➡️ Sending to Studio with API key ending in ...{api_key[-6:]}")
         resp = httpx.post(
             "https://agent-prod.studio.lyzr.ai/v3/inference/chat/",
             headers=headers,
             json=payload,
             timeout=60,
         )
-        logger.info(f"[trace][rid={rid}] ⬅️ Studio responded {resp.status_code}: {resp.text[:300]}")
+        trace(f"Studio response status={resp.status_code}", {"request_id": rid})
 
         if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail=resp.text)
+            error_text = resp.text
+            logger.error(f"Studio error response: {error_text}")
+            raise HTTPException(status_code=resp.status_code, detail=error_text)
 
         raw = resp.json()
         out_dir = Path(f"outputs/{safe_user_sub(user)}")
@@ -237,14 +242,11 @@ async def run_inference(
             "normalized": normalized,
             "user": user_to_dict(user),
         }
-
     except httpx.RequestError as re:
-        logger.exception(f"[trace][rid={rid}] ❌ Network error contacting Studio")
+        logger.exception("❌ HTTP request to Studio failed")
         raise HTTPException(status_code=500, detail=f"Network error contacting Studio: {re}")
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.exception(f"[trace][rid={rid}] ❌ run_inference failed")
+        logger.exception("❌ run_inference failed")
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
 
 
