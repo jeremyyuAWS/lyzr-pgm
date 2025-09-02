@@ -190,6 +190,18 @@ class InferencePayload(BaseModel):
     message: str
 
 
+from time import time
+
+class InferencePayload(BaseModel):
+    agent_id: str
+    message: str
+    user_id: str | None = None
+    system_prompt_variables: dict = {}
+    filter_variables: dict = {}
+    features: list = []
+    assets: list[str] = []
+
+
 @app.post("/run-inference/")
 async def run_inference(
     req: InferencePayload,
@@ -210,24 +222,37 @@ async def run_inference(
         "x-api-key": api_key,
     }
 
+    # Build full payload expected by Studio
     payload = {
+        "user_id": req.user_id or safe_user_email(user) or safe_user_sub(user),
+        "system_prompt_variables": req.system_prompt_variables or {},
         "agent_id": req.agent_id,
         "session_id": f"{req.agent_id}-{os.urandom(4).hex()}",
         "message": req.message,
+        "filter_variables": req.filter_variables or {},
+        "features": req.features or [],
+        "assets": req.assets or [],
     }
 
     try:
+        start = time()
         resp = httpx.post(
             "https://agent-prod.studio.lyzr.ai/v3/inference/chat/",
             headers=headers,
             json=payload,
             timeout=60,
         )
-        trace(f"Studio response status={resp.status_code}", {"request_id": rid})
+        elapsed = round(time() - start, 2)
+        trace(
+            f"Studio response status={resp.status_code} elapsed={elapsed}s",
+            {"request_id": rid},
+        )
 
         if resp.status_code != 200:
             error_text = resp.text
-            logger.error(f"Studio error response: {error_text}")
+            logger.error(
+                f"❌ Studio error response (status={resp.status_code}, elapsed={elapsed}s): {error_text}"
+            )
             raise HTTPException(status_code=resp.status_code, detail=error_text)
 
         raw = resp.json()
@@ -241,13 +266,18 @@ async def run_inference(
             "raw": raw,
             "normalized": normalized,
             "user": user_to_dict(user),
+            "elapsed": elapsed,
         }
+
     except httpx.RequestError as re:
-        logger.exception("❌ HTTP request to Studio failed")
-        raise HTTPException(status_code=500, detail=f"Network error contacting Studio: {re}")
+        logger.error(f"❌ Network error contacting Studio: {re}")
+        raise HTTPException(
+            status_code=500, detail=f"Network error contacting Studio: {re}"
+        )
     except Exception as e:
         logger.exception("❌ run_inference failed")
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
+
 
 
 # -----------------------------
