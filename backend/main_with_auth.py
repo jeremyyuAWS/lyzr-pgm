@@ -43,15 +43,15 @@ def trace(msg: str, extra: dict = None):
 # -----------------------------
 # FastAPI app
 # -----------------------------
-app = FastAPI(title="Agent Orchestrator API (JWT Auth)")
+app = FastAPI(title="Agent Orchestrator API (Supabase JWT Auth)")
 
 # -----------------------------
 # CORS (wide open for dev)
 # -----------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # TODO: restrict in staging/prod
-    allow_credentials=False,
+    allow_origins=["*"],       # TODO: tighten for staging/prod
+    allow_credentials=False,   # must be False with "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -67,55 +67,38 @@ def get_request_id() -> str:
 # Debug + health
 # -----------------------------
 @app.get("/me")
-async def read_me(claims: UserClaims = Depends(get_current_user)):
-    return {"status": "ok", "user_id": claims.sub, "claims": claims.dict()}
+async def read_me(user: UserClaims = Depends(get_current_user)):
+    """
+    Returns the decoded Supabase JWT claims for the authenticated user.
+    """
+    return {
+        "status": "ok",
+        "user_id": user.sub,
+        "claims": user.dict()
+    }
 
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "service": "Agent Orchestrator API (JWT Auth)"}
+    return {"status": "ok", "service": "Agent Orchestrator API (Supabase JWT Auth)"}
 
 
 # -----------------------------
 # Endpoints
 # -----------------------------
-@app.get("/studio-agents/")
-async def list_studio_agents(claims: UserClaims = Depends(get_current_user)):
-    """
-    Test connectivity to Lyzr Studio using the backend's API key.
-    Authenticated via JWT.
-    """
-    headers = {"x-api-key": os.getenv("LYZR_STUDIO_API_KEY"), "Content-Type": "application/json"}
-
-    try:
-        resp = httpx.get("https://agent-prod.studio.lyzr.ai/v3/agents/", headers=headers, timeout=30)
-        resp.raise_for_status()
-        return {"status": "success", "agents": resp.json()}
-    except httpx.HTTPStatusError as http_err:
-        logger.error(f"Studio returned {http_err.response.status_code}: {http_err.response.text}")
-        raise HTTPException(
-            status_code=http_err.response.status_code,
-            detail=f"Studio API error: {http_err.response.text}"
-        )
-    except Exception as e:
-        logger.exception("❌ studio connectivity failed")
-        raise HTTPException(status_code=500, detail=f"Studio connectivity failed: {e}")
-
-
 @app.post("/create-agents/")
 async def create_agents_from_file(
     file: UploadFile = File(...),
     tz_name: str = Form("America/Los_Angeles"),
-    claims: UserClaims = Depends(get_current_user)   # ✅ JWT auth instead of api_key query
+    user: UserClaims = Depends(get_current_user)  # ✅ enforce auth
 ):
     """
-    Create Manager + Role agents from a YAML file.
-    tz_name provided by user via dropdown (default: PST).
+    Create Manager + Role agents from a YAML file using the authenticated user's Supabase JWT.
     """
     rid = get_request_id()
-    trace(f"Received /create-agents request tz={tz_name}", {"request_id": rid})
+    trace(f"Received /create-agents request tz={tz_name} by {user.email}", {"request_id": rid})
 
-    client = LyzrAPIClient(api_key=os.getenv("LYZR_STUDIO_API_KEY"))
+    client = LyzrAPIClient(api_key=None)  # no longer pass API key directly, auth handled via JWT
 
     yaml_path = None
     try:
@@ -130,7 +113,7 @@ async def create_agents_from_file(
             yaml_path = Path(tmp.name)
 
         result = create_manager_with_roles(client, yaml_path)
-        return {"status": "success", "created": result}
+        return {"status": "success", "created": result, "user": user.dict()}
 
     except yaml.YAMLError as ye:
         logger.error(f"YAML parse failed: {ye}")
@@ -157,23 +140,20 @@ class InferencePayload(BaseModel):
 @app.post("/run-inference/")
 async def run_inference(
     req: InferencePayload,
-    tz_name: str = Form("America/Los_Angeles"),
-    claims: UserClaims = Depends(get_current_user)   # ✅ JWT auth
+    user: UserClaims = Depends(get_current_user)  # ✅ enforce auth
 ):
     """
-    Run inference against a given agent_id.
-    Authenticated via JWT.
+    Run inference against a given agent_id for the authenticated user.
     """
     rid = get_request_id()
-    trace(f"Run inference for agent_id={req.agent_id}", {"request_id": rid})
+    trace(f"Run inference for agent_id={req.agent_id} by {user.email}", {"request_id": rid})
 
-    headers = {"x-api-key": os.getenv("LYZR_STUDIO_API_KEY"), "Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json"}
 
     payload = {
         "agent_id": req.agent_id,
         "session_id": f"{req.agent_id}-{os.urandom(4).hex()}",
         "message": req.message,
-        "tz_name": tz_name
     }
 
     try:
@@ -192,11 +172,17 @@ async def run_inference(
 
         raw = resp.json()
 
-        out_dir = Path(f"outputs/{claims.sub}")
+        out_dir = Path(f"outputs/{user.sub}")
         out_dir.mkdir(parents=True, exist_ok=True)
 
         normalized = normalize_inference_output(json.dumps(raw), out_dir)
-        return {"status": "success", "agent_id": req.agent_id, "raw": raw, "normalized": normalized}
+        return {
+            "status": "success",
+            "agent_id": req.agent_id,
+            "raw": raw,
+            "normalized": normalized,
+            "user": user.dict()
+        }
     except httpx.RequestError as re:
         logger.exception("❌ HTTP request to Studio failed")
         raise HTTPException(status_code=500, detail=f"Network error contacting Studio: {re}")
