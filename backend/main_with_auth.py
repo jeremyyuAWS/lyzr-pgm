@@ -1,4 +1,5 @@
 # backend/main_with_auth.py
+
 import os
 import tempfile
 import json
@@ -7,7 +8,7 @@ import logging
 import uuid
 from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -174,7 +175,6 @@ async def run_inference(
     )
 
     headers = {"Content-Type": "application/json"}
-
     payload = {
         "agent_id": req.agent_id,
         "session_id": f"{req.agent_id}-{os.urandom(4).hex()}",
@@ -182,18 +182,17 @@ async def run_inference(
     }
 
     try:
+        logger.info(f"[trace][rid={rid}] ➡️ Sending to Studio: {json.dumps(payload)[:300]}...")
         resp = httpx.post(
             "https://agent-prod.studio.lyzr.ai/v3/inference/chat/",
             headers=headers,
             json=payload,
             timeout=60,
         )
-        trace(f"Studio response status={resp.status_code}", {"request_id": rid})
+        logger.info(f"[trace][rid={rid}] ⬅️ Studio responded {resp.status_code}: {resp.text[:300]}")
 
         if resp.status_code != 200:
-            error_text = resp.text
-            logger.error(f"Studio error response: {error_text}")
-            raise HTTPException(status_code=resp.status_code, detail=error_text)
+            raise HTTPException(status_code=resp.status_code, detail=resp.text)
 
         raw = resp.json()
         out_dir = Path(f"outputs/{safe_user_sub(user)}")
@@ -207,11 +206,14 @@ async def run_inference(
             "normalized": normalized,
             "user": user_to_dict(user),
         }
+
     except httpx.RequestError as re:
-        logger.exception("❌ HTTP request to Studio failed")
+        logger.exception(f"[trace][rid={rid}] ❌ Network error contacting Studio")
         raise HTTPException(status_code=500, detail=f"Network error contacting Studio: {re}")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.exception("❌ run_inference failed")
+        logger.exception(f"[trace][rid={rid}] ❌ run_inference failed")
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
 
 
