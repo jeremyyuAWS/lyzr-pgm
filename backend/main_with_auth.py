@@ -58,11 +58,16 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,   # now works since we specify explicit origins
-    allow_methods=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--96435430.local-credentialless.webcontainer-api.io",
+        "https://your-frontend-domain.com",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],  # 👈 explicit instead of ["*"]
     allow_headers=["*"],
 )
+
 
 # -----------------------------
 # Helpers
