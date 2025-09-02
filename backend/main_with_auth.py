@@ -73,6 +73,26 @@ def get_request_id() -> str:
     return uuid.uuid4().hex[:8]
 
 
+def safe_user_email(user) -> str:
+    """Extract email if present, else return None."""
+    return getattr(user, "email", None)
+
+
+def safe_user_sub(user) -> str:
+    """Extract sub (user id) if present, else return empty string."""
+    return getattr(user, "sub", "")
+
+
+def user_to_dict(user) -> dict:
+    """Convert Pydantic model or dict-like to a plain dict."""
+    if hasattr(user, "dict"):
+        return user.dict()
+    elif isinstance(user, dict):
+        return user
+    else:
+        return {"sub": safe_user_sub(user), "email": safe_user_email(user)}
+
+
 # -----------------------------
 # Debug + health
 # -----------------------------
@@ -83,8 +103,8 @@ async def read_me(user=Depends(get_current_user)):
     """
     return {
         "status": "ok",
-        "user_id": user.get("sub", ""),
-        "claims": user  # 👈 full decoded JWT payload
+        "user_id": safe_user_sub(user),
+        "claims": user_to_dict(user)
     }
 
 
@@ -106,7 +126,7 @@ async def create_agents_from_file(
     Create Manager + Role agents from a YAML file using the authenticated user's Supabase JWT.
     """
     rid = get_request_id()
-    trace(f"Received /create-agents request tz={tz_name} by {user.get('email')}", {"request_id": rid})
+    trace(f"Received /create-agents request tz={tz_name} by {safe_user_email(user)}", {"request_id": rid})
 
     client = LyzrAPIClient(api_key=None)  # auth handled via JWT now
 
@@ -123,7 +143,7 @@ async def create_agents_from_file(
             yaml_path = Path(tmp.name)
 
         result = create_manager_with_roles(client, yaml_path)
-        return {"status": "success", "created": result, "user": user}
+        return {"status": "success", "created": result, "user": user_to_dict(user)}
 
     except yaml.YAMLError as ye:
         logger.error(f"YAML parse failed: {ye}")
@@ -156,7 +176,7 @@ async def run_inference(
     Run inference against a given agent_id for the authenticated user.
     """
     rid = get_request_id()
-    trace(f"Run inference for agent_id={req.agent_id} by {user.get('email')}", {"request_id": rid})
+    trace(f"Run inference for agent_id={req.agent_id} by {safe_user_email(user)}", {"request_id": rid})
 
     headers = {"Content-Type": "application/json"}
 
@@ -182,7 +202,7 @@ async def run_inference(
 
         raw = resp.json()
 
-        out_dir = Path(f"outputs/{user.get('sub')}")
+        out_dir = Path(f"outputs/{safe_user_sub(user)}")
         out_dir.mkdir(parents=True, exist_ok=True)
 
         normalized = normalize_inference_output(json.dumps(raw), out_dir)
@@ -191,7 +211,7 @@ async def run_inference(
             "agent_id": req.agent_id,
             "raw": raw,
             "normalized": normalized,
-            "user": user
+            "user": user_to_dict(user)
         }
     except httpx.RequestError as re:
         logger.exception("❌ HTTP request to Studio failed")
