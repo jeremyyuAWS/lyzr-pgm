@@ -1,10 +1,7 @@
-# scripts/create_manager_with_roles.py
-
-from __future__ import annotations
+# Used by backend/main_with_auth.py
 
 import os
 import yaml
-import logging
 from pathlib import Path
 from typing import Union, Dict, Any, List
 from datetime import datetime
@@ -13,76 +10,58 @@ import pytz
 from src.api.client import LyzrAPIClient
 from scripts.create_agent_from_yaml import create_agent_from_yaml, update_agent
 
-# -----------------------------
-# Logging
-# -----------------------------
-logger = logging.getLogger("create-manager-with-roles")
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+# ---------- Timezone / naming helpers ----------
 
-
-# -----------------------------
-# Helpers
-# -----------------------------
 def _tz() -> pytz.timezone:
+    # Default PST; override with APP_TZ (e.g. America/Los_Angeles)
     tz_name = os.getenv("APP_TZ", "America/Los_Angeles")
     try:
         return pytz.timezone(tz_name)
     except Exception:
         return pytz.timezone("America/Los_Angeles")
 
-
 def _timestamp_str() -> str:
+    # Example: 31AUG2025-10:07AM PDT
     now = datetime.now(_tz())
     return now.strftime("%d%b%Y-%I:%M%p %Z").upper()
 
-
-def _suffix_from_id(agent_id: str | None) -> str:
+def _suffix_from_id(agent_id: str) -> str:
     return (agent_id or "")[-6:] or "XXXXXX"
 
-
 def _rich_manager_name(base: str, agent_id: str) -> str:
-    """Keep manager renaming to ensure uniqueness in Studio."""
     return f"{base}_v1.0_{_suffix_from_id(agent_id)}_{_timestamp_str()}"
 
+def _rich_role_name(base: str, agent_id: str) -> str:
+    return f"(R) {base}_v1.0_{_suffix_from_id(agent_id)}_{_timestamp_str()}"
+
+# ---------- Prompt + examples builders ----------
 
 def _compose_system_prompt(agent_def: Dict[str, Any]) -> str:
-    """Assemble system prompt from role, goal, and instructions."""
     role = agent_def.get("agent_role", "").strip()
     goal = agent_def.get("agent_goal", "").strip()
     instr = agent_def.get("agent_instructions", "").strip()
 
-    parts = []
+    sections = []
     if role:
-        parts.append(f"ROLE:\n{role}")
+        sections.append(f"ROLE:\n{role}")
     if goal:
-        parts.append(f"GOAL:\n{goal}")
+        sections.append(f"GOAL:\n{goal}")
     if instr:
-        parts.append(f"INSTRUCTIONS:\n{instr}")
-    return "\n\n".join(parts).strip()
+        sections.append(f"INSTRUCTIONS:\n{instr}")
+    return "\n\n".join(sections).strip()
 
-
-def _manager_supervision_instructions(
-    manager_def: Dict[str, Any], created_roles: List[Dict[str, Any]]
-) -> str:
+def _manager_supervision_instructions(manager_def: Dict[str, Any], created_roles: List[Dict[str, Any]]) -> str:
+    """Extend manager instructions with how to manage each role."""
     base = manager_def.get("agent_instructions", "").strip()
     lines = [base, "", "Manage these attached roles:"]
     for r in created_roles:
-        goal = (r.get("agent_goal") or "").strip().replace("\n", " ")
-        if goal:
-            lines.append(f"- Role '{r['name']}': {goal}")
+        bullets = (r.get("agent_goal") or "").strip().replace("\n", " ").strip()
+        if bullets:
+            lines.append(f"- Role '{r['name']}': {bullets}")
         else:
             lines.append(f"- Role '{r['name']}': Execute delegated sub-tasks from the manager.")
-    return "\n".join(filter(None, lines)).strip()
+    return "\n".join([l for l in lines if l]).strip()
 
-
-# -----------------------------
-# Canonical Examples
-# -----------------------------
 def canonical_role_examples(role_name: str) -> str:
     return f"""Expected canonical YAML format for Role agents:
 
@@ -117,32 +96,10 @@ agents:
       llm_credential_id: lyzr_openai
 """
 
-
 def canonical_manager_examples(manager_name: str, role_names: List[str]) -> str:
     roles_block = "\n".join(
-        [
-            f"""  - name: {r}
-    type: role
-    yaml: |
-      name: {r}
-      description: Example Role description
-      agent_role: Example Role
-      agent_goal: Example goal
-      agent_instructions: Example instructions
-      features:
-        - type: yaml_role_generation
-          config: {{}}
-          priority: 0
-      tools: []
-      response_format:
-        type: json
-      provider_id: OpenAI
-      model: gpt-4o-mini
-      temperature: 0.3
-      top_p: 0.9
-      llm_credential_id: lyzr_openai"""
-            for r in role_names
-        ]
+        [f"  - name: {r}\n    type: role\n    yaml: |\n      name: {r}\n      description: Example Role description\n      agent_role: Example Role\n      agent_goal: Example goal\n      agent_instructions: Example instructions\n      features:\n        - type: yaml_role_generation\n          config: {{}}\n          priority: 0\n      tools: []\n      response_format:\n        type: json\n      provider_id: OpenAI\n      model: gpt-4o-mini\n      temperature: 0.3\n      top_p: 0.9\n      llm_credential_id: lyzr_openai"
+         for r in role_names]
     )
 
     return f"""Expected canonical YAML format for Manager + Roles:
@@ -179,25 +136,19 @@ agents:
 {roles_block if roles_block else ""}
 """
 
+# ---------- Main orchestration ----------
 
-# -----------------------------
-# Main Orchestration
-# -----------------------------
-def create_manager_with_roles(
-    client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]
-) -> Dict[str, Any]:
+def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Create role agents first, then manager.
-    - Roles: keep their original names (no renaming).
-    - Manager: renamed with suffix + timestamp for uniqueness.
+    Create role agents first, then manager, then:
+      - rename both with PST timestamp and id suffix,
+      - attach roles to manager (managed_agents + usage_description),
+      - set robust system_prompt & examples via PUT (creation may ignore these fields).
     """
     # Load YAML if a path was received
     if isinstance(manager_yaml, Path):
-        try:
-            with open(manager_yaml, "r") as f:
-                manager_yaml = yaml.safe_load(f)
-        except Exception as e:
-            raise ValueError(f"Failed to load YAML from {manager_yaml}: {e}")
+        with open(manager_yaml, "r") as f:
+            manager_yaml = yaml.safe_load(f)
 
     if not isinstance(manager_yaml, dict):
         raise ValueError("manager_yaml must be a dict or Path")
@@ -206,99 +157,105 @@ def create_manager_with_roles(
     if not manager_def:
         raise ValueError("YAML must contain a top-level 'manager' key")
 
-    # ----- Create roles -----
+    # ----- Create roles first -----
     created_roles: List[Dict[str, Any]] = []
     for role in manager_def.get("managed_agents", []):
         if "yaml" not in role:
-            logger.warning(f"⚠️ Skipping role {role.get('name')} (no inline YAML)")
+            print(f"⚠️ Skipping role {role.get('name')} (no inline YAML)")
             continue
 
-        try:
-            role_yaml = yaml.safe_load(role["yaml"])
-        except Exception as e:
-            logger.error(f"❌ Failed to parse role YAML for {role.get('name')}: {e}")
-            continue
-
+        role_yaml = yaml.safe_load(role["yaml"])
         role_name = role_yaml.get("name", "ROLE")
+
+        # inject examples & prepare prompt
         role_yaml["examples"] = canonical_role_examples(role_name)
 
-        logger.info(f"🎭 Creating role agent: {role_name}")
+        print(f"🎭 Creating role agent: {role_name}")
         role_resp = create_agent_from_yaml(client, role_yaml)
         if not role_resp.get("ok"):
-            logger.error(f"❌ Failed to create role {role_name}: {role_resp}")
+            print(f"❌ Failed to create role {role_name}")
+            print(role_resp)
             continue
 
         role_id = (role_resp.get("data") or {}).get("agent_id")
         if not role_id:
-            logger.error(f"❌ Role {role_name} created but missing agent_id")
+            print(f"❌ Role {role_name} created but missing agent_id in response")
             continue
 
-        # Keep original role name (do NOT rename)
+        # Rename + set system_prompt + examples (PUT)
+        role_renamed = _rich_role_name(role_name, role_id)
         role_updates = {
+            "name": role_renamed,
             "system_prompt": _compose_system_prompt(role_yaml),
             "examples": role_yaml["examples"],
+            # also backfill these where supported
             "agent_role": role_yaml.get("agent_role", ""),
             "agent_goal": role_yaml.get("agent_goal", ""),
             "agent_instructions": role_yaml.get("agent_instructions", ""),
         }
-        update_agent(client, role_id, role_updates)
+        upd = update_agent(client, role_id, role_updates)
+        if not upd.get("ok"):
+            print(f"⚠️ PUT update failed for role {role_name}: {upd}")
 
-        created_roles.append(
-            {
-                "id": role_id,
-                "name": role_name,  # keep original name
-                "description": role_yaml.get("description", ""),
-                "agent_role": role_yaml.get("agent_role", ""),
-                "agent_goal": role_yaml.get("agent_goal", ""),
-                "agent_instructions": role_yaml.get("agent_instructions", ""),
-            }
-        )
+        created_roles.append({
+            "id": role_id,
+            "name": role_renamed,  # store the final name
+            "base_name": role_name,
+            "description": role_yaml.get("description", ""),
+            "agent_role": role_yaml.get("agent_role", ""),
+            "agent_goal": role_yaml.get("agent_goal", ""),
+            "agent_instructions": role_yaml.get("agent_instructions", ""),
+        })
 
     # ----- Create manager -----
     manager_base_name = manager_def.get("name", "MANAGER")
+    # Build enhanced instructions to include supervision lines
     mgr_instr_with_supervision = _manager_supervision_instructions(manager_def, created_roles)
-    mgr_examples = canonical_manager_examples(
-        manager_base_name, [r["name"] for r in created_roles]
-    )
+
+    # Also set examples (manager + roles)
+    mgr_examples = canonical_manager_examples(manager_base_name, [r["base_name"] for r in created_roles])
     manager_def["examples"] = mgr_examples
 
-    logger.info(f"👑 Creating manager agent: {manager_base_name}")
+    print(f"👑 Creating manager agent: {manager_base_name}")
     mgr_resp = create_agent_from_yaml(client, manager_def)
     if not mgr_resp.get("ok"):
-        logger.error(f"❌ Manager creation failed: {mgr_resp}")
+        print("❌ Manager creation failed")
+        print(mgr_resp)
         return {}
 
     manager_id = (mgr_resp.get("data") or {}).get("agent_id")
     if not manager_id:
-        logger.error("❌ Manager created but missing agent_id")
+        print("❌ Manager created but missing agent_id in response")
         return {}
 
-    # Manager is renamed
+    # Rename + attach roles + set prompts/examples
     manager_renamed = _rich_manager_name(manager_base_name, manager_id)
 
+    # Manager managed_agents payload with usage descriptors
     managed_agents_payload = [
         {
             "id": r["id"],
             "name": r["name"],
-            "usage_description": f"Manager delegates YAML-subtasks to '{r['name']}'.",
+            "usage_description": f"Manager delegates YAML-subtasks to '{r['name']}'."
         }
         for r in created_roles
     ]
 
     manager_updates = {
         "name": manager_renamed,
-        "system_prompt": _compose_system_prompt(
-            {
-                "agent_role": manager_def.get("agent_role", ""),
-                "agent_goal": manager_def.get("agent_goal", ""),
-                "agent_instructions": mgr_instr_with_supervision,
-            }
-        ),
+        "system_prompt": _compose_system_prompt({
+            "agent_role": manager_def.get("agent_role", ""),
+            "agent_goal": manager_def.get("agent_goal", ""),
+            "agent_instructions": mgr_instr_with_supervision,
+        }),
         "examples": mgr_examples,
+        # best-effort backfill
         "agent_role": manager_def.get("agent_role", ""),
         "agent_goal": manager_def.get("agent_goal", ""),
         "agent_instructions": mgr_instr_with_supervision,
+        # association
         "managed_agents": managed_agents_payload,
+        # keep existing model config in case PUT requires full object in your deployment
         "description": manager_def.get("description", ""),
         "features": manager_def.get("features", []),
         "tools": manager_def.get("tools", []),
@@ -309,7 +266,9 @@ def create_manager_with_roles(
         "temperature": manager_def.get("temperature", 0.3),
         "response_format": manager_def.get("response_format", {"type": "json"}),
     }
-    update_agent(client, manager_id, manager_updates)
+    mgr_upd = update_agent(client, manager_id, manager_updates)
+    if not mgr_upd.get("ok"):
+        print(f"⚠️ PUT update failed for manager {manager_base_name}: {mgr_upd}")
 
     return {
         "agent_id": manager_id,
