@@ -1,41 +1,41 @@
 # src/utils/auth.py
-
 import os
-from jose import jwt, JWTError, ExpiredSignatureError
-from pydantic import BaseModel
+import requests
+from jose import jwt, jwk, JWTError
+from jose.utils import base64url_decode
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
 
-# -----------------------------
-# Config
-# -----------------------------
-SECRET = os.getenv("JWT_SECRET", "changeme")  # set in Render env vars
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+SUPABASE_JWKS_URL = os.getenv("SUPABASE_JWKS_URL")
 
-# -----------------------------
-# Models
-# -----------------------------
 class UserClaims(BaseModel):
     sub: str
     email: str
     role: str
 
-# -----------------------------
-# Security Dependency
-# -----------------------------
 security = HTTPBearer(auto_error=True)
 
 def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) -> UserClaims:
-    """
-    Decode a JWT from Authorization: Bearer <token> header
-    and return typed user claims.
-    """
     try:
-        payload = jwt.decode(token.credentials, SECRET, algorithms=[ALGORITHM])
+        # 1. Decode headers
+        unverified_header = jwt.get_unverified_header(token.credentials)
+
+        # 2. Fetch JWKS from Supabase
+        jwks = requests.get(SUPABASE_JWKS_URL).json()
+
+        # 3. Find the matching key
+        key = next((k for k in jwks["keys"] if k["kid"] == unverified_header["kid"]), None)
+        if not key:
+            raise HTTPException(status_code=401, detail="No matching JWK found")
+
+        # 4. Verify
+        payload = jwt.decode(
+            token.credentials,
+            key,
+            algorithms=[unverified_header["alg"]],
+            audience=os.getenv("SUPABASE_JWT_AUDIENCE", None)
+        )
         return UserClaims(**payload)
-    except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Auth failed: {str(e)}")
+    except JWTError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Supabase token: {str(e)}")
