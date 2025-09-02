@@ -47,27 +47,23 @@ def trace(msg: str, extra: dict = None):
 app = FastAPI(title="Agent Orchestrator API (Supabase JWT Auth)")
 
 # -----------------------------
-# CORS
+# CORS (origins from .env)
 # -----------------------------
-# 👇 Explicitly allow your local dev frontends + production frontend
-origins = [
-    "http://localhost:5173",  # Vite local dev
-    "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--96435430.local-credentialless.webcontainer-api.io",  # webcontainer dev
-    "https://your-frontend-domain.com",  # TODO: replace with prod frontend
-]
+# Example in .env:
+# CORS_ALLOW_ORIGINS=http://localhost:5173,https://my-webcontainer-url,https://my-prod-frontend.com
+cors_origins_env = os.getenv("CORS_ALLOW_ORIGINS", "")
+origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+
+if not origins:
+    logger.warning("⚠️ No CORS origins configured, API may be inaccessible from browsers.")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--96435430.local-credentialless.webcontainer-api.io",
-        "https://your-frontend-domain.com",
-    ],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],  # 👈 explicit instead of ["*"]
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
-
 
 # -----------------------------
 # Helpers
