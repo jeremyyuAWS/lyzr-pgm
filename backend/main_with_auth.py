@@ -1,5 +1,4 @@
 # backend/main_with_auth.py
-
 import os
 import tempfile
 import json
@@ -8,7 +7,7 @@ import logging
 import uuid
 from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -92,6 +91,20 @@ def user_to_dict(user) -> dict:
         return {"sub": safe_user_sub(user), "email": safe_user_email(user)}
 
 
+def extract_api_key_from_user(user) -> str | None:
+    """
+    Extract API key from Supabase user profile claims.
+    Supports both 'lyzr_api_key' and 'encrypted_api_key'.
+    """
+    if isinstance(user, dict):
+        return user.get("lyzr_api_key") or user.get("encrypted_api_key")
+    if hasattr(user, "lyzr_api_key"):
+        return getattr(user, "lyzr_api_key")
+    if hasattr(user, "encrypted_api_key"):
+        return getattr(user, "encrypted_api_key")
+    return None
+
+
 # -----------------------------
 # Debug + health
 # -----------------------------
@@ -124,7 +137,12 @@ async def create_agents_from_file(
         {"request_id": rid},
     )
 
-    client = LyzrAPIClient(api_key=None)
+    # 🔑 Pull API key from Supabase profile claims
+    api_key = extract_api_key_from_user(user)
+    if not api_key:
+        raise HTTPException(status_code=401, detail="No API key found in user profile")
+
+    client = LyzrAPIClient(api_key=api_key)
 
     yaml_path = None
     try:
@@ -139,7 +157,11 @@ async def create_agents_from_file(
             yaml_path = Path(tmp.name)
 
         result = create_manager_with_roles(client, yaml_path)
-        return {"status": "success", "created": result, "user": user_to_dict(user)}
+        return {
+            "status": "success",
+            "created": result,
+            "user": user_to_dict(user),
+        }
 
     except yaml.YAMLError as ye:
         logger.error(f"YAML parse failed: {ye}")
@@ -174,7 +196,16 @@ async def run_inference(
         {"request_id": rid},
     )
 
-    headers = {"Content-Type": "application/json"}
+    # 🔑 Pull API key from Supabase profile claims
+    api_key = extract_api_key_from_user(user)
+    if not api_key:
+        raise HTTPException(status_code=401, detail="No API key found in user profile")
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": api_key,
+    }
+
     payload = {
         "agent_id": req.agent_id,
         "session_id": f"{req.agent_id}-{os.urandom(4).hex()}",
@@ -182,7 +213,7 @@ async def run_inference(
     }
 
     try:
-        logger.info(f"[trace][rid={rid}] ➡️ Sending to Studio: {json.dumps(payload)[:300]}...")
+        logger.info(f"[trace][rid={rid}] ➡️ Sending to Studio with API key ending in ...{api_key[-6:]}")
         resp = httpx.post(
             "https://agent-prod.studio.lyzr.ai/v3/inference/chat/",
             headers=headers,
