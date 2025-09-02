@@ -223,9 +223,11 @@ async def run_inference(
         {"request_id": rid},
     )
 
-    api_key = extract_api_key_from_user(user) or os.getenv("LYZR_API_KEY")
+    api_key = extract_api_key_from_user(user)
     if not api_key:
-        raise HTTPException(status_code=401, detail="No API key found")
+        raise HTTPException(status_code=401, detail="No API key found in user profile")
+
+    client = LyzrAPIClient(api_key=api_key)
 
     payload = {
         "user_id": req.user_id or safe_user_email(user) or safe_user_sub(user),
@@ -239,35 +241,39 @@ async def run_inference(
     }
 
     logger.info(f"➡️ Payload to Studio:\n{json.dumps(payload, indent=2)}")
-    logger.info(f"🔑 Using API key (truncated): {api_key[:6]}...")
 
     try:
-        resp = client.call_agent(payload, api_key=api_key)
-        if not resp["ok"]:
-            raise HTTPException(status_code=502, detail=resp.get("data", "Studio error"))
+        start = time()
+        resp = await client.call_agent(payload)   # ✅ no api_key arg
+        elapsed = round(time() - start, 2)
 
-        raw = resp["data"]
+        trace(
+            f"Studio response ok elapsed={elapsed}s",
+            {"request_id": rid},
+        )
+
         out_dir = Path(f"outputs/{safe_user_sub(user)}")
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        normalized = normalize_inference_output(json.dumps(raw), out_dir)
+        normalized = normalize_inference_output(json.dumps(resp), out_dir)
         return {
             "status": "success",
             "agent_id": req.agent_id,
-            "raw": raw,
+            "raw": resp,
             "normalized": normalized,
             "user": user_to_dict(user),
+            "elapsed": elapsed,
         }
 
-    except TimeoutException:
-        logger.error("⏱️ Studio request timed out")
-        raise HTTPException(status_code=504, detail="Studio timed out")
-    except RequestError as re:
-        logger.error(f"❌ Studio request error: {re}")
-        raise HTTPException(status_code=502, detail=f"Studio request error: {re}")
+    except httpx.RequestError as re:
+        logger.error(f"❌ Network error contacting Studio: {re}")
+        raise HTTPException(
+            status_code=500, detail=f"Network error contacting Studio: {re}"
+        )
     except Exception as e:
         logger.exception("❌ run_inference failed")
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
+
 
 
 # -----------------------------
