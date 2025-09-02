@@ -6,7 +6,7 @@ import logging
 import uuid
 from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -14,6 +14,7 @@ import httpx
 from scripts.create_manager_with_roles import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
 from src.api.client import LyzrAPIClient
+from src.utils.auth import get_current_user, UserClaims  # ✅ JWT-based auth
 
 # -----------------------------
 # Environment
@@ -42,15 +43,15 @@ def trace(msg: str, extra: dict = None):
 # -----------------------------
 # FastAPI app
 # -----------------------------
-app = FastAPI(title="Agent Orchestrator API (No-Auth Dev Mode, User Key)")
+app = FastAPI(title="Agent Orchestrator API (JWT Auth)")
 
 # -----------------------------
 # CORS (wide open for dev)
 # -----------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # TODO: tighten for staging/prod
-    allow_credentials=False,   # must be False with "*"
+    allow_origins=["*"],       # TODO: restrict in staging/prod
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -66,25 +67,25 @@ def get_request_id() -> str:
 # Debug + health
 # -----------------------------
 @app.get("/me")
-async def read_me():
-    return {"status": "ok", "user_id": "demo-user", "claims": {"role": "tester"}}
+async def read_me(claims: UserClaims = Depends(get_current_user)):
+    return {"status": "ok", "user_id": claims.sub, "claims": claims.dict()}
 
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "service": "Agent Orchestrator API (No-Auth Dev Mode, User Key)"}
+    return {"status": "ok", "service": "Agent Orchestrator API (JWT Auth)"}
 
 
 # -----------------------------
 # Endpoints
 # -----------------------------
 @app.get("/studio-agents/")
-async def list_studio_agents(api_key: str = Query(..., description="User-provided Lyzr Studio API key")):
+async def list_studio_agents(claims: UserClaims = Depends(get_current_user)):
     """
-    Test connectivity to Lyzr Studio using a user-provided API key.
-    Frontend can call /studio-agents?api_key=<key>.
+    Test connectivity to Lyzr Studio using the backend's API key.
+    Authenticated via JWT.
     """
-    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+    headers = {"x-api-key": os.getenv("LYZR_STUDIO_API_KEY"), "Content-Type": "application/json"}
 
     try:
         resp = httpx.get("https://agent-prod.studio.lyzr.ai/v3/agents/", headers=headers, timeout=30)
@@ -105,16 +106,16 @@ async def list_studio_agents(api_key: str = Query(..., description="User-provide
 async def create_agents_from_file(
     file: UploadFile = File(...),
     tz_name: str = Form("America/Los_Angeles"),
-    api_key: str = Query(..., description="User-provided Lyzr Studio API key")
+    claims: UserClaims = Depends(get_current_user)   # ✅ JWT auth instead of api_key query
 ):
     """
-    Create Manager + Role agents from a YAML file using a user-provided API key.
-    tz_name is provided by user via dropdown (default: PST).
+    Create Manager + Role agents from a YAML file.
+    tz_name provided by user via dropdown (default: PST).
     """
     rid = get_request_id()
     trace(f"Received /create-agents request tz={tz_name}", {"request_id": rid})
 
-    client = LyzrAPIClient(api_key=api_key)
+    client = LyzrAPIClient(api_key=os.getenv("LYZR_STUDIO_API_KEY"))
 
     yaml_path = None
     try:
@@ -156,20 +157,23 @@ class InferencePayload(BaseModel):
 @app.post("/run-inference/")
 async def run_inference(
     req: InferencePayload,
-    api_key: str = Query(..., description="User-provided Lyzr Studio API key")
+    tz_name: str = Form("America/Los_Angeles"),
+    claims: UserClaims = Depends(get_current_user)   # ✅ JWT auth
 ):
     """
-    Run inference against a given agent_id using a user-provided API key.
+    Run inference against a given agent_id.
+    Authenticated via JWT.
     """
     rid = get_request_id()
     trace(f"Run inference for agent_id={req.agent_id}", {"request_id": rid})
 
-    headers = {"x-api-key": api_key, "Content-Type": "application/json"}
+    headers = {"x-api-key": os.getenv("LYZR_STUDIO_API_KEY"), "Content-Type": "application/json"}
 
     payload = {
         "agent_id": req.agent_id,
         "session_id": f"{req.agent_id}-{os.urandom(4).hex()}",
         "message": req.message,
+        "tz_name": tz_name
     }
 
     try:
@@ -188,8 +192,7 @@ async def run_inference(
 
         raw = resp.json()
 
-        # Ensure output dir exists
-        out_dir = Path("outputs/demo-user")
+        out_dir = Path(f"outputs/{claims.sub}")
         out_dir.mkdir(parents=True, exist_ok=True)
 
         normalized = normalize_inference_output(json.dumps(raw), out_dir)
