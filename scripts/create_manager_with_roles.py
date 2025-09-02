@@ -19,7 +19,7 @@ from scripts.create_agent_from_yaml import create_agent_from_yaml, update_agent
 logger = logging.getLogger("create-manager-with-roles")
 if not logger.handlers:
     handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] [create-manager-with-roles] %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
@@ -80,6 +80,35 @@ def _manager_supervision_instructions(
     return "\n".join(filter(None, lines)).strip()
 
 
+def _safe_parse_role_yaml(role: Dict[str, Any]) -> Dict[str, Any] | None:
+    """
+    Parse role['yaml'] robustly:
+    - If it's already a dict, return as-is
+    - If it's a string, try yaml.safe_load
+    - Otherwise return None
+    """
+    raw = role.get("yaml")
+    if raw is None:
+        return None
+
+    if isinstance(raw, dict):
+        return raw
+
+    if isinstance(raw, str):
+        try:
+            parsed = yaml.safe_load(raw)
+            if isinstance(parsed, dict):
+                return parsed
+            logger.error(f"❌ Role {role.get('name')} YAML parsed into {type(parsed)}, expected dict")
+            return None
+        except Exception as e:
+            logger.error(f"❌ Failed to parse role YAML for {role.get('name')}: {e}")
+            return None
+
+    logger.error(f"❌ Role {role.get('name')} had unsupported yaml type: {type(raw)}")
+    return None
+
+
 # -----------------------------
 # Canonical Examples
 # -----------------------------
@@ -103,10 +132,7 @@ agents:
       agent_role: Example Role
       agent_goal: Example goal
       agent_instructions: Example instructions
-      features:
-        - type: yaml_role_generation
-          config: {{}}
-          priority: 0
+      features: []
       tools: []
       response_format:
         type: json
@@ -129,10 +155,7 @@ def canonical_manager_examples(manager_name: str, role_names: List[str]) -> str:
       agent_role: Example Role
       agent_goal: Example goal
       agent_instructions: Example instructions
-      features:
-        - type: yaml_role_generation
-          config: {{}}
-          priority: 0
+      features: []
       tools: []
       response_format:
         type: json
@@ -164,10 +187,7 @@ agents:
       agent_role: Composer Manager
       agent_goal: Example manager goal
       agent_instructions: Example instructions
-      features:
-        - type: proposal_generation
-          config: {{}}
-          priority: 1
+      features: []
       tools: []
       response_format:
         type: json
@@ -209,21 +229,16 @@ def create_manager_with_roles(
     # ----- Create roles -----
     created_roles: List[Dict[str, Any]] = []
     for role in manager_def.get("managed_agents", []):
-        if "yaml" not in role:
-            logger.warning(f"⚠️ Skipping role {role.get('name')} (no inline YAML)")
+        parsed_role = _safe_parse_role_yaml(role)
+        if not parsed_role:
+            logger.warning(f"⚠️ Skipping role {role.get('name')} (invalid yaml)")
             continue
 
-        try:
-            role_yaml = yaml.safe_load(role["yaml"])
-        except Exception as e:
-            logger.error(f"❌ Failed to parse role YAML for {role.get('name')}: {e}")
-            continue
-
-        role_name = role_yaml.get("name", "ROLE")
-        role_yaml["examples"] = canonical_role_examples(role_name)
+        role_name = parsed_role.get("name", "ROLE")
+        parsed_role["examples"] = canonical_role_examples(role_name)
 
         logger.info(f"🎭 Creating role agent: {role_name}")
-        role_resp = create_agent_from_yaml(client, role_yaml)
+        role_resp = create_agent_from_yaml(client, parsed_role)
         if not role_resp.get("ok"):
             logger.error(f"❌ Failed to create role {role_name}: {role_resp}")
             continue
@@ -233,33 +248,31 @@ def create_manager_with_roles(
             logger.error(f"❌ Role {role_name} created but missing agent_id")
             continue
 
-        # Keep original role name (do NOT rename)
+        # Update role agent
         role_updates = {
-            "system_prompt": _compose_system_prompt(role_yaml),
-            "examples": role_yaml["examples"],
-            "agent_role": role_yaml.get("agent_role", ""),
-            "agent_goal": role_yaml.get("agent_goal", ""),
-            "agent_instructions": role_yaml.get("agent_instructions", ""),
+            "system_prompt": _compose_system_prompt(parsed_role),
+            "examples": parsed_role["examples"],
+            "agent_role": parsed_role.get("agent_role", ""),
+            "agent_goal": parsed_role.get("agent_goal", ""),
+            "agent_instructions": parsed_role.get("agent_instructions", ""),
         }
         update_agent(client, role_id, role_updates)
 
         created_roles.append(
             {
                 "id": role_id,
-                "name": role_name,  # keep original name
-                "description": role_yaml.get("description", ""),
-                "agent_role": role_yaml.get("agent_role", ""),
-                "agent_goal": role_yaml.get("agent_goal", ""),
-                "agent_instructions": role_yaml.get("agent_instructions", ""),
+                "name": role_name,
+                "description": parsed_role.get("description", ""),
+                "agent_role": parsed_role.get("agent_role", ""),
+                "agent_goal": parsed_role.get("agent_goal", ""),
+                "agent_instructions": parsed_role.get("agent_instructions", ""),
             }
         )
 
     # ----- Create manager -----
     manager_base_name = manager_def.get("name", "MANAGER")
     mgr_instr_with_supervision = _manager_supervision_instructions(manager_def, created_roles)
-    mgr_examples = canonical_manager_examples(
-        manager_base_name, [r["name"] for r in created_roles]
-    )
+    mgr_examples = canonical_manager_examples(manager_base_name, [r["name"] for r in created_roles])
     manager_def["examples"] = mgr_examples
 
     logger.info(f"👑 Creating manager agent: {manager_base_name}")
@@ -273,7 +286,6 @@ def create_manager_with_roles(
         logger.error("❌ Manager created but missing agent_id")
         return {}
 
-    # Manager is renamed
     manager_renamed = _rich_manager_name(manager_base_name, manager_id)
 
     managed_agents_payload = [
