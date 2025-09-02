@@ -91,19 +91,22 @@ def user_to_dict(user) -> dict:
 
 
 def extract_api_key_from_user(user) -> str | None:
-    """
-    Extract API key from Supabase user profile claims.
-    Supports both 'lyzr_api_key' and 'encrypted_api_key'.
-    Falls back to env LYZR_API_KEY if not present.
-    """
     key = None
+
     if isinstance(user, dict):
-        key = user.get("lyzr_api_key") or user.get("encrypted_api_key")
+        if "lyzr_api_key" in user:
+            key = user["lyzr_api_key"]
+            logger.info("✅ Using API key from Supabase user claim: lyzr_api_key")
+        elif "encrypted_api_key" in user:
+            key = user["encrypted_api_key"]
+            logger.info("✅ Using API key from Supabase user claim: encrypted_api_key")
     else:
         if hasattr(user, "lyzr_api_key"):
             key = getattr(user, "lyzr_api_key")
+            logger.info("✅ Using API key from Supabase user attribute: lyzr_api_key")
         elif hasattr(user, "encrypted_api_key"):
             key = getattr(user, "encrypted_api_key")
+            logger.info("✅ Using API key from Supabase user attribute: encrypted_api_key")
 
     if key:
         return key
@@ -111,8 +114,11 @@ def extract_api_key_from_user(user) -> str | None:
     # 🔑 fallback
     env_key = os.getenv("LYZR_API_KEY")
     if env_key:
-        logger.warning("⚠️ Using fallback LYZR_API_KEY from environment")
+        logger.warning("⚠️ No API key in Supabase JWT — falling back to environment LYZR_API_KEY")
+    else:
+        logger.error("❌ No API key available in user claims or environment")
     return env_key
+
 
 
 # -----------------------------
@@ -182,16 +188,11 @@ async def create_agents_from_file(
                 pass
 
 
-# -----------------------------
-# Inference
-# -----------------------------
-class InferencePayload(BaseModel):
-    agent_id: str
-    message: str
-
-
 from time import time
 
+# -----------------------------
+# Inference Payload
+# -----------------------------
 class InferencePayload(BaseModel):
     agent_id: str
     message: str
@@ -202,6 +203,9 @@ class InferencePayload(BaseModel):
     assets: list[str] = []
 
 
+# -----------------------------
+# Inference Endpoint
+# -----------------------------
 @app.post("/run-inference/")
 async def run_inference(
     req: InferencePayload,
@@ -222,7 +226,6 @@ async def run_inference(
         "x-api-key": api_key,
     }
 
-    # Build full payload expected by Studio
     payload = {
         "user_id": req.user_id or safe_user_email(user) or safe_user_sub(user),
         "system_prompt_variables": req.system_prompt_variables or {},
@@ -234,13 +237,17 @@ async def run_inference(
         "assets": req.assets or [],
     }
 
+    # 🔎 Debug logging
+    logger.info(f"➡️ Payload to Studio:\n{json.dumps(payload, indent=2)}")
+    logger.info(f"🔑 Using API key (truncated): {api_key[:6]}...")
+
     try:
         start = time()
         resp = httpx.post(
             "https://agent-prod.studio.lyzr.ai/v3/inference/chat/",
             headers=headers,
             json=payload,
-            timeout=60,
+            timeout=httpx.Timeout(20.0, connect=5.0),
         )
         elapsed = round(time() - start, 2)
         trace(
