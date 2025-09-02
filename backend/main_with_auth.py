@@ -1,3 +1,5 @@
+# main_with_auth.py
+
 import os
 import tempfile
 import json
@@ -11,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import httpx
+from httpx import TimeoutException, RequestError
 
 from scripts.create_manager_with_roles import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
@@ -33,7 +36,6 @@ logger = logging.getLogger("agent-api")
 
 
 def trace(msg: str, extra: dict = None):
-    """Helper for structured trace logging with request_id."""
     rid = extra.get("request_id") if extra else None
     if rid:
         logger.info(f"[trace][rid={rid}] {msg}")
@@ -45,6 +47,28 @@ def trace(msg: str, extra: dict = None):
 # FastAPI app
 # -----------------------------
 app = FastAPI(title="Agent Orchestrator API (Supabase JWT Auth)")
+
+# -----------------------------
+# Global API client (created in lifespan)
+# -----------------------------
+client: LyzrAPIClient | None = None
+
+
+@app.on_event("startup")
+async def startup_event():
+    global client
+    api_key = os.getenv("LYZR_API_KEY", "")
+    client = LyzrAPIClient(api_key=api_key, timeout=300.0)  # bump timeout to 5min
+    logger.info("✅ LyzrAPIClient initialized")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    global client
+    if client:
+        client.close()
+        logger.info("👋 LyzrAPIClient closed")
+
 
 # -----------------------------
 # CORS (origins from .env, fallback to *)
@@ -94,31 +118,20 @@ def extract_api_key_from_user(user) -> str | None:
     key = None
 
     if isinstance(user, dict):
-        if "lyzr_api_key" in user:
-            key = user["lyzr_api_key"]
-            logger.info("✅ Using API key from Supabase user claim: lyzr_api_key")
-        elif "encrypted_api_key" in user:
-            key = user["encrypted_api_key"]
-            logger.info("✅ Using API key from Supabase user claim: encrypted_api_key")
+        key = user.get("lyzr_api_key") or user.get("encrypted_api_key")
     else:
-        if hasattr(user, "lyzr_api_key"):
-            key = getattr(user, "lyzr_api_key")
-            logger.info("✅ Using API key from Supabase user attribute: lyzr_api_key")
-        elif hasattr(user, "encrypted_api_key"):
-            key = getattr(user, "encrypted_api_key")
-            logger.info("✅ Using API key from Supabase user attribute: encrypted_api_key")
+        key = getattr(user, "lyzr_api_key", None) or getattr(user, "encrypted_api_key", None)
 
     if key:
+        logger.info("✅ Using API key from Supabase JWT")
         return key
 
-    # 🔑 fallback
     env_key = os.getenv("LYZR_API_KEY")
     if env_key:
-        logger.warning("⚠️ No API key in Supabase JWT — falling back to environment LYZR_API_KEY")
+        logger.warning("⚠️ No API key in Supabase JWT — falling back to environment")
     else:
         logger.error("❌ No API key available in user claims or environment")
     return env_key
-
 
 
 # -----------------------------
@@ -157,21 +170,18 @@ async def create_agents_from_file(
     if not api_key:
         raise HTTPException(status_code=401, detail="No API key found in user profile")
 
-    client = LyzrAPIClient(api_key=api_key)
+    local_client = LyzrAPIClient(api_key=api_key)
 
     yaml_path = None
     try:
         raw_bytes = await file.read()
-        try:
-            text = raw_bytes.decode("utf-8")
-        except UnicodeDecodeError:
-            raise HTTPException(status_code=400, detail="Uploaded file is not valid UTF-8")
+        text = raw_bytes.decode("utf-8")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".yaml") as tmp:
             tmp.write(text.encode("utf-8"))
             yaml_path = Path(tmp.name)
 
-        result = create_manager_with_roles(client, yaml_path)
+        result = create_manager_with_roles(local_client, yaml_path)
         return {"status": "success", "created": result, "user": user_to_dict(user)}
 
     except yaml.YAMLError as ye:
@@ -182,13 +192,9 @@ async def create_agents_from_file(
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
     finally:
         if yaml_path and yaml_path.exists():
-            try:
-                yaml_path.unlink()
-            except Exception:
-                pass
+            yaml_path.unlink()
+        local_client.close()
 
-
-from time import time
 
 # -----------------------------
 # Inference Payload
@@ -217,14 +223,9 @@ async def run_inference(
         {"request_id": rid},
     )
 
-    api_key = extract_api_key_from_user(user)
+    api_key = extract_api_key_from_user(user) or os.getenv("LYZR_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=401, detail="No API key found in user profile")
-
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": api_key,
-    }
+        raise HTTPException(status_code=401, detail="No API key found")
 
     payload = {
         "user_id": req.user_id or safe_user_email(user) or safe_user_sub(user),
@@ -237,32 +238,15 @@ async def run_inference(
         "assets": req.assets or [],
     }
 
-    # 🔎 Debug logging
     logger.info(f"➡️ Payload to Studio:\n{json.dumps(payload, indent=2)}")
     logger.info(f"🔑 Using API key (truncated): {api_key[:6]}...")
 
     try:
-        start = time()
-        resp = httpx.post(
-            "https://agent-prod.studio.lyzr.ai/v3/inference/chat/",
-            headers=headers,
-            json=payload,
-            timeout=httpx.Timeout(20.0, connect=5.0),
-        )
-        elapsed = round(time() - start, 2)
-        trace(
-            f"Studio response status={resp.status_code} elapsed={elapsed}s",
-            {"request_id": rid},
-        )
+        resp = client.call_agent(payload, api_key=api_key)
+        if not resp["ok"]:
+            raise HTTPException(status_code=502, detail=resp.get("data", "Studio error"))
 
-        if resp.status_code != 200:
-            error_text = resp.text
-            logger.error(
-                f"❌ Studio error response (status={resp.status_code}, elapsed={elapsed}s): {error_text}"
-            )
-            raise HTTPException(status_code=resp.status_code, detail=error_text)
-
-        raw = resp.json()
+        raw = resp["data"]
         out_dir = Path(f"outputs/{safe_user_sub(user)}")
         out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -273,18 +257,17 @@ async def run_inference(
             "raw": raw,
             "normalized": normalized,
             "user": user_to_dict(user),
-            "elapsed": elapsed,
         }
 
-    except httpx.RequestError as re:
-        logger.error(f"❌ Network error contacting Studio: {re}")
-        raise HTTPException(
-            status_code=500, detail=f"Network error contacting Studio: {re}"
-        )
+    except TimeoutException:
+        logger.error("⏱️ Studio request timed out")
+        raise HTTPException(status_code=504, detail="Studio timed out")
+    except RequestError as re:
+        logger.error(f"❌ Studio request error: {re}")
+        raise HTTPException(status_code=502, detail=f"Studio request error: {re}")
     except Exception as e:
         logger.exception("❌ run_inference failed")
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
-
 
 
 # -----------------------------
