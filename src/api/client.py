@@ -222,7 +222,8 @@ class LyzrAPIClient:
         """
     mgr_resp = self.create_manager_with_roles(manager_yaml, is_path=True)
     if not mgr_resp.get("ok") or "data" not in mgr_resp:
-        return {"ok": False, "error": mgr_resp.get("error", "Failed to create manager")}
+        
+    return {"ok": False, "error": mgr_resp.get("error", "Failed to create manager")}
 
     manager_id = mgr_resp["data"].get("_id") or mgr_resp["data"].get("agent_id")
     manager_name = mgr_resp["data"].get("name", "Manager")
