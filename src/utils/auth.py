@@ -1,41 +1,69 @@
 # src/utils/auth.py
+
 import os
 import requests
-from jose import jwt, jwk, JWTError
-from jose.utils import base64url_decode
+from pydantic import BaseModel
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from jose import jwt
+from jose.exceptions import JWTError
 
-SUPABASE_JWKS_URL = os.getenv("SUPABASE_JWKS_URL")
+# -----------------------------
+# Config
+# -----------------------------
+JWKS_URL = os.getenv("SUPABASE_JWKS_URL")
+ALGORITHMS = ["RS256"]  # Supabase uses RS256 for signing
 
+if not JWKS_URL:
+    raise RuntimeError("❌ SUPABASE_JWKS_URL is not set in environment variables")
+
+# Cache keys for performance
+_jwks_cache = None
+
+
+def _get_jwks():
+    global _jwks_cache
+    if _jwks_cache is None:
+        try:
+            resp = requests.get(JWKS_URL, timeout=10)
+            resp.raise_for_status()
+            _jwks_cache = resp.json()
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch JWKS from {JWKS_URL}: {e}")
+    return _jwks_cache
+
+
+# -----------------------------
+# Models
+# -----------------------------
 class UserClaims(BaseModel):
     sub: str
     email: str
     role: str
 
+
+# -----------------------------
+# Security Dependency
+# -----------------------------
 security = HTTPBearer(auto_error=True)
 
-def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) -> UserClaims:
+
+def get_current_user(
+    token: HTTPAuthorizationCredentials = Depends(security),
+) -> UserClaims:
+    """
+    Decode and verify Supabase JWT using JWKS.
+    """
     try:
-        # 1. Decode headers
-        unverified_header = jwt.get_unverified_header(token.credentials)
-
-        # 2. Fetch JWKS from Supabase
-        jwks = requests.get(SUPABASE_JWKS_URL).json()
-
-        # 3. Find the matching key
-        key = next((k for k in jwks["keys"] if k["kid"] == unverified_header["kid"]), None)
-        if not key:
-            raise HTTPException(status_code=401, detail="No matching JWK found")
-
-        # 4. Verify
+        jwks = _get_jwks()
         payload = jwt.decode(
             token.credentials,
-            key,
-            algorithms=[unverified_header["alg"]],
-            audience=os.getenv("SUPABASE_JWT_AUDIENCE", None)
+            jwks,
+            algorithms=ALGORITHMS,
+            options={"verify_aud": False},  # skip aud unless you enforce it
         )
         return UserClaims(**payload)
     except JWTError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid Supabase token: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Auth failed: {str(e)}")
