@@ -1,3 +1,4 @@
+# backend/main_with_auth.py
 import os
 import tempfile
 import json
@@ -74,7 +75,7 @@ async def read_me(user=Depends(get_current_user)):
     return {
         "status": "ok",
         "user_id": user.get("sub", ""),
-        "claims": user  # 👈 full raw payload from JWT
+        "claims": user  # 👈 full decoded JWT payload
     }
 
 
