@@ -11,7 +11,7 @@ from src.utils.normalize_output import normalize_inference_output, canonicalize_
 
 
 class LyzrAPIClient:
-    def __init__(self, api_key: str = None, debug: bool = None, timeout: int = 60, retries: int = 3):
+    def __init__(self, api_key: str = None, debug: bool = None, timeout: int = 120, retries: int = 3):
         self.base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai")
 
         # Use provided key OR fallback to env
