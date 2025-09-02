@@ -23,7 +23,10 @@ class LyzrAPIClient:
         self.timeout = timeout
         self.retries = retries
 
-        # Debug mode via constructor or env
+        # ✅ Reusable client for all requests
+        self.client = httpx.Client(timeout=httpx.Timeout(self.timeout))
+
+        # Debug mode
         if debug is None:
             self.debug = os.getenv("LYZR_DEBUG", "0") == "1"
         else:
@@ -40,11 +43,11 @@ class LyzrAPIClient:
         for attempt in range(self.retries):
             try:
                 if stream:
-                    with httpx.stream(method, url, headers=self.headers, json=payload, timeout=self.timeout) as r:
+                    with self.client.stream(method, url, headers=self.headers, json=payload) as r:
                         r.raise_for_status()
                         return {"ok": True, "status": r.status_code, "data": r.iter_text()}
                 else:
-                    r = httpx.request(method, url, headers=self.headers, json=payload, timeout=self.timeout)
+                    r = self.client.request(method, url, headers=self.headers, json=payload)
                     r.raise_for_status()
                     try:
                         return {"ok": True, "status": r.status_code, "data": r.json()}
@@ -91,8 +94,11 @@ class LyzrAPIClient:
     # -----------------
     # High-level helpers
     # -----------------
-    def create_agent(self, payload: dict):
-        return self.post("/v3/agents/", payload)
+    def call_agent(self, agent_id_or_name: str, payload: dict):
+        """Invoke a specific agent by ID or name"""
+        url = f"/v3/agents/{agent_id_or_name}/invoke"
+        return self.post(url, payload)   # ✅ now uses self.client internally
+
 
     def create_agent_from_yaml(self, yaml_input: str, is_path: bool = True):
         """Create agent directly from YAML."""
