@@ -9,8 +9,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 # -----------------------------
 # Config
 # -----------------------------
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-JWKS_URL = f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+SUPABASE_JWKS_URL = os.getenv("SUPABASE_JWKS_URL")
+if not SUPABASE_JWKS_URL:
+    raise RuntimeError("SUPABASE_JWKS_URL must be set in environment variables")
 
 # -----------------------------
 # Models
@@ -25,18 +26,23 @@ class UserClaims(BaseModel):
 # -----------------------------
 security = HTTPBearer(auto_error=True)
 
+# -----------------------------
+# JWKS Cache
+# -----------------------------
+_jwks_cache = None
+
 def get_jwks():
-    try:
-        resp = requests.get(JWKS_URL, timeout=10)
+    global _jwks_cache
+    if _jwks_cache is None:
+        resp = requests.get(SUPABASE_JWKS_URL, timeout=10)
         resp.raise_for_status()
-        return resp.json()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch JWKS: {e}")
+        _jwks_cache = resp.json()
+    return _jwks_cache
 
 def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) -> UserClaims:
     """
-    Decode a Supabase JWT from Authorization: Bearer <token> header
-    and return typed user claims.
+    Decode a Supabase JWT from Authorization: Bearer <token> header.
+    Auto-detects audience: tries 'authenticated', falls back to verify_aud=False.
     """
     try:
         jwks = get_jwks()
@@ -47,12 +53,22 @@ def get_current_user(token: HTTPAuthorizationCredentials = Depends(security)) ->
 
         public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key)
 
-        payload = jwt.decode(
-            token.credentials,
-            public_key,
-            algorithms=["RS256"],
-            options={"verify_aud": False}  # 👈 ignore audience mismatch
-        )
+        # Try strict audience first
+        try:
+            payload = jwt.decode(
+                token.credentials,
+                public_key,
+                algorithms=["RS256"],
+                audience="authenticated"
+            )
+        except jwt.InvalidAudienceError:
+            # Fallback: disable audience verification
+            payload = jwt.decode(
+                token.credentials,
+                public_key,
+                algorithms=["RS256"],
+                options={"verify_aud": False}
+            )
 
         return UserClaims(
             sub=payload.get("sub", ""),
