@@ -9,6 +9,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import httpx
 
@@ -74,17 +75,14 @@ def get_request_id() -> str:
 
 
 def safe_user_email(user) -> str:
-    """Extract email if present, else return None."""
     return getattr(user, "email", None)
 
 
 def safe_user_sub(user) -> str:
-    """Extract sub (user id) if present, else return empty string."""
     return getattr(user, "sub", "")
 
 
 def user_to_dict(user) -> dict:
-    """Convert Pydantic model or dict-like to a plain dict."""
     if hasattr(user, "dict"):
         return user.dict()
     elif isinstance(user, dict):
@@ -98,13 +96,10 @@ def user_to_dict(user) -> dict:
 # -----------------------------
 @app.get("/me")
 async def read_me(user=Depends(get_current_user)):
-    """
-    Returns the full decoded Supabase JWT payload for debugging.
-    """
     return {
         "status": "ok",
         "user_id": safe_user_sub(user),
-        "claims": user_to_dict(user)
+        "claims": user_to_dict(user),
     }
 
 
@@ -120,15 +115,15 @@ async def health_check():
 async def create_agents_from_file(
     file: UploadFile = File(...),
     tz_name: str = Form("America/Los_Angeles"),
-    user=Depends(get_current_user)  # ✅ enforce auth
+    user=Depends(get_current_user),
 ):
-    """
-    Create Manager + Role agents from a YAML file using the authenticated user's Supabase JWT.
-    """
     rid = get_request_id()
-    trace(f"Received /create-agents request tz={tz_name} by {safe_user_email(user)}", {"request_id": rid})
+    trace(
+        f"Received /create-agents request tz={tz_name} by {safe_user_email(user)}",
+        {"request_id": rid},
+    )
 
-    client = LyzrAPIClient(api_key=None)  # auth handled via JWT now
+    client = LyzrAPIClient(api_key=None)
 
     yaml_path = None
     try:
@@ -170,13 +165,13 @@ class InferencePayload(BaseModel):
 @app.post("/run-inference/")
 async def run_inference(
     req: InferencePayload,
-    user=Depends(get_current_user)  # ✅ enforce auth
+    user=Depends(get_current_user),
 ):
-    """
-    Run inference against a given agent_id for the authenticated user.
-    """
     rid = get_request_id()
-    trace(f"Run inference for agent_id={req.agent_id} by {safe_user_email(user)}", {"request_id": rid})
+    trace(
+        f"Run inference for agent_id={req.agent_id} by {safe_user_email(user)}",
+        {"request_id": rid},
+    )
 
     headers = {"Content-Type": "application/json"}
 
@@ -201,7 +196,6 @@ async def run_inference(
             raise HTTPException(status_code=resp.status_code, detail=error_text)
 
         raw = resp.json()
-
         out_dir = Path(f"outputs/{safe_user_sub(user)}")
         out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -211,7 +205,7 @@ async def run_inference(
             "agent_id": req.agent_id,
             "raw": raw,
             "normalized": normalized,
-            "user": user_to_dict(user)
+            "user": user_to_dict(user),
         }
     except httpx.RequestError as re:
         logger.exception("❌ HTTP request to Studio failed")
@@ -235,3 +229,25 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     print(f"📤 Response {response.status_code}")
     return response
+
+
+# -----------------------------
+# Middleware (catch all exceptions → JSON + CORS)
+# -----------------------------
+@app.middleware("http")
+async def catch_exceptions_middleware(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except HTTPException as he:
+        return JSONResponse(
+            status_code=he.status_code,
+            content={"status": "error", "detail": he.detail},
+            headers={"Access-Control-Allow-Origin": request.headers.get("origin", "*")},
+        )
+    except Exception as e:
+        logger.exception("❌ Unhandled server error")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "detail": str(e)},
+            headers={"Access-Control-Allow-Origin": request.headers.get("origin", "*")},
+        )
