@@ -1,143 +1,3 @@
-# Used by backend/main_with_auth.py
-
-import os
-import yaml
-from pathlib import Path
-from typing import Union, Dict, Any, List
-from datetime import datetime
-import pytz
-
-from src.api.client import LyzrAPIClient
-from scripts.create_agent_from_yaml import create_agent_from_yaml, update_agent
-
-# ---------- Timezone / naming helpers ----------
-
-def _tz() -> pytz.timezone:
-    # Default PST; override with APP_TZ (e.g. America/Los_Angeles)
-    tz_name = os.getenv("APP_TZ", "America/Los_Angeles")
-    try:
-        return pytz.timezone(tz_name)
-    except Exception:
-        return pytz.timezone("America/Los_Angeles")
-
-def _timestamp_str() -> str:
-    # Example: 31AUG2025-10:07AM PDT
-    now = datetime.now(_tz())
-    return now.strftime("%d%b%Y-%I:%M%p %Z").upper()
-
-def _suffix_from_id(agent_id: str) -> str:
-    return (agent_id or "")[-6:] or "XXXXXX"
-
-def _rich_manager_name(base: str, agent_id: str) -> str:
-    return f"{base}_v1.0_{_suffix_from_id(agent_id)}_{_timestamp_str()}"
-
-def _rich_role_name(base: str, agent_id: str) -> str:
-    return f"(R) {base}_v1.0_{_suffix_from_id(agent_id)}_{_timestamp_str()}"
-
-# ---------- Prompt + examples builders ----------
-
-def _compose_system_prompt(agent_def: Dict[str, Any]) -> str:
-    role = agent_def.get("agent_role", "").strip()
-    goal = agent_def.get("agent_goal", "").strip()
-    instr = agent_def.get("agent_instructions", "").strip()
-
-    sections = []
-    if role:
-        sections.append(f"ROLE:\n{role}")
-    if goal:
-        sections.append(f"GOAL:\n{goal}")
-    if instr:
-        sections.append(f"INSTRUCTIONS:\n{instr}")
-    return "\n\n".join(sections).strip()
-
-def _manager_supervision_instructions(manager_def: Dict[str, Any], created_roles: List[Dict[str, Any]]) -> str:
-    """Extend manager instructions with how to manage each role."""
-    base = manager_def.get("agent_instructions", "").strip()
-    lines = [base, "", "Manage these attached roles:"]
-    for r in created_roles:
-        bullets = (r.get("agent_goal") or "").strip().replace("\n", " ").strip()
-        if bullets:
-            lines.append(f"- Role '{r['name']}': {bullets}")
-        else:
-            lines.append(f"- Role '{r['name']}': Execute delegated sub-tasks from the manager.")
-    return "\n".join([l for l in lines if l]).strip()
-
-def canonical_role_examples(role_name: str) -> str:
-    return f"""Expected canonical YAML format for Role agents:
-
-workflow_name: {role_name}_Flow
-workflow_yaml: |
-  flow_name: {role_name}_Flow
-  flow_data:
-    tasks:
-      - name: {role_name.lower()}_task
-        function: call_agent
-        agent: {role_name}
-agents:
-  - name: {role_name}
-    type: role
-    yaml: |
-      name: {role_name}
-      description: Example Role description
-      agent_role: Example Role
-      agent_goal: Example goal
-      agent_instructions: Example instructions
-      features:
-        - type: yaml_role_generation
-          config: {{}}
-          priority: 0
-      tools: []
-      response_format:
-        type: json
-      provider_id: OpenAI
-      model: gpt-4o-mini
-      temperature: 0.3
-      top_p: 0.9
-      llm_credential_id: lyzr_openai
-"""
-
-def canonical_manager_examples(manager_name: str, role_names: List[str]) -> str:
-    roles_block = "\n".join(
-        [f"  - name: {r}\n    type: role\n    yaml: |\n      name: {r}\n      description: Example Role description\n      agent_role: Example Role\n      agent_goal: Example goal\n      agent_instructions: Example instructions\n      features:\n        - type: yaml_role_generation\n          config: {{}}\n          priority: 0\n      tools: []\n      response_format:\n        type: json\n      provider_id: OpenAI\n      model: gpt-4o-mini\n      temperature: 0.3\n      top_p: 0.9\n      llm_credential_id: lyzr_openai"
-         for r in role_names]
-    )
-
-    return f"""Expected canonical YAML format for Manager + Roles:
-
-workflow_name: {manager_name}_Flow
-workflow_yaml: |
-  flow_name: {manager_name}_Flow
-  flow_data:
-    tasks:
-      - name: {manager_name.lower()}_task
-        function: call_agent
-        agent: {manager_name}
-agents:
-  - name: {manager_name}
-    type: manager
-    yaml: |
-      name: {manager_name}
-      description: Example Composer Manager description
-      agent_role: Composer Manager
-      agent_goal: Example manager goal
-      agent_instructions: Example instructions
-      features:
-        - type: proposal_generation
-          config: {{}}
-          priority: 1
-      tools: []
-      response_format:
-        type: json
-      provider_id: OpenAI
-      model: gpt-4o-mini
-      temperature: 0.3
-      top_p: 0.9
-      llm_credential_id: lyzr_openai
-{roles_block if roles_block else ""}
-"""
-
-# ---------- Main orchestration ----------
-
 def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]) -> Dict[str, Any]:
     """
     Create role agents first, then manager, then:
@@ -164,7 +24,17 @@ def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, D
             print(f"⚠️ Skipping role {role.get('name')} (no inline YAML)")
             continue
 
-        role_yaml = yaml.safe_load(role["yaml"])
+        # 🔑 Fix: decode escaped YAML string
+        raw_yaml = role["yaml"]
+        if isinstance(raw_yaml, str):
+            raw_yaml = raw_yaml.replace("\\n", "\n").replace("\\t", "  ")
+
+        try:
+            role_yaml = yaml.safe_load(raw_yaml)
+        except Exception as e:
+            print(f"❌ Failed to parse role YAML for {role.get('name')}: {e}")
+            continue
+
         role_name = role_yaml.get("name", "ROLE")
 
         # inject examples & prepare prompt

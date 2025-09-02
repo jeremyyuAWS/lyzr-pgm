@@ -1,4 +1,9 @@
-import os, tempfile, json, yaml, logging, uuid
+import os
+import tempfile
+import json
+import yaml
+import logging
+import uuid
 from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Query
@@ -9,7 +14,6 @@ import httpx
 from scripts.create_manager_with_roles import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
 from src.api.client import LyzrAPIClient
-
 
 # -----------------------------
 # Environment
@@ -25,6 +29,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agent-api")
 
+
 def trace(msg: str, extra: dict = None):
     """Helper for structured trace logging with request_id."""
     rid = extra.get("request_id") if extra else None
@@ -32,6 +37,7 @@ def trace(msg: str, extra: dict = None):
         logger.info(f"[trace][rid={rid}] {msg}")
     else:
         logger.info(f"[trace] {msg}")
+
 
 # -----------------------------
 # FastAPI app
@@ -43,7 +49,7 @@ app = FastAPI(title="Agent Orchestrator API (No-Auth Dev Mode, User Key)")
 # -----------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # allow all
+    allow_origins=["*"],       # TODO: tighten for staging/prod
     allow_credentials=False,   # must be False with "*"
     allow_methods=["*"],
     allow_headers=["*"],
@@ -67,6 +73,7 @@ async def read_me():
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "Agent Orchestrator API (No-Auth Dev Mode, User Key)"}
+
 
 # -----------------------------
 # Endpoints
@@ -109,16 +116,33 @@ async def create_agents_from_file(
 
     client = LyzrAPIClient(api_key=api_key)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".yaml") as tmp:
-        tmp.write(await file.read())
-        yaml_path = Path(tmp.name)
-
+    yaml_path = None
     try:
+        raw_bytes = await file.read()
+        try:
+            text = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            raise HTTPException(status_code=400, detail="Uploaded file is not valid UTF-8")
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".yaml") as tmp:
+            tmp.write(text.encode("utf-8"))
+            yaml_path = Path(tmp.name)
+
         result = create_manager_with_roles(client, yaml_path)
         return {"status": "success", "created": result}
+
+    except yaml.YAMLError as ye:
+        logger.error(f"YAML parse failed: {ye}")
+        raise HTTPException(status_code=400, detail=f"Invalid YAML: {ye}")
     except Exception as e:
         logger.exception("❌ create_agents_from_file failed")
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
+    finally:
+        if yaml_path and yaml_path.exists():
+            try:
+                yaml_path.unlink()
+            except Exception:
+                pass
 
 
 # -----------------------------
@@ -127,6 +151,7 @@ async def create_agents_from_file(
 class InferencePayload(BaseModel):
     agent_id: str
     message: str
+
 
 @app.post("/run-inference/")
 async def run_inference(
@@ -162,7 +187,12 @@ async def run_inference(
             raise HTTPException(status_code=resp.status_code, detail=error_text)
 
         raw = resp.json()
-        normalized = normalize_inference_output(json.dumps(raw), Path("outputs/demo-user"))
+
+        # Ensure output dir exists
+        out_dir = Path("outputs/demo-user")
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        normalized = normalize_inference_output(json.dumps(raw), out_dir)
         return {"status": "success", "agent_id": req.agent_id, "raw": raw, "normalized": normalized}
     except httpx.RequestError as re:
         logger.exception("❌ HTTP request to Studio failed")
@@ -178,7 +208,11 @@ async def run_inference(
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     body = await request.body()
-    print(f"📥 Incoming {request.method} {request.url} - Body: {body.decode()}")
+    try:
+        body_text = body.decode("utf-8")
+    except UnicodeDecodeError:
+        body_text = f"<{len(body)} bytes of binary>"
+    print(f"📥 Incoming {request.method} {request.url} - Body: {body_text}")
     response = await call_next(request)
     print(f"📤 Response {response.status_code}")
     return response
