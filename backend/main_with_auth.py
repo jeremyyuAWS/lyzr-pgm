@@ -47,20 +47,21 @@ def trace(msg: str, extra: dict = None):
 app = FastAPI(title="Agent Orchestrator API (Supabase JWT Auth)")
 
 # -----------------------------
-# CORS (origins from .env)
+# CORS (origins from .env, fallback to *)
 # -----------------------------
-# Example in .env:
-# CORS_ALLOW_ORIGINS=http://localhost:5173,https://my-webcontainer-url,https://my-prod-frontend.com
 cors_origins_env = os.getenv("CORS_ALLOW_ORIGINS", "")
 origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
 
 if not origins:
-    logger.warning("⚠️ No CORS origins configured, API may be inaccessible from browsers.")
+    logger.warning("⚠️ No CORS origins configured, falling back to * (dev mode).")
+    origins = ["*"]
+
+logger.info(f"🔐 Allowed CORS origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=True if "*" not in origins else False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
