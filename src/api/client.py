@@ -216,14 +216,13 @@ class LyzrAPIClient:
     # New: Run Manager with Use Cases (like run_list_iterate.py)
     # -----------------
     def run_manager_with_usecases(self, manager_yaml: str, usecases_yaml: str, save_outputs=True, max_retries=3):
-        """
-        Deploy a Manager from YAML, then loop over use-cases YAML and run inference.
-        Save raw + normalized outputs under ./output/{ManagerName}/{UseCaseName}.
-        """
+    """
+    Deploy a Manager from YAML, then loop over use-cases YAML and run inference.
+    Save raw + normalized outputs under ./output/{ManagerName}/{UseCaseName}.
+    """
     mgr_resp = self.create_manager_with_roles(manager_yaml, is_path=True)
     if not mgr_resp.get("ok") or "data" not in mgr_resp:
-        
-    return {"ok": False, "error": mgr_resp.get("error", "Failed to create manager")}
+        return {"ok": False, "error": mgr_resp.get("error", "Failed to create manager")}
 
     manager_id = mgr_resp["data"].get("_id") or mgr_resp["data"].get("agent_id")
     manager_name = mgr_resp["data"].get("name", "Manager")
