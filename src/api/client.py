@@ -115,7 +115,6 @@ class LyzrAPIClient:
         url = f"/v3/agents/{agent_id_or_name}/invoke"
         return self.post(url, payload)
 
-
     def create_agent_from_yaml(self, yaml_input: str, is_path: bool = True):
         """Create agent directly from YAML."""
         if is_path:
@@ -125,7 +124,7 @@ class LyzrAPIClient:
             yaml_def = yaml.safe_load(yaml_input)
         payload = normalize_payload(yaml_def)
         return self.create_agent(payload)
-    
+
     def create_manager_with_roles(self, yaml_input: str, is_path: bool = True):
         """
         Deploy subordinate role agents first, then the manager agent with references.
@@ -165,7 +164,6 @@ class LyzrAPIClient:
         # 2. Create the manager agent with references to roles
         manager_payload = normalize_payload(manager_def)
         if created_roles:
-            # ✅ Pass full role objects instead of just IDs
             manager_payload["managed_agents"] = created_roles
 
         mgr_resp = self.create_agent(manager_payload)
@@ -216,65 +214,65 @@ class LyzrAPIClient:
     # New: Run Manager with Use Cases (like run_list_iterate.py)
     # -----------------
     def run_manager_with_usecases(self, manager_yaml: str, usecases_yaml: str, save_outputs=True, max_retries=3):
-    """
-    Deploy a Manager from YAML, then loop over use-cases YAML and run inference.
-    Save raw + normalized outputs under ./output/{ManagerName}/{UseCaseName}.
-    """
-    mgr_resp = self.create_manager_with_roles(manager_yaml, is_path=True)
-    if not mgr_resp.get("ok") or "data" not in mgr_resp:
-        return {"ok": False, "error": mgr_resp.get("error", "Failed to create manager")}
+        """
+        Deploy a Manager from YAML, then loop over use-cases YAML and run inference.
+        Save raw + normalized outputs under ./output/{ManagerName}/{UseCaseName}.
+        """
+        mgr_resp = self.create_manager_with_roles(manager_yaml, is_path=True)
+        if not mgr_resp.get("ok") or "data" not in mgr_resp:
+            return {"ok": False, "error": mgr_resp.get("error", "Failed to create manager")}
 
-    manager_id = mgr_resp["data"].get("_id") or mgr_resp["data"].get("agent_id")
-    manager_name = mgr_resp["data"].get("name", "Manager")
-    out_root = Path("output") / manager_name
-    out_root.mkdir(parents=True, exist_ok=True)
+        manager_id = mgr_resp["data"].get("_id") or mgr_resp["data"].get("agent_id")
+        manager_name = mgr_resp["data"].get("name", "Manager")
+        out_root = Path("output") / manager_name
+        out_root.mkdir(parents=True, exist_ok=True)
 
-    with open(usecases_yaml, "r") as f:
-        usecases = yaml.safe_load(f)
+        with open(usecases_yaml, "r") as f:
+            usecases = yaml.safe_load(f)
 
-    results = []
-    for uc in usecases.get("use_cases", []):
-        raw_name = uc.get("name", "unnamed_usecase")
-        usecase_name = canonicalize_name(raw_name)
-        usecase_text = uc.get("description", "")
+        results = []
+        for uc in usecases.get("use_cases", []):
+            raw_name = uc.get("name", "unnamed_usecase")
+            usecase_name = canonicalize_name(raw_name)
+            usecase_text = uc.get("description", "")
 
-        out_dir = out_root / usecase_name
-        out_dir.mkdir(parents=True, exist_ok=True)
+            out_dir = out_root / usecase_name
+            out_dir.mkdir(parents=True, exist_ok=True)
 
-        success = False
-        for attempt in range(1, max_retries + 1):
-            payload = {
-                "agent_id": manager_id,
-                "user_id": "demo-user",
-                "session_id": f"{manager_id}-{os.urandom(4).hex()}",
-                "message": usecase_text,
-            }
+            success = False
+            for attempt in range(1, max_retries + 1):
+                payload = {
+                    "agent_id": manager_id,
+                    "user_id": "demo-user",
+                    "session_id": f"{manager_id}-{os.urandom(4).hex()}",
+                    "message": usecase_text,
+                }
 
-            resp = self.post("/v3/inference/chat/", payload)
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                resp = self.post("/v3/inference/chat/", payload)
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-            if save_outputs:
-                (out_dir / f"inference_raw_{ts}_attempt{attempt}.json").write_text(
-                    json.dumps(resp, indent=2)
-                )
+                if save_outputs:
+                    (out_dir / f"inference_raw_{ts}_attempt{attempt}.json").write_text(
+                        json.dumps(resp, indent=2)
+                    )
 
-            response_data = resp.get("data") if isinstance(resp, dict) else None
-            if resp.get("ok") and response_data and "response" in response_data:
-                try:
-                    norm = normalize_inference_output(response_data["response"], out_dir)
-                    if save_outputs:
-                        (out_dir / f"inference_normalized_{ts}_attempt{attempt}.json").write_text(
-                            json.dumps(norm, indent=2)
-                        )
-                    success = True
-                    results.append({"usecase": usecase_name, "normalized": norm})
-                    break
-                except Exception as e:
-                    self._log(f"⚠️ Normalization failed: {e}")
+                response_data = resp.get("data") if isinstance(resp, dict) else None
+                if resp.get("ok") and response_data and "response" in response_data:
+                    try:
+                        norm = normalize_inference_output(response_data["response"], out_dir)
+                        if save_outputs:
+                            (out_dir / f"inference_normalized_{ts}_attempt{attempt}.json").write_text(
+                                json.dumps(norm, indent=2)
+                            )
+                        success = True
+                        results.append({"usecase": usecase_name, "normalized": norm})
+                        break
+                    except Exception as e:
+                        self._log(f"⚠️ Normalization failed: {e}")
 
-            time.sleep(2 ** (attempt - 1))  # backoff
+                time.sleep(2 ** (attempt - 1))  # backoff
 
-        if not success:
-            results.append({"usecase": usecase_name, "error": "Failed after retries"})
+            if not success:
+                results.append({"usecase": usecase_name, "error": "Failed after retries"})
 
-    return {"ok": True, "manager_id": manager_id, "results": results}
+        return {"ok": True, "manager_id": manager_id, "results": results}
