@@ -8,3 +8,4 @@ supabase
 python-dotenv
 python-multipart
 python-jose
+requests>=2.31.0
