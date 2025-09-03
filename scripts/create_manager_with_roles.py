@@ -1,3 +1,6 @@
+# scripts/create_manager_with_roles.py
+
+import os
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
@@ -17,16 +20,22 @@ def _tz() -> pytz.timezone:
     except Exception:
         return pytz.timezone("America/Los_Angeles")
 
+
 def _timestamp_str() -> str:
-    # Example: 03SEP2025-04:37PM PDT
+    """Format local timestamp for manager rename."""
     now = datetime.now(_tz())
     return now.strftime("%d%b%Y-%I:%M%p %Z").upper()
 
+
 def _suffix_from_id(agent_id: str) -> str:
+    """Use last 6 chars of agent_id as suffix."""
     return (agent_id or "")[-6:] or "XXXXXX"
 
+
 def _rich_manager_name(base: str, agent_id: str) -> str:
+    """Build rich manager name with version, id suffix, and timestamp."""
     return f"{base}_v1.0_{_suffix_from_id(agent_id)}_{_timestamp_str()}"
+
 
 # -----------------------------
 # Validation
@@ -60,7 +69,8 @@ async def create_manager_with_roles(
 ) -> Dict[str, Any]:
     """
     Create a manager agent and its role agents using JSON only.
-    Roles are linked back to the manager via PUT, then the manager is renamed with a suffix + timestamp.
+    Roles are linked back to the manager via PUT,
+    then the manager is renamed with a suffix + timestamp.
     """
 
     logger.info("📦 Using provided JSON dict for manager + roles")
@@ -103,12 +113,14 @@ async def create_manager_with_roles(
         if not role_id:
             raise RuntimeError(f"❌ Role response missing agent_id: {role_resp}")
 
-        # Link role → manager (PUT)
+        # Link role → manager (client does a PUT update)
         link_resp = await client.link_agents(manager_id, role_id, role.get("name"))
         if link_resp.get("ok"):
             logger.info(f"🔗 Linked role {role['name']} → manager {manager_json['name']}")
         else:
-            logger.warning(f"⚠️ Failed to link role {role['name']} → manager {manager_json['name']}: {link_resp}")
+            logger.warning(
+                f"⚠️ Failed to link role {role['name']} → manager {manager_json['name']}: {link_resp}"
+            )
 
         results["roles"].append(role_data)
 
