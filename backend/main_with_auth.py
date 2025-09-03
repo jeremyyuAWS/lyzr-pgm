@@ -91,7 +91,7 @@ async def create_agents(
     roles_json = [r.dict() for r in (body.roles_json or [])]
     tz_name = body.tz_name or "America/Los_Angeles"
 
-    async with LyzrAPIClient(debug=True) as client:
+    async with LyzrAPIClient() as client:
         try:
             result = await create_manager_with_roles(client, manager_json, roles_json)
         except Exception as e:
