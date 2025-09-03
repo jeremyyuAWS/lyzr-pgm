@@ -5,6 +5,7 @@ import json
 import yaml
 import httpx
 import asyncio
+import argparse
 from pathlib import Path
 
 from src.utils.payload_normalizer import normalize_payload
@@ -12,7 +13,13 @@ from src.utils.normalize_output import normalize_inference_output, canonicalize_
 
 
 class LyzrAPIClient:
-    def __init__(self, api_key: str = None, debug: bool = None, timeout: int = 300, retries: int = 3):
+    """
+    Async client for interacting with the Lyzr Studio API.
+    Supports creating agents, managers, roles, inference, and cleanup.
+    """
+
+    def __init__(self, api_key: str = None, debug: bool = None,
+                 timeout: int = 300, retries: int = 3):
         self.base_url = os.getenv("LYZR_BASE_URL", "https://agent-prod.studio.lyzr.ai")
 
         # Use provided key OR fallback to env
@@ -34,16 +41,10 @@ class LyzrAPIClient:
             self.debug = debug
 
     # -----------------
-    # Logging
-    # -----------------
-    def _log(self, *args):
-        if self.debug:
-            print(*args, flush=True)
-
-    # -----------------
     # Lifecycle methods
     # -----------------
     async def aclose(self):
+        """Close the httpx AsyncClient."""
         if self.client:
             await self.client.aclose()
 
@@ -53,12 +54,10 @@ class LyzrAPIClient:
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    # Fire and forget in running loop
                     loop.create_task(self.aclose())
                 else:
                     loop.run_until_complete(self.aclose())
             except RuntimeError:
-                # No running loop
                 asyncio.run(self.aclose())
 
     def __enter__(self):
@@ -74,21 +73,34 @@ class LyzrAPIClient:
         await self.aclose()
 
     # -----------------
+    # Logging
+    # -----------------
+    def _log(self, *args):
+        if self.debug:
+            print(*args, flush=True)
+
+    # -----------------
     # Validation helpers
     # -----------------
-    def _validate_agent_payload(self, payload: dict):
-        """
-        Ensures agent payload has required fields.
-        Raises ValueError if invalid.
-        """
+    def _validate_agent_payload(self, payload: dict) -> dict:
+        """Ensures agent payload has required fields."""
         required = ["name", "description", "agent_role", "agent_goal", "agent_instructions"]
         for key in required:
             if key not in payload or not isinstance(payload[key], str):
                 raise ValueError(f"YAML missing required string field: {key}")
 
-        # Optional normalization for name (avoid spaces/specials)
         payload["name"] = canonicalize_name(payload["name"])
         return payload
+
+    def _validate_and_parse_yaml(self, yaml_str: str) -> dict:
+        """Parse and validate a YAML string into a Python dict."""
+        try:
+            obj = yaml.safe_load(yaml_str)
+            if not isinstance(obj, dict):
+                raise ValueError("YAML did not parse into a dictionary")
+            return obj
+        except Exception as e:
+            raise ValueError(f"Invalid YAML string: {e}") from e
 
     # -----------------
     # Core request logic
@@ -118,90 +130,53 @@ class LyzrAPIClient:
                     await asyncio.sleep(wait)
                     continue
 
-                if self.debug:
-                    self._log(f"❌ API {method} error {status} at {url}")
-                    if payload:
-                        self._log("🔍 Payload sent:\n", json.dumps(payload, indent=2))
-                    self._log("🔍 Response text:\n", e.response.text)
-
-                return {"ok": False, "status": status, "data": e.response.text}
+                return {"ok": False, "status": status, "error": e.response.text}
 
             except Exception as e:
-                if self.debug:
-                    self._log("❌ Unexpected error:", str(e))
-                return {"ok": False, "status": -1, "data": str(e)}
+                return {"ok": False, "status": -1, "error": str(e)}
 
-        return {"ok": False, "status": -1, "data": "Max retries exceeded"}
+        return {"ok": False, "status": -1, "error": "Max retries exceeded"}
 
     # -----------------
     # Low-level wrappers
     # -----------------
-    async def get(self, endpoint):
-        return await self._request("GET", endpoint)
-
-    async def post(self, endpoint, payload, stream=False):
-        return await self._request("POST", endpoint, payload=payload, stream=stream)
-
-    async def put(self, endpoint, payload):
-        return await self._request("PUT", endpoint, payload=payload)
-
-    async def delete(self, endpoint):
-        return await self._request("DELETE", endpoint)
+    async def get(self, endpoint): return await self._request("GET", endpoint)
+    async def post(self, endpoint, payload, stream=False): return await self._request("POST", endpoint, payload=payload, stream=stream)
+    async def put(self, endpoint, payload): return await self._request("PUT", endpoint, payload=payload)
+    async def delete(self, endpoint): return await self._request("DELETE", endpoint)
 
     # -----------------
     # High-level helpers
     # -----------------
     async def call_agent(self, agent_id_or_name: str, payload: dict):
-        """Invoke a specific agent by ID or name"""
-        url = f"/v3/agents/{agent_id_or_name}/invoke"
-        return await self.post(url, payload)
+        return await self.post(f"/v3/agents/{agent_id_or_name}/invoke", payload)
 
     async def create_agent(self, payload: dict):
         payload = self._validate_agent_payload(payload)
         return await self.post("/v3/agents/", payload)
 
     async def create_agent_from_yaml(self, yaml_input: str, is_path: bool = True):
-        if is_path:
-            with open(yaml_input, "r") as f:
-                yaml_def = yaml.safe_load(f)
-        else:
-            yaml_def = yaml.safe_load(yaml_input)
-
-        payload = normalize_payload(yaml_def)
+        yaml_str = Path(yaml_input).read_text() if is_path else yaml_input
+        yaml_obj = self._validate_and_parse_yaml(yaml_str)
+        payload = normalize_payload(yaml_obj)
         payload = self._validate_agent_payload(payload)
         return await self.create_agent(payload)
 
     async def create_manager_with_roles(self, yaml_input: str, is_path: bool = True):
-        if is_path and Path(yaml_input).exists():
-            with open(yaml_input, "r") as f:
-                manager_def = yaml.safe_load(f)
-        else:
-            manager_def = yaml.safe_load(yaml_input)
+        manager_def = yaml.safe_load(Path(yaml_input).read_text()) if (is_path and Path(yaml_input).exists()) else yaml.safe_load(yaml_input)
 
         created_roles = []
-
         for entry in manager_def.get("managed_agents", []):
-            role_file = entry.get("file")
-            role_yaml = None
-
-            if role_file and Path(role_file).exists():
-                role_yaml = Path(role_file).read_text()
-            elif "yaml" in entry:
-                role_yaml = entry["yaml"]
-
+            role_yaml = Path(entry["file"]).read_text() if entry.get("file") and Path(entry["file"]).exists() else entry.get("yaml")
             if role_yaml:
-                role_obj = yaml.safe_load(role_yaml)
+                role_obj = self._validate_and_parse_yaml(role_yaml)
                 role_payload = normalize_payload(role_obj)
                 role_payload = self._validate_agent_payload(role_payload)
                 role_resp = await self.create_agent(role_payload)
-
-                if role_resp.get("ok") and "data" in role_resp:
+                if role_resp.get("ok"):
                     rid = role_resp["data"].get("_id") or role_resp["data"].get("agent_id")
                     if rid:
-                        created_roles.append(role_resp["data"])
-                        self._log(f"✅ Created role {role_obj.get('name')} -> {rid}")
-                else:
-                    self._log(f"❌ Failed to create role: {role_obj.get('name')}")
+                        created_roles.append({"agent_id": rid, "name": role_obj.get("name")})
 
         manager_payload = normalize_payload(manager_def)
         manager_payload = self._validate_agent_payload(manager_payload)
@@ -209,19 +184,12 @@ class LyzrAPIClient:
             manager_payload["managed_agents"] = created_roles
 
         mgr_resp = await self.create_agent(manager_payload)
-
-        if mgr_resp.get("ok") and "data" in mgr_resp:
-            return {"ok": True, "data": mgr_resp["data"], "roles": created_roles}
-        else:
-            return {"ok": False, "error": mgr_resp.get("data"), "roles": created_roles}
+        if mgr_resp.get("ok"):
+            return {"ok": True, "manager": mgr_resp["data"], "roles": created_roles}
+        return {"ok": False, "error": mgr_resp.get("error"), "roles": created_roles}
 
     async def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
-        payload = {
-            "agent_id": agent_id,
-            "user_id": "demo-user",
-            "session_id": session_id,
-            "message": message,
-        }
+        payload = {"agent_id": agent_id, "user_id": "demo-user", "session_id": session_id, "message": message}
         return await self.post("/v3/inference/chat/", payload)
 
     async def delete_agent(self, agent_id: str):
@@ -233,12 +201,28 @@ class LyzrAPIClient:
     async def delete_all_agents(self):
         agents_resp = await self.list_agents()
         if not agents_resp.get("ok"):
-            return {"ok": False, "deleted": [], "error": agents_resp.get("data")}
-        data = agents_resp.get("data", [])
+            return {"ok": False, "deleted": [], "error": agents_resp.get("error")}
         deleted = []
-        for agent in data:
+        for agent in agents_resp.get("data", []):
             agent_id = agent.get("_id") or agent.get("agent_id")
             if agent_id:
                 await self.delete_agent(agent_id)
                 deleted.append(agent_id)
         return {"ok": True, "deleted": deleted}
+
+
+# -----------------
+# __main__ runner
+# -----------------
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Lyzr API Client Runner")
+    parser.add_argument("yaml_file", help="Path to Manager YAML file")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    args = parser.parse_args()
+
+    async def main():
+        async with LyzrAPIClient(debug=args.debug) as client:
+            result = await client.create_manager_with_roles(args.yaml_file, is_path=True)
+            print(json.dumps(result, indent=2))
+
+    asyncio.run(main())
