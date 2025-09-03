@@ -2,20 +2,18 @@
 
 import os
 import json
-import yaml
 import httpx
 import asyncio
 import argparse
-from pathlib import Path
 
 from src.utils.payload_normalizer import normalize_payload
-from src.utils.normalize_output import normalize_inference_output, canonicalize_name
+from src.utils.normalize_output import canonicalize_name
 
 
 class LyzrAPIClient:
     """
     Async client for interacting with the Lyzr Studio API.
-    Supports creating agents, managers, roles, inference, and cleanup.
+    Pure JSON version (no YAML parsing).
     """
 
     def __init__(self, api_key: str = None, debug: bool = None,
@@ -44,12 +42,10 @@ class LyzrAPIClient:
     # Lifecycle methods
     # -----------------
     async def aclose(self):
-        """Close the httpx AsyncClient."""
         if self.client:
             await self.client.aclose()
 
     def close(self):
-        """Sync close (for cleanup outside async contexts)."""
         if self.client:
             try:
                 loop = asyncio.get_event_loop()
@@ -83,37 +79,14 @@ class LyzrAPIClient:
     # Validation helpers
     # -----------------
     def _validate_agent_payload(self, payload: dict) -> dict:
-        """Ensures agent payload has required fields.
-        Supports both direct JSON and wrapped yaml_content.
-        """
-
-        # 🔥 If payload came in as {"yaml_content": "..."} → parse YAML first
-        if "yaml_content" in payload and isinstance(payload["yaml_content"], str):
-            try:
-                yaml_obj = yaml.safe_load(payload["yaml_content"])
-                if not isinstance(yaml_obj, dict):
-                    raise ValueError("yaml_content did not parse into a dictionary")
-                payload.update(yaml_obj)  # merge YAML fields into payload
-            except Exception as e:
-                raise ValueError(f"Invalid yaml_content: {e}") from e
-
+        """Ensure agent payload has required fields (JSON only)."""
         required = ["name", "description", "agent_role", "agent_goal", "agent_instructions"]
         for key in required:
             if key not in payload or not isinstance(payload[key], str):
-                raise ValueError(f"YAML missing required string field: {key}")
+                raise ValueError(f"Agent payload missing required string field: {key}")
 
         payload["name"] = canonicalize_name(payload["name"])
         return payload
-
-    def _validate_and_parse_yaml(self, yaml_str: str) -> dict:
-        """Parse and validate a YAML string into a Python dict."""
-        try:
-            obj = yaml.safe_load(yaml_str)
-            if not isinstance(obj, dict):
-                raise ValueError("YAML did not parse into a dictionary")
-            return obj
-        except Exception as e:
-            raise ValueError(f"Invalid YAML string: {e}") from e
 
     # -----------------
     # Core request logic
@@ -142,7 +115,6 @@ class LyzrAPIClient:
                     self._log(f"⚠️ Transient error {status}, retrying in {wait}s...")
                     await asyncio.sleep(wait)
                     continue
-
                 return {"ok": False, "status": status, "error": e.response.text}
 
             except Exception as e:
@@ -165,67 +137,31 @@ class LyzrAPIClient:
         return await self.post(f"/v3/agents/{agent_id_or_name}/invoke", payload)
 
     async def create_agent(self, payload: dict):
+        payload = normalize_payload(payload)
         payload = self._validate_agent_payload(payload)
         return await self.post("/v3/agents/", payload)
 
-    async def create_agent_from_yaml(self, yaml_input: str, is_path: bool = True):
-        yaml_str = Path(yaml_input).read_text() if is_path else yaml_input
-        yaml_obj = self._validate_and_parse_yaml(yaml_str)
-        payload = normalize_payload(yaml_obj)
-        payload = self._validate_agent_payload(payload)
-        return await self.create_agent(payload)
-
-    async def create_manager_with_roles(self, yaml_input, is_path: bool = True):
+    async def create_manager_with_roles(self, manager_def: dict):
         """
         Create a manager agent and its managed role agents.
-
-        Args:
-            yaml_input: Can be
-              - dict (already parsed manager + roles definition)
-              - str (YAML string, OR file path if is_path=True)
-              - Path (file path)
-            is_path: If True, yaml_input is treated as a file path when str/Path
+        Input must be a dict containing manager + roles definitions.
         """
-        # --- Parse manager definition ---
-        manager_def = None
-        if isinstance(yaml_input, dict):
-            manager_def = yaml_input
-        elif isinstance(yaml_input, (str, Path)):
-            try:
-                if is_path and Path(yaml_input).exists():
-                    text = Path(yaml_input).read_text()
-                    manager_def = yaml.safe_load(text)
-                else:
-                    manager_def = yaml.safe_load(str(yaml_input))
-            except Exception as e:
-                return {"ok": False, "error": f"Failed to parse manager YAML: {e}"}
-        else:
-            return {"ok": False, "error": f"Unsupported input type: {type(yaml_input)}"}
-
         if not isinstance(manager_def, dict):
-            return {"ok": False, "error": "Manager definition did not parse into dict"}
+            return {"ok": False, "error": "Manager definition must be dict"}
 
         # --- Create roles first ---
         created_roles = []
         for entry in manager_def.get("managed_agents", []):
-            role_yaml = None
-            if entry.get("file") and Path(entry["file"]).exists():
-                role_yaml = Path(entry["file"]).read_text()
-            elif entry.get("yaml"):
-                role_yaml = entry["yaml"]
-
-            if role_yaml:
-                try:
-                    role_obj = self._validate_and_parse_yaml(role_yaml)
-                    role_payload = normalize_payload(role_obj)
-                    role_payload = self._validate_agent_payload(role_payload)
-                    role_resp = await self.create_agent(role_payload)
-                    if role_resp.get("ok"):
-                        rid = role_resp["data"].get("_id") or role_resp["data"].get("agent_id")
-                        if rid:
-                            created_roles.append({"agent_id": rid, "name": role_obj.get("name")})
-                except Exception as e:
-                    self._log(f"❌ Failed to create role: {e}")
+            try:
+                role_payload = normalize_payload(entry)
+                role_payload = self._validate_agent_payload(role_payload)
+                role_resp = await self.create_agent(role_payload)
+                if role_resp.get("ok"):
+                    rid = role_resp["data"].get("_id") or role_resp["data"].get("agent_id")
+                    if rid:
+                        created_roles.append({"agent_id": rid, "name": role_payload.get("name")})
+            except Exception as e:
+                self._log(f"❌ Failed to create role: {e}")
 
         # --- Create manager ---
         try:
@@ -240,6 +176,11 @@ class LyzrAPIClient:
             return {"ok": False, "error": mgr_resp.get("error"), "roles": created_roles}
         except Exception as e:
             return {"ok": False, "error": f"Manager creation failed: {e}", "roles": created_roles}
+
+    async def link_agents(self, manager_id: str, role_id: str):
+        """Link a role agent to a manager agent."""
+        payload = {"manager_id": manager_id, "role_id": role_id}
+        return await self.post("/v3/agents/link", payload)
 
     async def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
         payload = {"agent_id": agent_id, "user_id": "demo-user", "session_id": session_id, "message": message}
@@ -268,14 +209,18 @@ class LyzrAPIClient:
 # __main__ runner
 # -----------------
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Lyzr API Client Runner")
-    parser.add_argument("yaml_file", help="Path to Manager YAML file")
+    parser = argparse.ArgumentParser(description="Lyzr API Client Runner (JSON only)")
+    parser.add_argument("json_file", help="Path to Manager JSON file")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
     async def main():
+        import json
+        with open(args.json_file, "r") as f:
+            manager_def = json.load(f)
+
         async with LyzrAPIClient(debug=args.debug) as client:
-            result = await client.create_manager_with_roles(args.yaml_file, is_path=True)
+            result = await client.create_manager_with_roles(manager_def)
             print(json.dumps(result, indent=2))
 
     asyncio.run(main())
