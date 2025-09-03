@@ -20,6 +20,31 @@ from src.api.client_async import LyzrAPIClient
 from src.utils.auth import get_current_user
 
 # -----------------------------
+# Load JSON
+# -----------------------------
+
+def _load_yaml_or_json(text: str) -> dict:
+    """Try to parse input as YAML, fallback to JSON."""
+    try:
+        parsed = yaml.safe_load(text)
+        if isinstance(parsed, dict):
+            logger.info("📦 Parsed input as YAML")
+            return parsed
+    except Exception:
+        logger.warning("⚠️ YAML parse failed, trying JSON")
+
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            logger.info("📦 Parsed input as JSON")
+            return parsed
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML/JSON: {e}")
+
+    raise HTTPException(status_code=400, detail="Input is not valid YAML or JSON")
+
+
+# -----------------------------
 # Environment
 # -----------------------------
 load_dotenv()
@@ -190,31 +215,33 @@ async def create_agents_from_file(
     rid = get_request_id()
     trace("📥 Received /create-agents", {"tz": tz_name, "user": safe_user_email(user), "rid": rid})
 
-    yaml_tmp_path: Path | None = None
     try:
         raw_bytes = await file.read()
         text = raw_bytes.decode("utf-8")
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".yaml") as tmp:
-            tmp.write(text.encode("utf-8"))
-            yaml_tmp_path = Path(tmp.name)
+        # ✅ Parse YAML or JSON
+        parsed = _load_yaml_or_json(text)
 
         async with build_client_for_user(user) as client:
-            result = await client.create_manager_with_roles(text, is_path=False)
+            result = await client.create_manager_with_roles(parsed)
 
-        if not result.get("ok"):
+        if not result.get("agent_id"):
             raise HTTPException(status_code=502, detail=result.get("error") or "Failed to create agents")
 
-        return {"status": "success", "created": result, "user": user_to_dict(user)}
+        # ✅ Unified response shape with /upload-manager-yaml/
+        return {
+            "ok": True,
+            "manager": result.get("name"),
+            "roles": result.get("roles"),
+            "agent_id": result.get("agent_id"),
+            "timestamp": result.get("timestamp"),
+            "user": user_to_dict(user),
+        }
 
-    except yaml.YAMLError as ye:
-        raise HTTPException(status_code=400, detail=f"Invalid YAML: {ye}")
     except Exception as e:
         logger.exception("❌ create_agents_from_file failed")
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
-    finally:
-        if yaml_tmp_path and yaml_tmp_path.exists():
-            yaml_tmp_path.unlink(missing_ok=True)
+
 
 
 @app.post("/upload-yaml/")
@@ -241,13 +268,16 @@ async def upload_manager_yaml(file: UploadFile = File(...), user=Depends(get_cur
         contents = await file.read()
         text = contents.decode("utf-8")
 
-        async with build_client_for_user(user) as client:
-            resp = await client.create_manager_with_roles(text, is_path=False)
+        # ✅ Parse YAML or JSON
+        parsed = _load_yaml_or_json(text)
 
-        if not resp.get("ok"):
+        async with build_client_for_user(user) as client:
+            resp = await client.create_manager_with_roles(parsed)
+
+        if not resp.get("agent_id"):
             raise HTTPException(status_code=502, detail=resp.get("error") or "Failed to create manager")
 
-        return {"ok": True, "manager": resp.get("data"), "roles": resp.get("roles")}
+        return {"ok": True, "manager": resp.get("name"), "roles": resp.get("roles")}
     except Exception as e:
         logger.exception("❌ upload_manager_yaml failed")
         raise HTTPException(status_code=500, detail=str(e))

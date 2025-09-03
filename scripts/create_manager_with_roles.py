@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Union, Dict, Any, List
 from datetime import datetime
 import pytz
+import json
 
 from src.api.client_async import LyzrAPIClient  # ✅ async client
 
@@ -95,6 +96,7 @@ def _safe_parse_role_yaml(role: Dict[str, Any]) -> Dict[str, Any] | None:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):
+        # Try YAML first
         try:
             parsed = yaml.safe_load(raw)
             if isinstance(parsed, dict):
@@ -102,12 +104,51 @@ def _safe_parse_role_yaml(role: Dict[str, Any]) -> Dict[str, Any] | None:
             logger.error(
                 f"❌ Role {role.get('name')} YAML parsed into {type(parsed)}, expected dict"
             )
-            return None
+        except Exception:
+            pass
+        # Try JSON as fallback
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                logger.info(f"📦 Parsed role {role.get('name')} as JSON")
+                return parsed
         except Exception as e:
-            logger.error(f"❌ Failed to parse role YAML for {role.get('name')}: {e}")
+            logger.error(f"❌ Failed to parse role YAML/JSON for {role.get('name')}: {e}")
             return None
     logger.error(f"❌ Role {role.get('name')} had unsupported yaml type: {type(raw)}")
     return None
+
+
+def _load_yaml_or_json(file_or_dict: Union[str, Path, Dict[str, Any]]) -> Dict[str, Any]:
+    """Accept dict, YAML file, JSON file, or string containing YAML/JSON."""
+    if isinstance(file_or_dict, dict):
+        return file_or_dict
+    if isinstance(file_or_dict, Path):
+        text = file_or_dict.read_text()
+    elif isinstance(file_or_dict, str):
+        text = file_or_dict
+    else:
+        raise ValueError("Unsupported type for manager_yaml")
+
+    # Try YAML first
+    try:
+        parsed = yaml.safe_load(text)
+        if isinstance(parsed, dict):
+            logger.info("📦 Parsed manager as YAML")
+            return parsed
+    except Exception:
+        logger.warning("⚠️ YAML parse failed, trying JSON")
+
+    # Try JSON as fallback
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            logger.info("📦 Parsed manager as JSON")
+            return parsed
+    except Exception as e:
+        raise ValueError(f"Failed to parse as YAML or JSON: {e}")
+
+    raise ValueError("Input is not a dict after parsing")
 
 
 # -----------------------------
@@ -204,7 +245,7 @@ agents:
 # Main Orchestration
 # -----------------------------
 async def create_manager_with_roles(
-    client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]
+    client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any], str]
 ) -> Dict[str, Any]:
     """
     Flow:
@@ -212,15 +253,11 @@ async def create_manager_with_roles(
       2. Create manager agent.
       3. PUT update manager with supervision instructions, examples, and role links.
     """
-    if isinstance(manager_yaml, Path):
-        with open(manager_yaml, "r") as f:
-            manager_yaml = yaml.safe_load(f)
-    if not isinstance(manager_yaml, dict):
-        raise ValueError("manager_yaml must be a dict or Path")
+    manager_yaml = _load_yaml_or_json(manager_yaml)
 
     manager_def = manager_yaml.get("manager")
     if not manager_def:
-        raise ValueError("YAML must contain a top-level 'manager' key")
+        raise ValueError("YAML/JSON must contain a top-level 'manager' key")
 
     created_roles: List[Dict[str, Any]] = []
 
@@ -228,7 +265,7 @@ async def create_manager_with_roles(
     for role in manager_def.get("managed_agents", []):
         parsed_role = _safe_parse_role_yaml(role)
         if not parsed_role:
-            logger.warning(f"⚠️ Skipping role {role.get('name')} (invalid yaml)")
+            logger.warning(f"⚠️ Skipping role {role.get('name')} (invalid yaml/json)")
             continue
 
         role_name = parsed_role.get("name", "ROLE")
