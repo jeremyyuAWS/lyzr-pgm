@@ -1,10 +1,10 @@
-# scripts/create_manager_with_roles.py
-
 from __future__ import annotations
 
 import os
+import sys
 import yaml
 import logging
+import asyncio
 from pathlib import Path
 from typing import Union, Dict, Any, List
 from datetime import datetime
@@ -254,10 +254,7 @@ async def create_manager_with_roles(
         }
         await client.update_agent(role_id, role_updates)
 
-        # 🧩 Friendly console output
-        print(
-            f"🧩 Created role agent {role_renamed} [{role_id} | {_timestamp_str()}]"
-        )
+        print(f"🧩 Created role agent {role_renamed} [{role_id} | {_timestamp_str()}]")
 
         created_roles.append(
             {
@@ -327,7 +324,6 @@ async def create_manager_with_roles(
     }
     await client.update_agent(manager_id, manager_updates)
 
-    # 🤖 Friendly console output
     print(
         f"🤖 Created manager agent {manager_renamed} [{manager_id} | {_timestamp_str()}] with {len(created_roles)} linked roles"
     )
@@ -338,3 +334,25 @@ async def create_manager_with_roles(
         "roles": created_roles,
         "timestamp": _timestamp_str(),
     }
+
+
+# -----------------------------
+# __main__ runner
+# -----------------------------
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("⚠️ Usage: python scripts/create_manager_with_roles.py <manager_yaml_path>")
+        sys.exit(1)
+
+    yaml_path = Path(sys.argv[1])
+    if not yaml_path.exists():
+        print(f"❌ File not found: {yaml_path}")
+        sys.exit(1)
+
+    async def _main():
+        client = LyzrAPIClient(debug=True)
+        result = await create_manager_with_roles(client, yaml_path)
+        print("\n✅ Done. Result:")
+        print(result)
+
+    asyncio.run(_main())

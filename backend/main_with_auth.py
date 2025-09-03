@@ -195,7 +195,6 @@ class InferencePayload(BaseModel):
 # -----------------------------
 # Endpoints
 # -----------------------------
-@app.post("/create-agents")
 @app.post("/create-agents/")
 async def create_agents_from_file(
     file: UploadFile = File(...),
@@ -247,7 +246,6 @@ async def create_agents_from_file(
         await local_client.__aexit__(None, None, None)
 
 
-@app.post("/upload-yaml")
 @app.post("/upload-yaml/")
 async def upload_yaml(
     file: UploadFile = File(...),
@@ -275,7 +273,6 @@ async def upload_yaml(
         await local_client.__aexit__(None, None, None)
 
 
-@app.post("/upload-manager-yaml")
 @app.post("/upload-manager-yaml/")
 async def upload_manager_yaml(
     file: UploadFile = File(...),
@@ -304,7 +301,6 @@ async def upload_manager_yaml(
         await local_client.__aexit__(None, None, None)
 
 
-@app.post("/run-inference")
 @app.post("/run-inference/")
 async def run_inference(
     req: InferencePayload,
