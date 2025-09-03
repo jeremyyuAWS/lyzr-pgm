@@ -5,10 +5,9 @@ import json
 import yaml
 import logging
 import uuid
-import tempfile
 from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -203,35 +202,34 @@ class InferencePayload(BaseModel):
     assets: list[str] = []
 
 
+class CreateAgentsPayload(BaseModel):
+    yaml_or_json: dict
+    tz_name: str = "America/Los_Angeles"
+
+
 # -----------------------------
 # Endpoints
 # -----------------------------
 @app.post("/create-agents/")
-async def create_agents_from_file(
-    file: UploadFile = File(...),
-    tz_name: str = Form("America/Los_Angeles"),
+async def create_agents(
+    payload: CreateAgentsPayload = Body(...),
     user=Depends(get_current_user),
 ):
     rid = get_request_id()
-    trace("📥 Received /create-agents", {"tz": tz_name, "user": safe_user_email(user), "rid": rid})
+    trace("📥 Received /create-agents", {"tz": payload.tz_name, "user": safe_user_email(user), "rid": rid})
 
     try:
-        raw_bytes = await file.read()
-        text = raw_bytes.decode("utf-8")
-
-        # ✅ Parse YAML or JSON
-        parsed = _load_yaml_or_json(text)
+        parsed = payload.yaml_or_json
 
         async with build_client_for_user(user) as client:
             result = await client.create_manager_with_roles(parsed)
 
-        if not result.get("agent_id"):
+        if not result.get("manager"):
             raise HTTPException(status_code=502, detail=result.get("error") or "Failed to create agents")
 
-        # ✅ Unified response shape with /upload-manager-yaml/
         return {
             "ok": True,
-            "manager": result.get("name"),
+            "manager": result.get("manager"),
             "roles": result.get("roles"),
             "agent_id": result.get("agent_id"),
             "timestamp": result.get("timestamp"),
@@ -239,9 +237,8 @@ async def create_agents_from_file(
         }
 
     except Exception as e:
-        logger.exception("❌ create_agents_from_file failed")
+        logger.exception("❌ create_agents failed")
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
-
 
 
 @app.post("/upload-yaml/")
@@ -268,7 +265,6 @@ async def upload_manager_yaml(file: UploadFile = File(...), user=Depends(get_cur
         contents = await file.read()
         text = contents.decode("utf-8")
 
-        # ✅ Parse YAML or JSON
         parsed = _load_yaml_or_json(text)
 
         async with build_client_for_user(user) as client:

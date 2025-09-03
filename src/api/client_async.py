@@ -162,31 +162,71 @@ class LyzrAPIClient:
         payload = self._validate_agent_payload(payload)
         return await self.create_agent(payload)
 
-    async def create_manager_with_roles(self, yaml_input: str, is_path: bool = True):
-        manager_def = yaml.safe_load(Path(yaml_input).read_text()) if (is_path and Path(yaml_input).exists()) else yaml.safe_load(yaml_input)
+    async def create_manager_with_roles(self, yaml_input, is_path: bool = True):
+        """
+        Create a manager agent and its managed role agents.
 
+        Args:
+            yaml_input: Can be
+              - dict (already parsed manager + roles definition)
+              - str (YAML string, OR file path if is_path=True)
+              - Path (file path)
+            is_path: If True, yaml_input is treated as a file path when str/Path
+        """
+        # --- Parse manager definition ---
+        manager_def = None
+        if isinstance(yaml_input, dict):
+            manager_def = yaml_input
+        elif isinstance(yaml_input, (str, Path)):
+            try:
+                if is_path and Path(yaml_input).exists():
+                    text = Path(yaml_input).read_text()
+                    manager_def = yaml.safe_load(text)
+                else:
+                    manager_def = yaml.safe_load(str(yaml_input))
+            except Exception as e:
+                return {"ok": False, "error": f"Failed to parse manager YAML: {e}"}
+        else:
+            return {"ok": False, "error": f"Unsupported input type: {type(yaml_input)}"}
+
+        if not isinstance(manager_def, dict):
+            return {"ok": False, "error": "Manager definition did not parse into dict"}
+
+        # --- Create roles first ---
         created_roles = []
         for entry in manager_def.get("managed_agents", []):
-            role_yaml = Path(entry["file"]).read_text() if entry.get("file") and Path(entry["file"]).exists() else entry.get("yaml")
+            role_yaml = None
+            if entry.get("file") and Path(entry["file"]).exists():
+                role_yaml = Path(entry["file"]).read_text()
+            elif entry.get("yaml"):
+                role_yaml = entry["yaml"]
+
             if role_yaml:
-                role_obj = self._validate_and_parse_yaml(role_yaml)
-                role_payload = normalize_payload(role_obj)
-                role_payload = self._validate_agent_payload(role_payload)
-                role_resp = await self.create_agent(role_payload)
-                if role_resp.get("ok"):
-                    rid = role_resp["data"].get("_id") or role_resp["data"].get("agent_id")
-                    if rid:
-                        created_roles.append({"agent_id": rid, "name": role_obj.get("name")})
+                try:
+                    role_obj = self._validate_and_parse_yaml(role_yaml)
+                    role_payload = normalize_payload(role_obj)
+                    role_payload = self._validate_agent_payload(role_payload)
+                    role_resp = await self.create_agent(role_payload)
+                    if role_resp.get("ok"):
+                        rid = role_resp["data"].get("_id") or role_resp["data"].get("agent_id")
+                        if rid:
+                            created_roles.append({"agent_id": rid, "name": role_obj.get("name")})
+                except Exception as e:
+                    self._log(f"❌ Failed to create role: {e}")
 
-        manager_payload = normalize_payload(manager_def)
-        manager_payload = self._validate_agent_payload(manager_payload)
-        if created_roles:
-            manager_payload["managed_agents"] = created_roles
+        # --- Create manager ---
+        try:
+            manager_payload = normalize_payload(manager_def)
+            manager_payload = self._validate_agent_payload(manager_payload)
+            if created_roles:
+                manager_payload["managed_agents"] = created_roles
 
-        mgr_resp = await self.create_agent(manager_payload)
-        if mgr_resp.get("ok"):
-            return {"ok": True, "manager": mgr_resp["data"], "roles": created_roles}
-        return {"ok": False, "error": mgr_resp.get("error"), "roles": created_roles}
+            mgr_resp = await self.create_agent(manager_payload)
+            if mgr_resp.get("ok"):
+                return {"ok": True, "manager": mgr_resp["data"], "roles": created_roles}
+            return {"ok": False, "error": mgr_resp.get("error"), "roles": created_roles}
+        except Exception as e:
+            return {"ok": False, "error": f"Manager creation failed: {e}", "roles": created_roles}
 
     async def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
         payload = {"agent_id": agent_id, "user_id": "demo-user", "session_id": session_id, "message": message}
