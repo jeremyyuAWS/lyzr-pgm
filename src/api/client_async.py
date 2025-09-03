@@ -83,7 +83,20 @@ class LyzrAPIClient:
     # Validation helpers
     # -----------------
     def _validate_agent_payload(self, payload: dict) -> dict:
-        """Ensures agent payload has required fields."""
+        """Ensures agent payload has required fields.
+        Supports both direct JSON and wrapped yaml_content.
+        """
+
+        # 🔥 If payload came in as {"yaml_content": "..."} → parse YAML first
+        if "yaml_content" in payload and isinstance(payload["yaml_content"], str):
+            try:
+                yaml_obj = yaml.safe_load(payload["yaml_content"])
+                if not isinstance(yaml_obj, dict):
+                    raise ValueError("yaml_content did not parse into a dictionary")
+                payload.update(yaml_obj)  # merge YAML fields into payload
+            except Exception as e:
+                raise ValueError(f"Invalid yaml_content: {e}") from e
+
         required = ["name", "description", "agent_role", "agent_goal", "agent_instructions"]
         for key in required:
             if key not in payload or not isinstance(payload[key], str):
