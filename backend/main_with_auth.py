@@ -173,30 +173,39 @@ class InferencePayload(BaseModel):
     assets: list[str] = []
 
 
-class CreateAgentsPayload(BaseModel):
-    agent: dict
-    tz_name: str = "America/Los_Angeles"
-
-
 # -----------------------------
 # Endpoints
 # -----------------------------
 @app.post("/create-agents/", response_class=JSONResponse)
 async def create_agents(
     request: Request,
-    payload: CreateAgentsPayload = Body(..., media_type="application/json"),  # ✅ Force JSON
+    payload: dict = Body(..., media_type="application/json"),  # ✅ Accept raw dict for flexibility
     user=Depends(get_current_user),
 ):
-    """Accepts raw JSON defining manager + roles (no FormData, no YAML)."""
+    """Accepts raw JSON defining manager + roles (flexible: yaml_or_json OR agent root)."""
     content_type = request.headers.get("content-type", "")
     if not content_type.startswith("application/json"):
         raise HTTPException(status_code=415, detail="Content-Type must be application/json")
 
     rid = get_request_id()
-    trace("📥 Received /create-agents", {"tz": payload.tz_name, "user": safe_user_email(user), "rid": rid})
+    trace("📥 Received /create-agents", {"user": safe_user_email(user), "rid": rid})
 
     try:
-        parsed = payload.agent
+        # 🔧 FLEXIBLE HANDLING
+        if "yaml_or_json" in payload:
+            inner = payload["yaml_or_json"]
+            if "manager" in inner:
+                parsed = inner["manager"]
+            else:
+                parsed = inner
+            tz_name = payload.get("tz_name", "America/Los_Angeles")
+        elif "agent" in payload:
+            parsed = payload["agent"]
+            tz_name = payload.get("tz_name", "America/Los_Angeles")
+        else:
+            parsed = payload
+            tz_name = payload.get("tz_name", "America/Los_Angeles")
+
         async with build_client_for_user(user) as client:
             result = await client.create_manager_with_roles(parsed)
 
@@ -209,6 +218,7 @@ async def create_agents(
             "roles": result.get("roles"),
             "agent_id": result.get("agent_id"),
             "timestamp": result.get("timestamp"),
+            "tz_name": tz_name,
             "user": user_to_dict(user),
         }
 
