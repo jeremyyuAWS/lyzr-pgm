@@ -14,8 +14,8 @@ from httpx import TimeoutException, RequestError
 
 from scripts.create_manager_with_roles import create_manager_with_roles
 from src.utils.normalize_output import normalize_inference_output
-from src.api.client import LyzrAPIClient  # now async-capable
-from src.utils.auth import get_current_user  # ✅ JWT-based auth
+from src.api.client_async import LyzrAPIClient  # ✅ async client
+from src.utils.auth import get_current_user     # ✅ JWT-based auth
 
 # -----------------------------
 # Environment
@@ -114,7 +114,6 @@ def user_to_dict(user) -> dict:
 
 def extract_api_key_from_user(user) -> str | None:
     key = None
-
     if isinstance(user, dict):
         key = user.get("lyzr_api_key") or user.get("encrypted_api_key")
     else:
@@ -147,7 +146,7 @@ async def read_me(user=Depends(get_current_user)):
 @app.get("/health")
 async def health_check():
     try:
-        resp = await client._request("GET", "/v3/agents/")
+        resp = await client.list_agents()  # ✅ clean wrapper
         ok = resp["ok"]
     except Exception as e:
         ok = False
@@ -158,8 +157,7 @@ async def health_check():
 # -----------------------------
 # Endpoints
 # -----------------------------
-@app.post("/create-agents")
-@app.post("/create-agents/")  # support both
+@app.post("/create-agents/")
 async def create_agents_from_file(
     file: UploadFile = File(...),
     tz_name: str = Form("America/Los_Angeles"),
@@ -175,9 +173,6 @@ async def create_agents_from_file(
     if not api_key:
         raise HTTPException(status_code=401, detail="No API key found in user profile")
 
-    local_client = LyzrAPIClient(api_key=api_key)
-    await local_client.__aenter__()  # open
-
     yaml_path = None
     try:
         raw_bytes = await file.read()
@@ -187,7 +182,7 @@ async def create_agents_from_file(
             tmp.write(text.encode("utf-8"))
             yaml_path = Path(tmp.name)
 
-        result = await create_manager_with_roles(local_client, yaml_path)
+        result = await create_manager_with_roles(client, yaml_path, api_key=api_key)
         return {"status": "success", "created": result, "user": user_to_dict(user)}
 
     except yaml.YAMLError as ye:
@@ -199,7 +194,6 @@ async def create_agents_from_file(
     finally:
         if yaml_path and yaml_path.exists():
             yaml_path.unlink()
-        await local_client.__aexit__(None, None, None)
 
 
 # -----------------------------
