@@ -155,6 +155,23 @@ async def upload_manager_yaml(
 
     return {"ok": True, "manager": resp.get("data"), "roles": resp.get("roles")}
 
+
+# -----------------------------
+# Aliases for frontend compatibility
+# -----------------------------
+@app.post("/create-agents/")
+async def create_agents_alias(
+    request: Request,
+    file: UploadFile = File(...),
+    user=Depends(get_current_user),
+):
+    """Alias so frontend calls to /create-agents/ still work."""
+    return await upload_manager_yaml(request, file, user)
+
+
+# -----------------------------
+# Healthcheck
+# -----------------------------
 @app.get("/health")
 async def healthcheck(request: Request):
     client: LyzrAPIClient = request.app.state.lyzr_client
