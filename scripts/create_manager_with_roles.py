@@ -37,8 +37,8 @@ async def create_manager_with_roles(
 ) -> Dict[str, Any]:
     """
     Create a manager agent and its role agents using JSON only.
-    Roles are linked back to the manager via client.link_agents(),
-    which also handles renaming the manager with a suffix + timestamp.
+    Roles are linked back to the manager via client.link_agents().
+    After all roles are linked, the manager is renamed once with a suffix + timestamp.
     """
 
     logger.info("📦 Using provided JSON dict for manager + roles")
@@ -81,23 +81,27 @@ async def create_manager_with_roles(
         if not role_id:
             raise RuntimeError(f"❌ Role response missing agent_id: {role_resp}")
 
-        # -----------------------------
-        # Link role → manager (PUT)
-        # -----------------------------
-        link_resp = await client.link_agents(manager_id, role_id, role.get("name"))
+        # Link role → manager (PUT, without renaming yet)
+        link_resp = await client.link_agents(manager_id, role_id, role.get("name"), rename_manager=False)
         if link_resp.get("ok"):
             logger.info(f"🔗 Linked role {role['name']} → manager {manager_json['name']}")
-            # Ensure manager object gets updated name
-            results["manager"]["name"] = link_resp.get(
-                "renamed",
-                results["manager"].get("name", manager_json.get("name", "MANAGER"))
-            )
         else:
             logger.warning(
                 f"⚠️ Failed to link role {role['name']} → manager {manager_json['name']}: {link_resp}"
             )
 
         results["roles"].append(role_data)
+
+    # -----------------------------
+    # Rename manager once at the end
+    # -----------------------------
+    rename_resp = await client.link_agents(manager_id, None, None, rename_manager=True)
+    if rename_resp.get("ok"):
+        new_name = rename_resp.get("renamed")
+        results["manager"]["name"] = new_name
+        logger.info(f"✏️ Final manager rename → {new_name}")
+    else:
+        logger.warning(f"⚠️ Failed final rename for manager {manager_json['name']}: {rename_resp}")
 
     logger.info("✅ Manager + roles created, linked, and renamed successfully")
     return results

@@ -153,11 +153,19 @@ class LyzrAPIClient:
     # -----------------
     # High-level helpers
     # -----------------
-    async def link_agents(self, manager_id: str, role_id: str, role_name: str = None):
+    async def link_agents(
+        self,
+        manager_id: str,
+        role_id: str = None,
+        role_name: str = None,
+        rename_manager: bool = False,
+    ):
         """
-        Link a role agent to a manager agent by updating the manager's managed_agents list,
-        and rename the manager with suffix + timestamp.
+        Link a role agent to a manager agent by updating the manager's managed_agents list.
+        If rename_manager=True, skip adding roles and only perform the final rename
+        with suffix + timestamp.
         """
+
         # Fetch current manager state
         mgr_resp = await self.get(f"/v3/agents/{manager_id}")
         if not mgr_resp.get("ok"):
@@ -169,39 +177,43 @@ class LyzrAPIClient:
         # Ensure list, even if Studio returns null
         existing_roles = manager_data.get("managed_agents") or []
 
-        # Append new role if not already present
-        if not any(r.get("id") == role_id for r in existing_roles):
-            existing_roles.append({
-                "id": role_id,
-                "name": role_name or role_id,
-                "usage_description": f"Manager delegates tasks to '{role_name or role_id}'."
-            })
+        if not rename_manager and role_id:
+            # Append new role if not already present
+            if not any(r.get("id") == role_id for r in existing_roles):
+                existing_roles.append({
+                    "id": role_id,
+                    "name": role_name or role_id,
+                    "usage_description": f"Manager delegates tasks to '{role_name or role_id}'."
+                })
 
-        # Rename manager with suffix + timestamp
-        manager_renamed = _rich_manager_name(manager_base_name, manager_id)
+        # Always rename if flag is set
+        manager_renamed = manager_base_name
+        if rename_manager:
+            manager_renamed = _rich_manager_name(manager_base_name, manager_id)
 
-        # Update manager with new managed_agents + name
+        # Update manager with managed_agents + new name
         update_payload = {
             "name": manager_renamed,
             "managed_agents": existing_roles,
-            # Required fields for Studio API to accept PUT
+            # Keep required fields so PUT won’t fail
             "provider_id": manager_data.get("provider_id"),
             "model": manager_data.get("model"),
-            "temperature": manager_data.get("temperature"),
             "top_p": manager_data.get("top_p"),
+            "temperature": manager_data.get("temperature"),
+            "response_format": manager_data.get("response_format", {"type": "json"}),
         }
+
         upd_resp = await self.put(f"/v3/agents/{manager_id}", update_payload)
 
         if upd_resp.get("ok"):
             return {
                 "ok": True,
-                "linked": True,
+                "linked": bool(role_id),
+                "renamed": manager_renamed if rename_manager else None,
                 "data": upd_resp.get("data"),
-                "renamed": manager_renamed,
-                "timestamp": _timestamp_str(),
+                "timestamp": _timestamp_str() if rename_manager else None,
             }
         return {"ok": False, "linked": False, "error": upd_resp.get("error")}
-
 
     async def call_agent(self, agent_id_or_name: str, payload: dict):
         return await self.post(f"/v3/agents/{agent_id_or_name}/invoke", payload)
