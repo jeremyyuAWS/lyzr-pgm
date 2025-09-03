@@ -153,7 +153,7 @@ class LyzrAPIClient:
     # -----------------
     # High-level helpers
     # -----------------
-        async def link_agents(self, manager_id: str, role_id: str, role_name: str = None):
+    async def link_agents(self, manager_id: str, role_id: str, role_name: str = None):
         """
         Link a role agent to a manager agent by updating the manager's managed_agents list,
         and rename the manager with suffix + timestamp.
@@ -180,14 +180,16 @@ class LyzrAPIClient:
         # Rename manager with suffix + timestamp
         manager_renamed = _rich_manager_name(manager_base_name, manager_id)
 
-        # Merge full payload with updates
-        update_payload = manager_data.copy()
-        update_payload.update({
+        # Update manager with new managed_agents + name
+        update_payload = {
             "name": manager_renamed,
             "managed_agents": existing_roles,
-        })
-
-        # Send full object back to API
+            # Required fields for Studio API to accept PUT
+            "provider_id": manager_data.get("provider_id"),
+            "model": manager_data.get("model"),
+            "temperature": manager_data.get("temperature"),
+            "top_p": manager_data.get("top_p"),
+        }
         upd_resp = await self.put(f"/v3/agents/{manager_id}", update_payload)
 
         if upd_resp.get("ok"):
