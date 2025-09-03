@@ -120,8 +120,13 @@ def _safe_parse_role_yaml(role: Dict[str, Any]) -> Dict[str, Any] | None:
 
 
 def _load_yaml_or_json(file_or_dict: Union[str, Path, Dict[str, Any]]) -> Dict[str, Any]:
-    """Accept dict, YAML file, JSON file, or string containing YAML/JSON."""
+    """
+    Accept dict, YAML file, JSON file, or string containing YAML/JSON.
+    - If already dict (JSON body), pass through unchanged.
+    - Otherwise, attempt YAML parse, then JSON parse.
+    """
     if isinstance(file_or_dict, dict):
+        logger.info("📦 Received direct JSON dict (frontend POST)")
         return file_or_dict
     if isinstance(file_or_dict, Path):
         text = file_or_dict.read_text()
