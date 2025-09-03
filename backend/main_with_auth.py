@@ -211,10 +211,22 @@ class CreateAgentsPayload(BaseModel):
 # -----------------------------
 @app.post("/create-agents/", response_class=JSONResponse)
 async def create_agents(
-    payload: CreateAgentsPayload = Body(..., media_type="application/json"),
+    request: Request,
+    payload: CreateAgentsPayload = Body(..., media_type="application/json"),  # ✅ Force JSON only
     user=Depends(get_current_user),
 ):
-    """Accepts raw JSON defining manager + roles (no FormData)."""
+    """
+    Accepts raw JSON defining manager + roles (no FormData).
+    ❗ Explicitly enforces application/json content-type
+    """
+    # ✅ Explicit check to reject non-JSON submissions (multipart/form-data, text/plain, etc.)
+    content_type = request.headers.get("content-type", "")
+    if not content_type.startswith("application/json"):
+        raise HTTPException(
+            status_code=415,
+            detail="Content-Type must be application/json",
+        )
+
     rid = get_request_id()
     trace("📥 Received /create-agents", {"tz": payload.tz_name, "user": safe_user_email(user), "rid": rid})
 
