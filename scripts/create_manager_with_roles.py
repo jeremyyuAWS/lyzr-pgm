@@ -64,17 +64,13 @@ def _manager_supervision_instructions(manager_def: Dict[str, Any], created_roles
 
 # ---------- Main orchestration ----------
 
-async def create_manager_with_roles(
-    client: LyzrAPIClient,
-    manager_yaml: Union[Path, Dict[str, Any]],
-) -> Dict[str, Any]:
+async def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]) -> Dict[str, Any]:
     """
     Orchestration:
-    1. Create role agents first
-    2. Create manager agent
-    3. Rename both with suffix + timestamp
-    4. Attach roles to manager with usage_description
-    5. PUT updates to ensure fields (description, instructions, examples) are preserved
+    1. Create role agents first (POST)
+    2. Collect their IDs
+    3. Create manager agent with managed_agents[] referencing those IDs
+    4. Rename with suffix + timestamp
     """
     try:
         logger.info("📥 Starting create_manager_with_roles orchestration")
@@ -91,23 +87,19 @@ async def create_manager_with_roles(
         if not manager_def:
             raise ValueError("YAML must contain a top-level 'manager' key")
 
-        # ----- Roles -----
+        # ----- 1. Create Roles -----
         created_roles: List[Dict[str, Any]] = []
         for role in manager_def.get("managed_agents", []):
-            if "yaml" not in role:
-                logger.warning(f"⚠️ Skipping role {role.get('name')} (no inline YAML)")
-                continue
-
-            role_yaml = yaml.safe_load(role["yaml"])
-            role_name = role_yaml.get("name", "ROLE")
-
+            role_name = role.get("name", "ROLE")
             logger.info(f"🎭 Creating role agent → {role_name}")
-            role_resp = await client.create_agent(role_yaml)
+
+            role_resp = await client.create_agent(role)
             if not role_resp.get("ok"):
                 logger.error(f"❌ Failed to create role {role_name}: {role_resp}")
                 continue
 
-            role_id = (role_resp.get("data") or {}).get("agent_id") or (role_resp.get("data") or {}).get("_id")
+            role_data = role_resp["data"]
+            role_id = role_data.get("agent_id") or role_data.get("_id")
             if not role_id:
                 logger.error(f"❌ Role {role_name} created but missing agent_id")
                 continue
@@ -117,10 +109,10 @@ async def create_manager_with_roles(
 
             role_updates = {
                 "name": role_renamed,
-                "system_prompt": _compose_system_prompt(role_yaml),
-                "agent_role": role_yaml.get("agent_role", ""),
-                "agent_goal": role_yaml.get("agent_goal", ""),
-                "agent_instructions": role_yaml.get("agent_instructions", ""),
+                "system_prompt": _compose_system_prompt(role),
+                "agent_role": role.get("agent_role", ""),
+                "agent_goal": role.get("agent_goal", ""),
+                "agent_instructions": role.get("agent_instructions", ""),
             }
             upd = await client.update_agent(role_id, role_updates)
             if not upd.get("ok"):
@@ -129,63 +121,69 @@ async def create_manager_with_roles(
             created_roles.append({
                 "id": role_id,
                 "name": role_renamed,
-                "base_name": role_name,
-                "description": role_yaml.get("description", ""),
-                "agent_role": role_yaml.get("agent_role", ""),
-                "agent_goal": role_yaml.get("agent_goal", ""),
-                "agent_instructions": role_yaml.get("agent_instructions", ""),
+                "description": role.get("description", ""),
+                "agent_role": role.get("agent_role", ""),
+                "agent_goal": role.get("agent_goal", ""),
+                "agent_instructions": role.get("agent_instructions", ""),
             })
 
-        # ----- Manager -----
+        # ----- 2. Create Manager -----
         manager_base_name = manager_def.get("name", "MANAGER")
         logger.info(f"👑 Creating manager agent → {manager_base_name}")
-        mgr_resp = await client.create_agent(manager_def)
+
+        manager_payload = {
+            **manager_def,
+            "managed_agents": [
+                {
+                    "id": r["id"],
+                    "name": r["name"],
+                    "usage_description": f"Manager delegates YAML-subtasks to '{r['name']}'."
+                }
+                for r in created_roles
+            ]
+        }
+
+        mgr_resp = await client.create_agent(manager_payload)
         if not mgr_resp.get("ok"):
             logger.error(f"❌ Manager creation failed: {mgr_resp}")
             return {"ok": False, "error": "Manager creation failed", "roles": created_roles}
 
-        manager_id = (mgr_resp.get("data") or {}).get("agent_id") or (mgr_resp.get("data") or {}).get("_id")
+        manager = mgr_resp["data"]
+        manager_id = manager.get("agent_id") or manager.get("_id")
         if not manager_id:
             logger.error("❌ Manager created but missing agent_id")
             return {"ok": False, "error": "Manager missing id", "roles": created_roles}
 
+        # ----- 3. Rename Manager -----
         manager_renamed = _rich_manager_name(manager_base_name, manager_id)
         logger.info(f"✏️ Updating manager {manager_base_name} → {manager_renamed}")
-
-        managed_agents_payload = [
-            {
-                "id": r["id"],
-                "name": r["name"],
-                "usage_description": f"Manager delegates YAML-subtasks to '{r['name']}'."
-            }
-            for r in created_roles
-        ]
 
         manager_updates = {
             "name": manager_renamed,
             "agent_role": manager_def.get("agent_role", ""),
             "agent_goal": manager_def.get("agent_goal", ""),
             "agent_instructions": _manager_supervision_instructions(manager_def, created_roles),
-            "managed_agents": managed_agents_payload,
             "description": manager_def.get("description", ""),
             "features": manager_def.get("features", []),
             "tools": manager_def.get("tools", []),
-            "llm_credential_id": manager_def.get("llm_credential_id", "lyzr_openai"),
+            "llm_credential_id": manager_def.get("llm_credential_id", "lyzr-default"),
             "provider_id": manager_def.get("provider_id", "OpenAI"),
             "model": manager_def.get("model", "gpt-4o-mini"),
             "top_p": manager_def.get("top_p", 0.9),
             "temperature": manager_def.get("temperature", 0.3),
             "response_format": manager_def.get("response_format", {"type": "json"}),
+            "managed_agents": manager_payload["managed_agents"],
         }
         upd = await client.update_agent(manager_id, manager_updates)
-        if not upd.get("ok"):
+        if upd.get("ok"):
+            manager = upd["data"]
+        else:
             logger.warning(f"⚠️ PUT update failed for manager {manager_base_name}: {upd}")
 
         logger.info("✅ Manager + roles orchestration complete")
-
         return {
             "ok": True,
-            "manager": upd.get("data") if upd.get("ok") else {"id": manager_id, "name": manager_renamed},
+            "manager": manager,
             "roles": created_roles,
             "timestamp": _timestamp_str(),
         }
