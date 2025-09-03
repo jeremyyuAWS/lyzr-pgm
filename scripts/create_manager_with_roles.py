@@ -19,6 +19,7 @@ async def create_manager_with_roles(
     2. Create manager agent
     3. Link roles to manager (if any)
     4. Always rename manager once at the end
+    5. Refresh manager to return full object with managed_agents populated
     """
     created_roles: List[Dict[str, Any]] = []
 
@@ -41,12 +42,18 @@ async def create_manager_with_roles(
     if created_roles:
         for role_agent in created_roles:
             logger.info(
-                f"🔗 Linking role '{role_agent['name']}' to manager '{manager['name']}'"
+                f"🔗 Linking role '{role_agent.get('name')}' to manager '{manager.get('name', manager.get('id'))}'"
             )
             await client.link_agents(manager["id"], role_agent["id"], rename_manager=False)
 
     # 4) Always rename manager (even if no roles were provided)
-    logger.info(f"✨ Renaming manager '{manager['name']}' (final step)")
+    logger.info(f"✨ Renaming manager '{manager.get('name', manager.get('id'))}' (final step)")
     manager = await client.rename_manager(manager["id"])
+
+    # 5) Refresh manager so we return the fully populated object (with managed_agents)
+    try:
+        manager = await client.get_agent(manager["id"])
+    except Exception as e:
+        logger.warning(f"⚠️ Could not refresh manager {manager.get('id')}: {e}")
 
     return {"manager": manager, "roles": created_roles}
