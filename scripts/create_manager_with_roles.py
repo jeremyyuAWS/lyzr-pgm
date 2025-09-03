@@ -1,41 +1,9 @@
-# scripts/create_manager_with_roles.py
-
-import os
 import logging
 from typing import Dict, Any, List
-from datetime import datetime
-import pytz
 
 from src.api.client_async import LyzrAPIClient
 
 logger = logging.getLogger("create-manager-with-roles")
-
-# -----------------------------
-# Timezone / naming helpers
-# -----------------------------
-def _tz() -> pytz.timezone:
-    tz_name = os.getenv("APP_TZ", "America/Los_Angeles")
-    try:
-        return pytz.timezone(tz_name)
-    except Exception:
-        return pytz.timezone("America/Los_Angeles")
-
-
-def _timestamp_str() -> str:
-    """Format local timestamp for manager rename."""
-    now = datetime.now(_tz())
-    return now.strftime("%d%b%Y-%I:%M%p %Z").upper()
-
-
-def _suffix_from_id(agent_id: str) -> str:
-    """Use last 6 chars of agent_id as suffix."""
-    return (agent_id or "")[-6:] or "XXXXXX"
-
-
-def _rich_manager_name(base: str, agent_id: str) -> str:
-    """Build rich manager name with version, id suffix, and timestamp."""
-    return f"{base}_v1.0_{_suffix_from_id(agent_id)}_{_timestamp_str()}"
-
 
 # -----------------------------
 # Validation
@@ -69,8 +37,8 @@ async def create_manager_with_roles(
 ) -> Dict[str, Any]:
     """
     Create a manager agent and its role agents using JSON only.
-    Roles are linked back to the manager via PUT,
-    then the manager is renamed with a suffix + timestamp.
+    Roles are linked back to the manager via client.link_agents(),
+    which also handles renaming the manager with a suffix + timestamp.
     """
 
     logger.info("📦 Using provided JSON dict for manager + roles")
@@ -97,7 +65,7 @@ async def create_manager_with_roles(
     }
 
     # -----------------------------
-    # Create roles and attach via PUT
+    # Create roles and attach via link_agents()
     # -----------------------------
     roles: List[Dict[str, Any]] = manager_json.get("managed_agents", [])
     for role in roles:
@@ -113,34 +81,17 @@ async def create_manager_with_roles(
         if not role_id:
             raise RuntimeError(f"❌ Role response missing agent_id: {role_resp}")
 
-        # Link role → manager (client does a PUT update)
+        # Link role → manager (client handles PUT + rename)
         link_resp = await client.link_agents(manager_id, role_id, role.get("name"))
         if link_resp.get("ok"):
             logger.info(f"🔗 Linked role {role['name']} → manager {manager_json['name']}")
+            # Update manager name after renaming
+            results["manager"]["name"] = link_resp.get("renamed", results["manager"]["name"])
+            results["timestamp"] = link_resp.get("timestamp")
         else:
-            logger.warning(
-                f"⚠️ Failed to link role {role['name']} → manager {manager_json['name']}: {link_resp}"
-            )
+            logger.warning(f"⚠️ Failed to link role {role['name']} → manager {manager_json['name']}: {link_resp}")
 
         results["roles"].append(role_data)
-
-    # -----------------------------
-    # Rename manager with suffix + timestamp
-    # -----------------------------
-    manager_base_name = manager_json.get("name", "MANAGER")
-    manager_renamed = _rich_manager_name(manager_base_name, manager_id)
-
-    upd_resp = await client.put(
-        f"/v3/agents/{manager_id}",
-        {"name": manager_renamed}
-    )
-    if upd_resp.get("ok"):
-        logger.info(f"✏️ Renamed manager → {manager_renamed}")
-        results["manager"]["name"] = manager_renamed
-    else:
-        logger.warning(f"⚠️ Failed to rename manager {manager_base_name}: {upd_resp}")
-
-    results["timestamp"] = _timestamp_str()
 
     logger.info("✅ Manager + roles created, linked, and renamed successfully")
     return results
