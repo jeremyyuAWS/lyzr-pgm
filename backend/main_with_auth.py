@@ -182,7 +182,7 @@ async def create_agents_from_file(
             tmp.write(text.encode("utf-8"))
             yaml_path = Path(tmp.name)
 
-        result = await create_manager_with_roles(client, yaml_path, api_key=api_key)
+        result = await create_manager_with_roles(client, yaml_path)
         return {"status": "success", "created": result, "user": user_to_dict(user)}
 
     except yaml.YAMLError as ye:
