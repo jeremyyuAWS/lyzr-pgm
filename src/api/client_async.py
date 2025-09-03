@@ -134,33 +134,33 @@ class LyzrAPIClient:
     # High-level helpers
     # -----------------
     async def link_agents(self, manager_id: str, role_id: str, role_name: str = None):
-    """
-    Link a role agent to a manager agent by updating the manager's managed_agents list.
-    """
-    # Fetch current manager state
-    mgr_resp = await self.get(f"/v3/agents/{manager_id}")
-    if not mgr_resp.get("ok"):
-        return {"ok": False, "error": f"Failed to fetch manager: {mgr_resp}"}
+        """
+        Link a role agent to a manager agent by updating the manager's managed_agents list.
+        Mirrors the old update_agent behavior.
+        """
+        # Fetch current manager state
+        mgr_resp = await self.get(f"/v3/agents/{manager_id}")
+        if not mgr_resp.get("ok"):
+            return {"ok": False, "error": f"Failed to fetch manager: {mgr_resp}"}
 
-    manager_data = mgr_resp["data"]
-    existing_roles = manager_data.get("managed_agents", [])
+        manager_data = mgr_resp["data"]
+        existing_roles = manager_data.get("managed_agents", [])
 
-    # Append new role if not already present
-    if not any(r.get("id") == role_id for r in existing_roles):
-        existing_roles.append({
-            "id": role_id,
-            "name": role_name or role_id,
-            "usage_description": f"Manager delegates tasks to '{role_name or role_id}'."
-        })
+        # Append new role if not already present
+        if not any(r.get("id") == role_id for r in existing_roles):
+            existing_roles.append({
+                "id": role_id,
+                "name": role_name or role_id,
+                "usage_description": f"Manager delegates tasks to '{role_name or role_id}'."
+            })
 
-    # Update manager with new managed_agents list
-    update_payload = {"managed_agents": existing_roles}
-    upd_resp = await self.put(f"/v3/agents/{manager_id}", update_payload)
+        # Update manager with new managed_agents list
+        update_payload = {"managed_agents": existing_roles}
+        upd_resp = await self.put(f"/v3/agents/{manager_id}", update_payload)
 
-    if upd_resp.get("ok"):
-        return {"ok": True, "linked": True, "data": upd_resp.get("data")}
-    return {"ok": False, "linked": False, "error": upd_resp.get("error")}
-
+        if upd_resp.get("ok"):
+            return {"ok": True, "linked": True, "data": upd_resp.get("data")}
+        return {"ok": False, "linked": False, "error": upd_resp.get("error")}
 
     async def call_agent(self, agent_id_or_name: str, payload: dict):
         return await self.post(f"/v3/agents/{agent_id_or_name}/invoke", payload)
@@ -205,11 +205,6 @@ class LyzrAPIClient:
             return {"ok": False, "error": mgr_resp.get("error"), "roles": created_roles}
         except Exception as e:
             return {"ok": False, "error": f"Manager creation failed: {e}", "roles": created_roles}
-
-    async def link_agents(self, manager_id: str, role_id: str):
-        """Link a role agent to a manager agent."""
-        payload = {"manager_id": manager_id, "role_id": role_id}
-        return await self.post("/v3/agents/link", payload)
 
     async def run_inference(self, agent_id: str, message: str, session_id: str = "default-session"):
         payload = {"agent_id": agent_id, "user_id": "demo-user", "session_id": session_id, "message": message}
