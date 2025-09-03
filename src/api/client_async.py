@@ -44,7 +44,7 @@ class LyzrAPIClient:
     """
 
     def __init__(self, base_url: str | None = None, api_key: str | None = None, timeout: int = 30):
-        self.base_url = base_url or os.getenv("STUDIO_API_URL", "https://studio.lyzr.ai")
+        self.base_url = base_url or os.getenv("STUDIO_API_URL", "https://agent-prod.studio.lyzr.ai")
         self.api_key = api_key or os.getenv("STUDIO_API_KEY")
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
