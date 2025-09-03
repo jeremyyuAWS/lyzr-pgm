@@ -10,7 +10,7 @@ from typing import Union, Dict, Any, List
 from datetime import datetime
 import pytz
 
-from src.api.client_async import LyzrAPIClient  # ✅ use async client
+from src.api.client_async import LyzrAPIClient  # ✅ async client
 
 # -----------------------------
 # Logging
@@ -55,6 +55,7 @@ def _rich_role_name(base: str, agent_id: str) -> str:
 
 
 def _compose_system_prompt(agent_def: Dict[str, Any]) -> str:
+    """Build system_prompt by joining role, goal, and instructions."""
     role = agent_def.get("agent_role", "").strip()
     goal = agent_def.get("agent_goal", "").strip()
     instr = agent_def.get("agent_instructions", "").strip()
@@ -72,6 +73,7 @@ def _compose_system_prompt(agent_def: Dict[str, Any]) -> str:
 def _manager_supervision_instructions(
     manager_def: Dict[str, Any], created_roles: List[Dict[str, Any]]
 ) -> str:
+    """Append role responsibilities to manager instructions."""
     base = manager_def.get("agent_instructions", "").strip()
     lines = [base, "", "Manage these attached roles:"]
     for r in created_roles:
@@ -86,7 +88,7 @@ def _manager_supervision_instructions(
 
 
 def _safe_parse_role_yaml(role: Dict[str, Any]) -> Dict[str, Any] | None:
-    """Parse role['yaml'] into a dict safely."""
+    """Parse role['yaml'] (string or dict) safely into a dict."""
     raw = role.get("yaml")
     if raw is None:
         return None
@@ -206,9 +208,9 @@ async def create_manager_with_roles(
 ) -> Dict[str, Any]:
     """
     Flow:
-      1. Create role agents first (with PUT update + renaming).
+      1. Create role agents (PUT update + rich names).
       2. Create manager agent.
-      3. PUT update manager with rich name, supervision instructions, examples, and role associations.
+      3. PUT update manager with supervision instructions, examples, and role links.
     """
     if isinstance(manager_yaml, Path):
         with open(manager_yaml, "r") as f:
@@ -350,9 +352,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     async def _main():
-        client = LyzrAPIClient(debug=True)
-        result = await create_manager_with_roles(client, yaml_path)
-        print("\n✅ Done. Result:")
-        print(result)
+        async with LyzrAPIClient(debug=True) as client:
+            result = await create_manager_with_roles(client, yaml_path)
+            print("\n✅ Done. Result:")
+            print(result)
 
     asyncio.run(_main())
