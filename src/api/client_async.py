@@ -1,12 +1,12 @@
+# src/api/client_async.py
+
 import os
 import json
 import yaml
 import httpx
 import asyncio
-import time
-
 from pathlib import Path
-from datetime import datetime
+
 from src.utils.payload_normalizer import normalize_payload
 from src.utils.normalize_output import normalize_inference_output, canonicalize_name
 
@@ -72,6 +72,23 @@ class LyzrAPIClient:
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.aclose()
+
+    # -----------------
+    # Validation helpers
+    # -----------------
+    def _validate_agent_payload(self, payload: dict):
+        """
+        Ensures agent payload has required fields.
+        Raises ValueError if invalid.
+        """
+        required = ["name", "description", "agent_role", "agent_goal", "agent_instructions"]
+        for key in required:
+            if key not in payload or not isinstance(payload[key], str):
+                raise ValueError(f"YAML missing required string field: {key}")
+
+        # Optional normalization for name (avoid spaces/specials)
+        payload["name"] = canonicalize_name(payload["name"])
+        return payload
 
     # -----------------
     # Core request logic
@@ -140,6 +157,7 @@ class LyzrAPIClient:
         return await self.post(url, payload)
 
     async def create_agent(self, payload: dict):
+        payload = self._validate_agent_payload(payload)
         return await self.post("/v3/agents/", payload)
 
     async def create_agent_from_yaml(self, yaml_input: str, is_path: bool = True):
@@ -148,7 +166,9 @@ class LyzrAPIClient:
                 yaml_def = yaml.safe_load(f)
         else:
             yaml_def = yaml.safe_load(yaml_input)
+
         payload = normalize_payload(yaml_def)
+        payload = self._validate_agent_payload(payload)
         return await self.create_agent(payload)
 
     async def create_manager_with_roles(self, yaml_input: str, is_path: bool = True):
@@ -172,6 +192,7 @@ class LyzrAPIClient:
             if role_yaml:
                 role_obj = yaml.safe_load(role_yaml)
                 role_payload = normalize_payload(role_obj)
+                role_payload = self._validate_agent_payload(role_payload)
                 role_resp = await self.create_agent(role_payload)
 
                 if role_resp.get("ok") and "data" in role_resp:
@@ -183,6 +204,7 @@ class LyzrAPIClient:
                     self._log(f"❌ Failed to create role: {role_obj.get('name')}")
 
         manager_payload = normalize_payload(manager_def)
+        manager_payload = self._validate_agent_payload(manager_payload)
         if created_roles:
             manager_payload["managed_agents"] = created_roles
 
