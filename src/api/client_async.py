@@ -51,7 +51,8 @@ class LyzrAPIClient:
 
     # --- Context manager support ---
     async def __aenter__(self):
-        self._client = httpx.AsyncClient(timeout=self.timeout)
+        # 👇 enable redirect following globally
+        self._client = httpx.AsyncClient(timeout=self.timeout, follow_redirects=True)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
@@ -60,7 +61,7 @@ class LyzrAPIClient:
 
     # --- Core HTTP helpers ---
     async def get(self, path: str):
-        url = f"{self.base_url}{path}"
+        url = self._normalize_url(path)
         try:
             resp = await self._client.get(url, headers=self._headers())
             return self._handle_response(resp)
@@ -69,7 +70,7 @@ class LyzrAPIClient:
             return {"ok": False, "error": str(e)}
 
     async def post(self, path: str, payload: dict):
-        url = f"{self.base_url}{path}"
+        url = self._normalize_url(path)
         try:
             resp = await self._client.post(url, headers=self._headers(), json=payload)
             return self._handle_response(resp)
@@ -78,7 +79,7 @@ class LyzrAPIClient:
             return {"ok": False, "error": str(e)}
 
     async def put(self, path: str, payload: dict):
-        url = f"{self.base_url}{path}"
+        url = self._normalize_url(path)
         try:
             resp = await self._client.put(url, headers=self._headers(), json=payload)
             return self._handle_response(resp)
@@ -88,10 +89,11 @@ class LyzrAPIClient:
 
     # --- API Wrappers ---
     async def create_agent(self, payload: dict):
-        return await self.post("/v3/agents", payload)
+        # 👇 always use trailing slash
+        return await self.post("/v3/agents/", payload)
 
     async def update_agent(self, agent_id: str, payload: dict):
-        return await self.put(f"/v3/agents/{agent_id}", payload)
+        return await self.put(f"/v3/agents/{agent_id}/", payload)
 
     # --- Linking + Orchestration ---
     async def link_agents(self, manager_id: str, role_id: str = None, role_name: str = None, rename_manager: bool = False):
@@ -99,7 +101,7 @@ class LyzrAPIClient:
         Link a role agent to a manager agent by updating the manager's managed_agents list.
         Always PUT full payload back so no fields are lost.
         """
-        mgr_resp = await self.get(f"/v3/agents/{manager_id}")
+        mgr_resp = await self.get(f"/v3/agents/{manager_id}/")
         if not mgr_resp.get("ok"):
             return {"ok": False, "error": f"Failed to fetch manager: {mgr_resp}"}
 
@@ -143,6 +145,7 @@ class LyzrAPIClient:
 
         created_roles = []
 
+        # 1. Create roles
         for entry in manager_def.get("managed_agents", []):
             try:
                 role_payload = normalize_payload(entry)
@@ -153,6 +156,7 @@ class LyzrAPIClient:
                 logger.error(f"❌ Failed to create role: {e}")
 
         try:
+            # 2. Create manager
             manager_payload = normalize_payload(manager_def)
             mgr_resp = await self.create_agent(manager_payload)
             if not mgr_resp.get("ok"):
@@ -160,8 +164,9 @@ class LyzrAPIClient:
 
             manager = mgr_resp["data"]
 
+            # 3. Link roles back into manager
             if created_roles:
-                mgr_fetched = await self.get(f"/v3/agents/{manager['id']}")
+                mgr_fetched = await self.get(f"/v3/agents/{manager['id']}/")
                 if not mgr_fetched.get("ok"):
                     return {"ok": False, "error": f"Failed to fetch created manager: {mgr_fetched}"}
 
@@ -182,6 +187,12 @@ class LyzrAPIClient:
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
+
+    def _normalize_url(self, path: str) -> str:
+        """Ensure trailing slash consistency on API paths."""
+        if not path.endswith("/"):
+            path = path + "/"
+        return f"{self.base_url}{path}"
 
     def _handle_response(self, resp: httpx.Response):
         try:
