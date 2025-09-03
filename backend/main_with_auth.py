@@ -10,8 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from src.utils.normalize_output import normalize_inference_output
-from src.api.client_async import LyzrAPIClient   # ✅ your new async client
+from src.api.client_async import LyzrAPIClient   # ✅ async client
 from src.utils.auth import get_current_user      # ✅ JWT-based auth
+
 
 # -----------------------------
 # Environment
@@ -51,14 +52,15 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    trace("🚀 Starting up FastAPI app")
-    app.state.lyzr_client = await LyzrAPIClient().__aenter__()
+    app.state.lyzr_client = LyzrAPIClient(api_key=os.getenv("LYZR_API_KEY"))
+    logger.info("✅ LyzrAPIClient initialized")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    trace("🛑 Shutting down FastAPI app")
     client: LyzrAPIClient = app.state.lyzr_client
-    await client.__aexit__(None, None, None)
+    if client:
+        await client.aclose()
+        logger.info("👋 LyzrAPIClient closed")
 
 
 # -----------------------------
@@ -152,3 +154,20 @@ async def upload_manager_yaml(
         raise HTTPException(status_code=500, detail=resp.get("error"))
 
     return {"ok": True, "manager": resp.get("data"), "roles": resp.get("roles")}
+
+@app.get("/health")
+async def healthcheck(request: Request):
+    client: LyzrAPIClient = request.app.state.lyzr_client
+    resp = await client.list_agents()
+
+    if resp.get("ok"):
+        return {
+            "status": "ok",
+            "count": len(resp.get("data", [])),
+            "timestamp": str(uuid.uuid4())[:8],  # optional trace ID
+        }
+    else:
+        return {
+            "status": "error",
+            "error": resp.get("data"),
+        }
