@@ -64,7 +64,10 @@ def _manager_supervision_instructions(manager_def: Dict[str, Any], created_roles
 
 # ---------- Main orchestration ----------
 
-async def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]) -> Dict[str, Any]:
+async def create_manager_with_roles(
+    client: LyzrAPIClient,
+    manager_yaml: Union[Path, Dict[str, Any]],
+) -> Dict[str, Any]:
     """
     Orchestration:
     1. Create role agents first
@@ -76,7 +79,6 @@ async def create_manager_with_roles(client: LyzrAPIClient, manager_yaml: Union[P
     try:
         logger.info("📥 Starting create_manager_with_roles orchestration")
 
-        # 1. Load YAML if file path given
         if isinstance(manager_yaml, Path):
             logger.info(f"📂 Loading manager YAML from {manager_yaml}")
             with open(manager_yaml, "r") as f:

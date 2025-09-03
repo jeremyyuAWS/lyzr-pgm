@@ -82,6 +82,7 @@ async def create_agents(
 ):
     """
     Create manager + role agents from incoming JSON.
+    Expects: { "manager_json": {...}, "tz_name": "America/Los_Angeles", "studio_api_key": "<key>" }
     """
     try:
         body = await request.json()
@@ -89,28 +90,36 @@ async def create_agents(
 
         manager_json = body.get("manager_json")
         tz_name = body.get("tz_name", "America/Los_Angeles")
+        studio_api_key = body.get("studio_api_key")
 
         if not manager_json:
             raise HTTPException(status_code=400, detail="manager_json is required")
 
+        if not studio_api_key:
+            raise HTTPException(status_code=400, detail="studio_api_key is required")
+
         trace("🔑 Authenticated user", {"user": user.dict()})
 
-        # Orchestration with API client
-        async with LyzrAPIClient() as client:
+        # Orchestration with API client (thread the API key)
+        async with LyzrAPIClient(api_key=studio_api_key) as client:
             result = await create_manager_with_roles(client, manager_json)
 
-        if not result or "agent_id" not in result:
+        if not result or not result.get("ok"):
             trace("❌ Manager creation failed", {"error": result})
             raise HTTPException(status_code=500, detail="Manager creation failed")
 
-        trace("✅ Manager created", {"id": result["agent_id"]})
+        manager_data = result.get("manager", {})
+        manager_id = manager_data.get("id") or manager_data.get("agent_id")
+        manager_name = manager_data.get("name")
+
+        trace("✅ Manager created", {"id": manager_id, "name": manager_name})
 
         return {
             "ok": True,
             "timestamp": _timestamp_str(tz_name),
             "manager": {
-                "id": result["agent_id"],
-                "name": result["name"],
+                "id": manager_id,
+                "name": manager_name,
             },
             "roles": result.get("roles", []),
         }
