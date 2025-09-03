@@ -7,7 +7,7 @@ import logging
 import uuid
 from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form, Depends, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -19,9 +19,8 @@ from src.api.client_async import LyzrAPIClient
 from src.utils.auth import get_current_user
 
 # -----------------------------
-# Load JSON
+# Load JSON or YAML
 # -----------------------------
-
 def _load_yaml_or_json(text: str) -> dict:
     """Try to parse input as YAML, fallback to JSON."""
     try:
@@ -203,23 +202,24 @@ class InferencePayload(BaseModel):
 
 
 class CreateAgentsPayload(BaseModel):
-    yaml_or_json: dict
+    agent: dict
     tz_name: str = "America/Los_Angeles"
 
 
 # -----------------------------
 # Endpoints
 # -----------------------------
-@app.post("/create-agents/")
+@app.post("/create-agents/", response_class=JSONResponse)
 async def create_agents(
-    payload: CreateAgentsPayload = Body(...),
+    payload: CreateAgentsPayload = Body(..., media_type="application/json"),
     user=Depends(get_current_user),
 ):
+    """Accepts raw JSON defining manager + roles (no FormData)."""
     rid = get_request_id()
     trace("📥 Received /create-agents", {"tz": payload.tz_name, "user": safe_user_email(user), "rid": rid})
 
     try:
-        parsed = payload.yaml_or_json
+        parsed = payload.agent
 
         async with build_client_for_user(user) as client:
             result = await client.create_manager_with_roles(parsed)

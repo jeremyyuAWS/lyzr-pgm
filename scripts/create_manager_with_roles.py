@@ -240,7 +240,6 @@ agents:
 {roles_block if roles_block else ""}
 """
 
-
 # -----------------------------
 # Main Orchestration
 # -----------------------------
@@ -249,15 +248,27 @@ async def create_manager_with_roles(
 ) -> Dict[str, Any]:
     """
     Flow:
-      1. Create role agents (PUT update + rich names).
-      2. Create manager agent.
-      3. PUT update manager with supervision instructions, examples, and role links.
+      Accepts:
+        - Dict with top-level manager fields (id, name, etc.)  ✅ JSON path
+        - Dict with "manager" key wrapping managed_agents       ✅ Old path
+        - YAML/JSON file path or raw string
+      Steps:
+        1. Create role agents (PUT update + rich names).
+        2. Create manager agent.
+        3. PUT update manager with supervision instructions, examples, and role links.
     """
     manager_yaml = _load_yaml_or_json(manager_yaml)
 
-    manager_def = manager_yaml.get("manager")
-    if not manager_def:
-        raise ValueError("YAML/JSON must contain a top-level 'manager' key")
+    # --- New: handle raw JSON manager payload directly ---
+    if "manager" in manager_yaml:
+        manager_def = manager_yaml.get("manager")
+    elif "id" in manager_yaml and "name" in manager_yaml:
+        manager_def = manager_yaml
+    else:
+        raise ValueError(
+            "Input must contain either a top-level 'manager' key "
+            "or direct agent fields (id, name, etc.)"
+        )
 
     created_roles: List[Dict[str, Any]] = []
 
