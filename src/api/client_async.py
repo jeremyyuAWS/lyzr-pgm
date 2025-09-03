@@ -95,6 +95,11 @@ class LyzrAPIClient:
         if self.debug:
             print(*args, flush=True)
 
+    def _log_json(self, label: str, data: dict):
+        """Pretty-print JSON payloads in debug mode."""
+        if self.debug:
+            print(f"{label}:\n{json.dumps(data, indent=2)}", flush=True)
+
     # -----------------
     # Validation helpers
     # -----------------
@@ -153,6 +158,16 @@ class LyzrAPIClient:
     # -----------------
     # High-level helpers
     # -----------------
+    async def update_agent(self, agent_id: str, payload: dict):
+        """Update agent, logging full payload and response."""
+        self._log_json(f"✏️ Updating agent {agent_id} with payload", payload)
+        resp = await self.put(f"/v3/agents/{agent_id}", payload)
+        if resp.get("ok"):
+            self._log_json(f"✅ Update response for agent {agent_id}", resp.get("data"))
+        else:
+            self._log(f"❌ Update failed for agent {agent_id}: {resp}")
+        return resp
+
     async def link_agents(
         self,
         manager_id: str,
@@ -203,7 +218,7 @@ class LyzrAPIClient:
             "response_format": manager_data.get("response_format", {"type": "json"}),
         }
 
-        upd_resp = await self.put(f"/v3/agents/{manager_id}", update_payload)
+        upd_resp = await self.update_agent(manager_id, update_payload)
 
         if upd_resp.get("ok"):
             return {
@@ -292,7 +307,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     async def main():
-        import json
         with open(args.json_file, "r") as f:
             manager_def = json.load(f)
 

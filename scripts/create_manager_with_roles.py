@@ -1,9 +1,14 @@
+# scripts/create_manager_with_roles.py
+
 import logging
 from typing import Dict, Any, List
+from datetime import datetime
+import pytz
 
 from src.api.client_async import LyzrAPIClient
 
 logger = logging.getLogger("create-manager-with-roles")
+
 
 # -----------------------------
 # Validation
@@ -29,79 +34,58 @@ def _validate_role(role: Dict[str, Any]) -> None:
 
 
 # -----------------------------
-# Main entrypoint
+# Create Manager with Roles
 # -----------------------------
 async def create_manager_with_roles(
     client: LyzrAPIClient,
     manager_json: Dict[str, Any],
+    roles_json: List[Dict[str, Any]],
+    tz_name: str = "UTC"
 ) -> Dict[str, Any]:
     """
-    Create a manager agent and its role agents using JSON only.
-    Roles are linked back to the manager via client.link_agents().
-    After all roles are linked, the manager is renamed once with a suffix + timestamp.
+    Create a manager agent, link roles, and perform final rename with preserved instructions.
     """
 
-    logger.info("📦 Using provided JSON dict for manager + roles")
-
-    # -----------------------------
-    # Create manager first
-    # -----------------------------
     _validate_manager(manager_json)
-    logger.info(f"🚀 Creating manager: {manager_json['name']}")
-
-    mgr_resp = await client.create_agent(manager_json)
-    if not mgr_resp.get("ok"):
-        raise RuntimeError(f"❌ Manager creation failed: {mgr_resp}")
-
-    manager_data = mgr_resp["data"]
-    manager_id = manager_data.get("_id") or manager_data.get("agent_id")
-    if not manager_id:
-        raise RuntimeError(f"❌ Manager response missing agent_id: {mgr_resp}")
-
-    results: Dict[str, Any] = {
-        "manager": manager_data,
-        "roles": [],
-        "manager_id": manager_id,
-    }
-
-    # -----------------------------
-    # Create roles and attach via link_agents()
-    # -----------------------------
-    roles: List[Dict[str, Any]] = manager_json.get("managed_agents", [])
-    for role in roles:
+    for role in roles_json:
         _validate_role(role)
 
-        logger.info(f"👷 Creating role: {role['name']}")
-        role_resp = await client.create_agent(role)
-        if not role_resp.get("ok"):
-            raise RuntimeError(f"❌ Role creation failed: {role_resp}")
+    logger.info(f"🚀 Creating manager: {manager_json['name']}")
+    manager = await client.create_agent(manager_json)
+    manager_id = manager["id"]
 
-        role_data = role_resp["data"]
-        role_id = role_data.get("_id") or role_data.get("agent_id")
-        if not role_id:
-            raise RuntimeError(f"❌ Role response missing agent_id: {role_resp}")
+    # Cache original manager JSON so we can re-use later
+    cached_manager_json = manager_json.copy()
 
-        # Link role → manager (PUT, without renaming yet)
-        link_resp = await client.link_agents(manager_id, role_id, role.get("name"), rename_manager=False)
-        if link_resp.get("ok"):
-            logger.info(f"🔗 Linked role {role['name']} → manager {manager_json['name']}")
-        else:
-            logger.warning(
-                f"⚠️ Failed to link role {role['name']} → manager {manager_json['name']}: {link_resp}"
-            )
+    # Create and link each role
+    for role_json in roles_json:
+        logger.info(f"👷 Creating role: {role_json['name']}")
+        role = await client.create_agent(role_json)
+        role_id = role["id"]
 
-        results["roles"].append(role_data)
+        await client.link_agents(manager_id, role_id)
+        logger.info(f"🔗 Linked role {role_json['name']} → manager {manager_json['name']}")
 
-    # -----------------------------
-    # Rename manager once at the end
-    # -----------------------------
-    rename_resp = await client.link_agents(manager_id, None, None, rename_manager=True)
-    if rename_resp.get("ok"):
-        new_name = rename_resp.get("renamed")
-        results["manager"]["name"] = new_name
-        logger.info(f"✏️ Final manager rename → {new_name}")
-    else:
-        logger.warning(f"⚠️ Failed final rename for manager {manager_json['name']}: {rename_resp}")
+    # Final rename step: re-pass full JSON payload
+    short_id = manager_id[-6:]
+    now = datetime.now(pytz.timezone(tz_name))
+    timestamp = now.strftime("%d%b%Y-%I:%M%p %Z")
+
+    final_name = f"{cached_manager_json['name']}_v1.0_{short_id}_{timestamp}"
+
+    final_payload = {
+        **cached_manager_json,   # keep original instructions, examples, etc.
+        "name": final_name       # override only the name
+    }
+
+    logger.info(f"✏️ Final manager rename → {final_name}")
+    await client.update_agent(manager_id, final_payload)
 
     logger.info("✅ Manager + roles created, linked, and renamed successfully")
-    return results
+
+    return {
+        "manager": final_payload,
+        "roles": roles_json,
+        "manager_id": manager_id,
+        "agent_id": manager_id  # alias for frontend
+    }
