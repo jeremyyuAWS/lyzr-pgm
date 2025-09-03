@@ -134,37 +134,32 @@ class LyzrAPIClient:
     # High-level helpers
     # -----------------
     async def link_agents(self, manager_id: str, role_id: str, role_name: str = None):
-        """
-        Link a role agent to a manager agent by updating the manager's managed_agents list.
-        This mirrors the old 'update_agent' PUT approach.
-        """
-        # Fetch current manager state
-        mgr_resp = await self.get(f"/v3/agents/{manager_id}")
-        if not mgr_resp.get("ok"):
-            return {"ok": False, "error": f"Failed to fetch manager: {mgr_resp}"}
+    """
+    Link a role agent to a manager agent by updating the manager's managed_agents list.
+    """
+    # Fetch current manager state
+    mgr_resp = await self.get(f"/v3/agents/{manager_id}")
+    if not mgr_resp.get("ok"):
+        return {"ok": False, "error": f"Failed to fetch manager: {mgr_resp}"}
 
-        manager_data = mgr_resp["data"]
-        existing_roles = manager_data.get("managed_agents", [])
+    manager_data = mgr_resp["data"]
+    existing_roles = manager_data.get("managed_agents", [])
 
-        # Append new role if not already present
-        if not any(r.get("id") == role_id for r in existing_roles):
-            existing_roles.append({
-                "id": role_id,
-                "name": role_name or role_id,
-                "usage_description": f"Manager delegates tasks to '{role_name or role_id}'."
-            })
+    # Append new role if not already present
+    if not any(r.get("id") == role_id for r in existing_roles):
+        existing_roles.append({
+            "id": role_id,
+            "name": role_name or role_id,
+            "usage_description": f"Manager delegates tasks to '{role_name or role_id}'."
+        })
 
-        # Prepare update payload
-        update_payload = {
-            "managed_agents": existing_roles
-        }
+    # Update manager with new managed_agents list
+    update_payload = {"managed_agents": existing_roles}
+    upd_resp = await self.put(f"/v3/agents/{manager_id}", update_payload)
 
-        # Issue PUT update
-        upd_resp = await self.put(f"/v3/agents/{manager_id}", update_payload)
-
-        if upd_resp.get("ok"):
-            return {"ok": True, "linked": True, "data": upd_resp.get("data")}
-        return {"ok": False, "linked": False, "error": upd_resp.get("error")}
+    if upd_resp.get("ok"):
+        return {"ok": True, "linked": True, "data": upd_resp.get("data")}
+    return {"ok": False, "linked": False, "error": upd_resp.get("error")}
 
 
     async def call_agent(self, agent_id_or_name: str, payload: dict):
