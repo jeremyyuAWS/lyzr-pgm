@@ -1,3 +1,5 @@
+# scripts/create_manager_with_roles.py
+
 import logging
 from typing import Dict, Any, List
 
@@ -6,7 +8,7 @@ from src.api.client_async import LyzrAPIClient
 logger = logging.getLogger("create-manager-with-roles")
 
 # -----------------------------
-# Helpers
+# Validation
 # -----------------------------
 def _validate_manager(manager: Dict[str, Any]) -> None:
     """Validate manager definition."""
@@ -15,7 +17,7 @@ def _validate_manager(manager: Dict[str, Any]) -> None:
 
     required_fields = ["name", "agent_role", "agent_goal", "agent_instructions"]
     for field in required_fields:
-        if field not in manager:
+        if field not in manager or not manager[field]:
             raise ValueError(f"Manager JSON must include '{field}'")
 
 
@@ -26,7 +28,7 @@ def _validate_role(role: Dict[str, Any]) -> None:
 
     required_fields = ["name", "agent_role", "agent_goal", "agent_instructions"]
     for field in required_fields:
-        if field not in role:
+        if field not in role or not role[field]:
             raise ValueError(f"Role JSON must include '{field}'")
 
 
@@ -47,6 +49,7 @@ async def create_manager_with_roles(
       "agent_role": "...",
       "agent_goal": "...",
       "agent_instructions": "...",
+      "tz_name": "...",              # Optional
       "managed_agents": [ { role_json }, ... ]
     }
 
@@ -65,7 +68,12 @@ async def create_manager_with_roles(
     _validate_manager(manager_json)
     logger.info(f"🚀 Creating manager: {manager_json['name']}")
 
-    mgr_resp = await client.create_agent(manager_json)
+    mgr_payload = manager_json.copy()
+    if "tz_name" in manager_json:
+        logger.info(f"🌍 Attaching tz_name='{manager_json['tz_name']}'")
+        mgr_payload["tz_name"] = manager_json["tz_name"]
+
+    mgr_resp = await client.create_agent(mgr_payload)
     if not mgr_resp.get("ok"):
         raise RuntimeError(f"❌ Manager creation failed: {mgr_resp}")
 

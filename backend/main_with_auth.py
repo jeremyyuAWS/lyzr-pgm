@@ -1,9 +1,10 @@
+# backend/main_with_auth.py
+
 from __future__ import annotations
 
 import os
 import logging
 import json
-from pathlib import Path
 from typing import Dict, Any
 
 from fastapi import FastAPI, HTTPException, Request, Depends
@@ -11,8 +12,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
-
-import asyncio
 
 from scripts.create_manager_with_roles import create_manager_with_roles
 from src.api.client_async import LyzrAPIClient
@@ -46,6 +45,13 @@ app.add_middleware(
 security = HTTPBearer()
 
 # -----------------------------
+# Healthcheck
+# -----------------------------
+@app.get("/healthz", response_class=JSONResponse)
+async def healthcheck():
+    return {"status": "ok"}
+
+# -----------------------------
 # Routes
 # -----------------------------
 @app.post("/create-agents/", response_class=JSONResponse)
@@ -58,17 +64,22 @@ async def create_agents(
 
     Request Contract (JSON only):
     {
-      "id": "...",                 # Optional: agent_id
-      "name": "...",               # Required: base name
-      "description": "...",        # Optional
-      "agent_role": "...",         # Required
-      "agent_goal": "...",         # Required
-      "agent_instructions": "...", # Required
-      "managed_agents": [          # Optional list of role agents
-        {
-          "yaml": { ...role_def... }
-        }
-      ]
+      "manager_json": {
+        "name": "...",               # Required: base name
+        "description": "...",        # Optional
+        "agent_role": "...",         # Required
+        "agent_goal": "...",         # Required
+        "agent_instructions": "...", # Required
+        "tz_name": "America/LA",     # Optional
+        "managed_agents": [          # Optional list of role agents
+          {
+            "name": "...",
+            "agent_role": "...",
+            "agent_goal": "...",
+            "agent_instructions": "..."
+          }
+        ]
+      }
     }
     """
     # Enforce JSON-only
@@ -93,8 +104,15 @@ async def create_agents(
     # Create manager + roles
     async with LyzrAPIClient(debug=True) as client:
         try:
-            result = await create_manager_with_roles(client, body)
+            result = await create_manager_with_roles(client, body["manager_json"])
+
+        except ValueError as ve:
+            # Validation failures → 400
+            logger.warning(f"⚠️ Validation error: {ve}")
+            raise HTTPException(status_code=400, detail=str(ve))
+
         except Exception as e:
+            # Downstream/network errors → 502
             logger.exception("❌ Failed to create agents")
             raise HTTPException(status_code=502, detail=str(e))
 
