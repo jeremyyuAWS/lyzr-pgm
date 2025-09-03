@@ -81,15 +81,21 @@ async def create_manager_with_roles(
         if not role_id:
             raise RuntimeError(f"❌ Role response missing agent_id: {role_resp}")
 
-        # Link role → manager (client handles PUT + rename)
+        # -----------------------------
+        # Link role → manager (PUT)
+        # -----------------------------
         link_resp = await client.link_agents(manager_id, role_id, role.get("name"))
         if link_resp.get("ok"):
             logger.info(f"🔗 Linked role {role['name']} → manager {manager_json['name']}")
-            # Update manager name after renaming
-            results["manager"]["name"] = link_resp.get("renamed", results["manager"]["name"])
-            results["timestamp"] = link_resp.get("timestamp")
+            # Ensure manager object gets updated name
+            results["manager"]["name"] = link_resp.get(
+                "renamed",
+                results["manager"].get("name", manager_json.get("name", "MANAGER"))
+            )
         else:
-            logger.warning(f"⚠️ Failed to link role {role['name']} → manager {manager_json['name']}: {link_resp}")
+            logger.warning(
+                f"⚠️ Failed to link role {role['name']} → manager {manager_json['name']}: {link_resp}"
+            )
 
         results["roles"].append(role_data)
 
