@@ -1,105 +1,122 @@
-from __future__ import annotations
+# backend/main_with_auth.py
 
+import os
+import json
 import logging
-from typing import Dict, Any, List, Optional
-
-from fastapi import FastAPI, HTTPException, Depends
+import pytz
+from datetime import datetime
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
-from fastapi.security import HTTPBearer
-from pydantic import BaseModel, Field
 
 from scripts.create_manager_with_roles import create_manager_with_roles
 from src.api.client_async import LyzrAPIClient
-from src.utils.auth import get_current_user  # ✅ JWT-based auth
+from src.utils.auth import get_current_user
+from src.utils.normalize_output import normalize_inference_output
 
 # -----------------------------
-# Logging
+# Environment
 # -----------------------------
-logger = logging.getLogger("agent-api")
+load_dotenv()
+
+# -----------------------------
+# Logging Setup
+# -----------------------------
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [agent-api] %(message)s",
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
 )
+logger = logging.getLogger("agent-api")
+
+
+def trace(msg: str, extra: dict | None = None):
+    """Helper for structured logging"""
+    if extra:
+        logger.info(f"{msg} | {json.dumps(extra, ensure_ascii=False)}")
+    else:
+        logger.info(msg)
+
 
 # -----------------------------
 # FastAPI App
 # -----------------------------
-app = FastAPI(title="Agent API", version="1.0")
+app = FastAPI(title="Lyzr Agent API", version="1.0.0")
 
-# -----------------------------
-# CORS (⚠️ tighten for production)
-# -----------------------------
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # TODO: restrict to trusted domains in prod
+    allow_origins=["*"],  # 🔒 tighten later if needed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-security = HTTPBearer()
 
 # -----------------------------
-# Schemas
+# Helpers
 # -----------------------------
-class RoleSchema(BaseModel):
-    name: str = Field(..., description="Unique role agent name")
-    agent_role: str
-    agent_goal: str
-    agent_instructions: str
-    description: Optional[str] = None
+def _tz(tz_name: str | None = None) -> pytz.timezone:
+    tz_name = tz_name or os.getenv("APP_TZ", "America/Los_Angeles")
+    try:
+        return pytz.timezone(tz_name)
+    except Exception:
+        return pytz.timezone("America/Los_Angeles")
 
 
-class ManagerSchema(BaseModel):
-    name: str = Field(..., description="Unique manager agent name")
-    agent_role: str
-    agent_goal: str
-    agent_instructions: str
-    description: Optional[str] = None
+def _timestamp_str(tz_name: str | None = None) -> str:
+    now = datetime.now(_tz(tz_name))
+    return now.strftime("%d%b%Y-%I:%M%p %Z").upper()
 
-
-class CreateAgentsRequest(BaseModel):
-    manager_json: ManagerSchema
-    roles_json: Optional[List[RoleSchema]] = []
-    tz_name: Optional[str] = "America/Los_Angeles"
-
-
-# -----------------------------
-# Healthcheck
-# -----------------------------
-@app.get("/healthz", response_class=JSONResponse)
-async def healthcheck():
-    return {"status": "ok"}
 
 # -----------------------------
 # Routes
 # -----------------------------
-@app.post("/create-agents/", response_class=JSONResponse)
-async def create_agents(
-    body: CreateAgentsRequest,
-    user: Dict[str, Any] = Depends(get_current_user),  # ✅ Enforce JWT auth
-):
+@app.get("/")
+async def root():
+    return {"status": "ok", "service": "lyzr-agent-api"}
+
+
+@app.post("/create-agents/")
+async def create_agents(request: Request):
     """
-    Create Manager + Role agents from JSON definition.
+    Create manager + role agents from incoming JSON.
     """
-    logger.info(f"📥 Incoming JSON body keys: {list(body.dict().keys())}")
+    try:
+        body = await request.json()
+        trace("📥 Incoming JSON body keys", {"keys": list(body.keys())})
 
-    # Extract payloads
-    manager_json = body.manager_json.dict()
-    roles_json = [r.dict() for r in (body.roles_json or [])]
-    tz_name = body.tz_name or "America/Los_Angeles"
+        manager_json = body.get("manager_json")
+        roles_json = body.get("roles_json", [])
+        tz_name = body.get("tz_name", "America/Los_Angeles")
 
-    async with LyzrAPIClient() as client:
-        try:
-            result = await create_manager_with_roles(client, manager_json, roles_json)
-        except Exception as e:
-            logger.exception("❌ Failed to create agents")
-            raise HTTPException(status_code=500, detail=str(e))
+        if not manager_json:
+            raise HTTPException(status_code=400, detail="manager_json is required")
 
-    return JSONResponse(content=jsonable_encoder({
-        "status": "success",
-        "result": result,
-        "tz_used": tz_name
-    }))
+        # Validate authenticated user
+        user = await get_current_user(request)
+        trace("🔑 Authenticated user", {"user": user})
+
+        # Orchestration with API client
+        async with LyzrAPIClient() as client:
+            result = await client.create_manager_with_roles(manager_json)
+
+            if not result.get("ok"):
+                trace("❌ Manager creation failed", {"error": result})
+                raise HTTPException(status_code=500, detail=result.get("error"))
+
+            trace("✅ Manager created", {"id": result["manager"]["id"]})
+            return {
+                "ok": True,
+                "timestamp": _timestamp_str(tz_name),
+                "manager": result["manager"],
+                "roles": result.get("roles", []),
+            }
+
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        trace("❌ Bad Request", {"error": str(ve)})
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        trace("❌ Internal Error", {"error": str(e)})
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")

@@ -1,81 +1,106 @@
-import logging
-from typing import Dict, Any, List, Optional
+# scripts/create_manager_with_roles.py
 
-from src.api.client_async import LyzrAPIClient, _rich_manager_name
+import argparse
+import asyncio
+import logging
+import json
+from pathlib import Path
+
+from src.api.client_async import LyzrAPIClient
+from src.utils.payload_normalizer import normalize_payload
 
 logger = logging.getLogger("create-manager-with-roles")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+)
 
-
-def _extract_roles(manager_json: Dict[str, Any], roles_json: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
-    """
-    Choose role definitions from roles_json if provided,
-    otherwise fall back to manager_json['managed_agents'].
-    """
-    if roles_json and len(roles_json) > 0:
-        logger.info("📦 Using roles from roles_json")
-        return roles_json
-    elif manager_json.get("managed_agents"):
-        logger.info("📦 Using roles from manager_json['managed_agents']")
-        return manager_json["managed_agents"]
-    else:
-        logger.info("ℹ️ No role agents provided")
-        return []
-
-
-async def create_manager_with_roles(
-    client: LyzrAPIClient,
-    manager_json: Dict[str, Any],
-    roles_json: Optional[List[Dict[str, Any]]] = None
-) -> Dict[str, Any]:
-    """
-    Create role agent(s) (from roles_json or manager_json.managed_agents),
-    create the manager, link roles, then update the manager once with:
-      - Rich name convention (original + v1.0 + suffix + timestamp)
-      - All original fields preserved (description, instructions, examples, etc.)
-      - Managed_agents explicitly set to linked role agents
-    """
-    created_roles: List[Dict[str, Any]] = []
-
-    # 1) Extract role definitions
-    role_defs = _extract_roles(manager_json, roles_json)
-
-    # 2) Create role agents first
-    for role in role_defs:
-        logger.info(f"➕ Creating role agent: {role.get('name')}")
-        role_agent = await client.create_agent(role)
-        created_roles.append(role_agent)
-
-    # 3) Create manager agent
-    logger.info(f"🚀 Creating manager agent: {manager_json.get('name')}")
-    manager = await client.create_agent(manager_json)
-
-    # 4) Link roles to manager (server-side association only)
-    if created_roles:
-        for role_agent in created_roles:
-            logger.info(
-                f"🔗 Linking role '{role_agent.get('name')}' to manager '{manager.get('name', manager.get('id'))}'"
-            )
-            await client.link_agents(manager["id"], role_agent["id"], rename_manager=False)
-
-    # 5) Build final enriched manager payload
+# -----------------------------
+# Helpers
+# -----------------------------
+def load_json_file(path: Path) -> dict:
+    """Load and parse a JSON file safely."""
     try:
-        logger.info(f"✨ Updating manager '{manager.get('id')}' with rich name and all details")
-
-        enriched_name = _rich_manager_name(manager.get("name"), manager["id"])
-
-        # Always include original manager fields to avoid data loss
-        final_payload = {
-            **manager,
-            "name": enriched_name,
-            "managed_agents": created_roles,  # explicitly attach role agents
-        }
-
-        # 6) PUT update to Studio
-        updated = await client.update_agent(manager["id"], final_payload)
-
-        manager = updated
-
+        with open(path, "r") as f:
+            return json.load(f)
     except Exception as e:
-        logger.error(f"❌ Failed to fully update manager {manager.get('id')}: {e}")
+        logger.error(f"❌ Failed to load JSON from {path}: {e}")
+        raise
 
-    return {"manager": manager, "roles": created_roles}
+
+# -----------------------------
+# Core Orchestration
+# -----------------------------
+async def create_manager_with_roles(manager_path: Path, tz_name: str = "America/Los_Angeles"):
+    """
+    Create manager + role agents from JSON file and update manager with roles.
+    Ensures full payload PUT updates to prevent data loss.
+    """
+    manager_def = load_json_file(manager_path)
+
+    async with LyzrAPIClient() as client:
+        # 1. Create role agents first
+        created_roles = []
+        for entry in manager_def.get("managed_agents", []):
+            try:
+                role_payload = normalize_payload(entry)
+                logger.info(f"📥 Creating Role Agent: {role_payload.get('name')}")
+                role_resp = await client.create_agent(role_payload)
+                if role_resp.get("ok"):
+                    created_roles.append(role_resp["data"])
+                    logger.info(f"✅ Created Role: {role_payload.get('name')} ({role_resp['data'].get('id')})")
+                else:
+                    logger.error(f"❌ Failed to create role: {role_resp}")
+            except Exception as e:
+                logger.error(f"❌ Exception creating role: {e}")
+
+        # 2. Create manager agent
+        logger.info(f"📥 Creating Manager Agent: {manager_def.get('name')}")
+        manager_payload = normalize_payload(manager_def)
+        mgr_resp = await client.create_agent(manager_payload)
+
+        if not mgr_resp.get("ok"):
+            logger.error(f"❌ Manager creation failed: {mgr_resp}")
+            return {"ok": False, "error": mgr_resp.get("error"), "roles": created_roles}
+
+        manager = mgr_resp["data"]
+        logger.info(f"✅ Created Manager: {manager.get('name')} ({manager.get('id')})")
+
+        # 3. Re-fetch and update manager with roles
+        if created_roles:
+            mgr_fetched = await client.get(f"/v3/agents/{manager['id']}")
+            if not mgr_fetched.get("ok"):
+                return {"ok": False, "error": f"Failed to fetch manager: {mgr_fetched}"}
+
+            manager_data = mgr_fetched["data"]
+            manager_data["managed_agents"] = (manager_data.get("managed_agents") or []) + created_roles
+
+            # Always rename manager on final update
+            from src.api.client_async import _rich_manager_name, _timestamp_str
+            manager_data["name"] = _rich_manager_name(manager_data["name"], manager["id"])
+
+            logger.info(f"🔄 Final Manager Update: {manager_data['name']} with {len(created_roles)} roles")
+            upd_resp = await client.update_agent(manager["id"], manager_data)
+            if upd_resp.get("ok"):
+                manager = upd_resp["data"]
+                logger.info(f"✅ Manager Updated: {manager['name']} ({manager['id']})")
+
+        return {"ok": True, "manager": manager, "roles": created_roles, "timestamp": _timestamp_str()}
+
+
+# -----------------------------
+# CLI Entry
+# -----------------------------
+def main():
+    parser = argparse.ArgumentParser(description="Create Manager + Role agents from JSON")
+    parser.add_argument("json_file", type=str, help="Path to JSON file defining manager and roles")
+    parser.add_argument("--tz", type=str, default="America/Los_Angeles", help="Timezone for renaming")
+    args = parser.parse_args()
+
+    manager_path = Path(args.json_file)
+    result = asyncio.run(create_manager_with_roles(manager_path, tz_name=args.tz))
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()
