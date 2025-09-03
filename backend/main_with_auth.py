@@ -244,9 +244,9 @@ async def run_inference(
     logger.info(f"➡️ Payload to Studio:\n{json.dumps(payload, indent=2)}")
 
     try:
-        start = time()
-        resp = await client.call_agent(payload)   # ✅ no api_key arg
-        elapsed = round(time() - start, 2)
+        start = time.time()
+        resp = await client.call_agent(payload)
+        elapsed = round(time.time() - start, 2)
 
         trace(
             f"Studio response ok elapsed={elapsed}s",
