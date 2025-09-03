@@ -39,11 +39,12 @@ def _rich_manager_name(base: str, agent_id: str) -> str:
 class LyzrAPIClient:
     """
     Async client for interacting with the Lyzr Studio API.
-    Ensures full payload PUT on update to avoid field loss.
+    Supports passing API key per request (from Supabase user),
+    falling back to env if not provided.
     """
 
     def __init__(self, base_url: str | None = None, api_key: str | None = None, timeout: int = 30):
-        # ✅ Default to the production Studio API URL
+        # ✅ Default to production Studio API URL
         self.base_url = base_url or os.getenv("STUDIO_API_URL", "https://agent-prod.studio.lyzr.ai")
         self.api_key = api_key or os.getenv("STUDIO_API_KEY")
         self.timeout = timeout
@@ -51,7 +52,6 @@ class LyzrAPIClient:
 
     # --- Context manager support ---
     async def __aenter__(self):
-        # 👇 enable redirect following globally
         self._client = httpx.AsyncClient(timeout=self.timeout, follow_redirects=True)
         return self
 
@@ -60,48 +60,55 @@ class LyzrAPIClient:
             await self._client.aclose()
 
     # --- Core HTTP helpers ---
-    async def get(self, path: str):
+    async def get(self, path: str, api_key: str | None = None):
         url = self._normalize_url(path)
         try:
-            resp = await self._client.get(url, headers=self._headers())
+            resp = await self._client.get(url, headers=self._headers(api_key))
             return self._handle_response(resp)
         except Exception as e:
             logger.error(f"❌ GET {url} failed: {e}")
             return {"ok": False, "error": str(e)}
 
-    async def post(self, path: str, payload: dict):
+    async def post(self, path: str, payload: dict, api_key: str | None = None):
         url = self._normalize_url(path)
         try:
-            resp = await self._client.post(url, headers=self._headers(), json=payload)
+            resp = await self._client.post(url, headers=self._headers(api_key), json=payload)
             return self._handle_response(resp)
         except Exception as e:
             logger.error(f"❌ POST {url} failed: {e}")
             return {"ok": False, "error": str(e)}
 
-    async def put(self, path: str, payload: dict):
+    async def put(self, path: str, payload: dict, api_key: str | None = None):
         url = self._normalize_url(path)
         try:
-            resp = await self._client.put(url, headers=self._headers(), json=payload)
+            resp = await self._client.put(url, headers=self._headers(api_key), json=payload)
             return self._handle_response(resp)
         except Exception as e:
             logger.error(f"❌ PUT {url} failed: {e}")
             return {"ok": False, "error": str(e)}
 
     # --- API Wrappers ---
-    async def create_agent(self, payload: dict):
+    async def create_agent(self, payload: dict, api_key: str | None = None):
         # 👇 always use trailing slash
-        return await self.post("/v3/agents/", payload)
+        return await self.post("/v3/agents/", payload, api_key=api_key)
 
-    async def update_agent(self, agent_id: str, payload: dict):
-        return await self.put(f"/v3/agents/{agent_id}/", payload)
+    async def update_agent(self, agent_id: str, payload: dict, api_key: str | None = None):
+        return await self.put(f"/v3/agents/{agent_id}/", payload, api_key=api_key)
 
     # --- Linking + Orchestration ---
-    async def link_agents(self, manager_id: str, role_id: str = None, role_name: str = None, rename_manager: bool = False):
+    async def link_agents(
+        self,
+        manager_id: str,
+        role_id: str = None,
+        role_name: str = None,
+        rename_manager: bool = False,
+        api_key: str | None = None,
+    ):
         """
         Link a role agent to a manager agent by updating the manager's managed_agents list.
         Always PUT full payload back so no fields are lost.
         """
-        mgr_resp = await self.get(f"/v3/agents/{manager_id}/")
+        mgr_resp = await self.get(f"/v3/agents/{manager_id}/", api_key=api_key)
         if not mgr_resp.get("ok"):
             return {"ok": False, "error": f"Failed to fetch manager: {mgr_resp}"}
 
@@ -122,7 +129,7 @@ class LyzrAPIClient:
             manager_renamed = _rich_manager_name(manager_base_name, manager_id)
 
         update_payload = {**manager_data, "name": manager_renamed, "managed_agents": existing_roles}
-        upd_resp = await self.update_agent(manager_id, update_payload)
+        upd_resp = await self.update_agent(manager_id, update_payload, api_key=api_key)
 
         if upd_resp.get("ok"):
             return {
@@ -135,7 +142,7 @@ class LyzrAPIClient:
             }
         return {"ok": False, "linked": False, "error": upd_resp.get("error")}
 
-    async def create_manager_with_roles(self, manager_def: dict):
+    async def create_manager_with_roles(self, manager_def: dict, api_key: str | None = None):
         """
         Create a manager agent and its managed role agents.
         Always PUT full payload back so no fields are lost.
@@ -149,7 +156,7 @@ class LyzrAPIClient:
         for entry in manager_def.get("managed_agents", []):
             try:
                 role_payload = normalize_payload(entry)
-                role_resp = await self.create_agent(role_payload)
+                role_resp = await self.create_agent(role_payload, api_key=api_key)
                 if role_resp.get("ok"):
                     created_roles.append(role_resp["data"])
             except Exception as e:
@@ -158,7 +165,7 @@ class LyzrAPIClient:
         try:
             # 2. Create manager
             manager_payload = normalize_payload(manager_def)
-            mgr_resp = await self.create_agent(manager_payload)
+            mgr_resp = await self.create_agent(manager_payload, api_key=api_key)
             if not mgr_resp.get("ok"):
                 return {"ok": False, "error": mgr_resp.get("error"), "roles": created_roles}
 
@@ -166,14 +173,14 @@ class LyzrAPIClient:
 
             # 3. Link roles back into manager
             if created_roles:
-                mgr_fetched = await self.get(f"/v3/agents/{manager['id']}/")
+                mgr_fetched = await self.get(f"/v3/agents/{manager['id']}/", api_key=api_key)
                 if not mgr_fetched.get("ok"):
                     return {"ok": False, "error": f"Failed to fetch created manager: {mgr_fetched}"}
 
                 manager_data = mgr_fetched["data"]
                 manager_data["managed_agents"] = (manager_data.get("managed_agents") or []) + created_roles
 
-                upd_resp = await self.update_agent(manager["id"], manager_data)
+                upd_resp = await self.update_agent(manager["id"], manager_data, api_key=api_key)
                 if upd_resp.get("ok"):
                     manager = upd_resp["data"]
 
@@ -182,11 +189,12 @@ class LyzrAPIClient:
             return {"ok": False, "error": f"Manager creation failed: {e}", "roles": created_roles}
 
     # --- Helpers ---
-    def _headers(self) -> dict:
+    def _headers(self, api_key: str | None = None) -> dict:
         headers = {"Content-Type": "application/json"}
-        if self.api_key:
+        key_to_use = api_key or self.api_key
+        if key_to_use:
             # ✅ Studio expects x-api-key, not Authorization
-            headers["x-api-key"] = self.api_key
+            headers["x-api-key"] = key_to_use
         return headers
 
     def _normalize_url(self, path: str) -> str:
