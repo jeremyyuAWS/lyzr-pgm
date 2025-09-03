@@ -12,7 +12,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from scripts.create_manager_with_roles import create_manager_with_roles
 from src.api.client_async import LyzrAPIClient
 from src.utils.auth import get_current_user
-from src.utils.normalize_output import normalize_inference_output
 
 # -----------------------------
 # Environment
@@ -45,7 +44,7 @@ app = FastAPI(title="Lyzr Agent API", version="1.0.0")
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 🔒 tighten later if needed
+    allow_origins=["*"],  # 🔒 tighten in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -86,7 +85,6 @@ async def create_agents(request: Request):
         trace("📥 Incoming JSON body keys", {"keys": list(body.keys())})
 
         manager_json = body.get("manager_json")
-        roles_json = body.get("roles_json", [])
         tz_name = body.get("tz_name", "America/Los_Angeles")
 
         if not manager_json:
@@ -98,19 +96,21 @@ async def create_agents(request: Request):
 
         # Orchestration with API client
         async with LyzrAPIClient() as client:
-            result = await client.create_manager_with_roles(manager_json)
+            result = await create_manager_with_roles(client, manager_json)
 
-            if not result.get("ok"):
-                trace("❌ Manager creation failed", {"error": result})
-                raise HTTPException(status_code=500, detail=result.get("error"))
+        if not result.get("ok"):
+            trace("❌ Manager creation failed", {"error": result})
+            raise HTTPException(status_code=500, detail=result.get("error", "Unknown error"))
 
-            trace("✅ Manager created", {"id": result["manager"]["id"]})
-            return {
-                "ok": True,
-                "timestamp": _timestamp_str(tz_name),
-                "manager": result["manager"],
-                "roles": result.get("roles", []),
-            }
+        manager = result["manager"]
+        trace("✅ Manager created", {"id": manager.get("name")})
+
+        return {
+            "ok": True,
+            "timestamp": _timestamp_str(tz_name),
+            "manager": manager,
+            "roles": result.get("roles", []),
+        }
 
     except HTTPException:
         raise
