@@ -10,8 +10,7 @@ from typing import Union, Dict, Any, List
 from datetime import datetime
 import pytz
 
-from src.api.client import LyzrAPIClient
-from scripts.create_agent_from_yaml import create_agent_from_yaml, update_agent
+from src.api.client_async import LyzrAPIClient  # ✅ use async client
 
 # -----------------------------
 # Logging
@@ -19,7 +18,9 @@ from scripts.create_agent_from_yaml import create_agent_from_yaml, update_agent
 logger = logging.getLogger("create-manager-with-roles")
 if not logger.handlers:
     handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] [create-manager-with-roles] %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] [create-manager-with-roles] %(message)s"
+    )
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
@@ -68,7 +69,9 @@ def _compose_system_prompt(agent_def: Dict[str, Any]) -> str:
     return "\n\n".join(parts).strip()
 
 
-def _manager_supervision_instructions(manager_def: Dict[str, Any], created_roles: List[Dict[str, Any]]) -> str:
+def _manager_supervision_instructions(
+    manager_def: Dict[str, Any], created_roles: List[Dict[str, Any]]
+) -> str:
     base = manager_def.get("agent_instructions", "").strip()
     lines = [base, "", "Manage these attached roles:"]
     for r in created_roles:
@@ -76,7 +79,9 @@ def _manager_supervision_instructions(manager_def: Dict[str, Any], created_roles
         if goal:
             lines.append(f"- Role '{r['name']}': {goal}")
         else:
-            lines.append(f"- Role '{r['name']}': Execute delegated sub-tasks from the manager.")
+            lines.append(
+                f"- Role '{r['name']}': Execute delegated sub-tasks from the manager."
+            )
     return "\n".join([l for l in lines if l]).strip()
 
 
@@ -92,7 +97,9 @@ def _safe_parse_role_yaml(role: Dict[str, Any]) -> Dict[str, Any] | None:
             parsed = yaml.safe_load(raw)
             if isinstance(parsed, dict):
                 return parsed
-            logger.error(f"❌ Role {role.get('name')} YAML parsed into {type(parsed)}, expected dict")
+            logger.error(
+                f"❌ Role {role.get('name')} YAML parsed into {type(parsed)}, expected dict"
+            )
             return None
         except Exception as e:
             logger.error(f"❌ Failed to parse role YAML for {role.get('name')}: {e}")
@@ -194,7 +201,7 @@ agents:
 # -----------------------------
 # Main Orchestration
 # -----------------------------
-def create_manager_with_roles(
+async def create_manager_with_roles(
     client: LyzrAPIClient, manager_yaml: Union[Path, Dict[str, Any]]
 ) -> Dict[str, Any]:
     """
@@ -225,7 +232,7 @@ def create_manager_with_roles(
         role_name = parsed_role.get("name", "ROLE")
         parsed_role["examples"] = canonical_role_examples(role_name)
 
-        role_resp = create_agent_from_yaml(client, parsed_role)
+        role_resp = await client.create_agent_from_yaml(parsed_role)
         if not role_resp.get("ok"):
             print(f"❌ Failed to create role {role_name}")
             continue
@@ -245,10 +252,12 @@ def create_manager_with_roles(
             "agent_goal": parsed_role.get("agent_goal", ""),
             "agent_instructions": parsed_role.get("agent_instructions", ""),
         }
-        update_agent(client, role_id, role_updates)
+        await client.update_agent(role_id, role_updates)
 
         # 🧩 Friendly console output
-        print(f"🧩 Created role agent {role_renamed} [{role_id} | {_timestamp_str()}]")
+        print(
+            f"🧩 Created role agent {role_renamed} [{role_id} | {_timestamp_str()}]"
+        )
 
         created_roles.append(
             {
@@ -264,11 +273,15 @@ def create_manager_with_roles(
 
     # ----- 2. Create manager -----
     manager_base_name = manager_def.get("name", "MANAGER")
-    mgr_instr_with_supervision = _manager_supervision_instructions(manager_def, created_roles)
-    mgr_examples = canonical_manager_examples(manager_base_name, [r["base_name"] for r in created_roles])
+    mgr_instr_with_supervision = _manager_supervision_instructions(
+        manager_def, created_roles
+    )
+    mgr_examples = canonical_manager_examples(
+        manager_base_name, [r["base_name"] for r in created_roles]
+    )
     manager_def["examples"] = mgr_examples
 
-    mgr_resp = create_agent_from_yaml(client, manager_def)
+    mgr_resp = await client.create_agent_from_yaml(manager_def)
     if not mgr_resp.get("ok"):
         print("❌ Manager creation failed")
         return {}
@@ -281,16 +294,22 @@ def create_manager_with_roles(
     # ----- 3. PUT update manager -----
     manager_renamed = _rich_manager_name(manager_base_name, manager_id)
     managed_agents_payload = [
-        {"id": r["id"], "name": r["name"], "usage_description": f"Manager delegates YAML-subtasks to '{r['name']}'."}
+        {
+            "id": r["id"],
+            "name": r["name"],
+            "usage_description": f"Manager delegates YAML-subtasks to '{r['name']}'.",
+        }
         for r in created_roles
     ]
     manager_updates = {
         "name": manager_renamed,
-        "system_prompt": _compose_system_prompt({
-            "agent_role": manager_def.get("agent_role", ""),
-            "agent_goal": manager_def.get("agent_goal", ""),
-            "agent_instructions": mgr_instr_with_supervision,
-        }),
+        "system_prompt": _compose_system_prompt(
+            {
+                "agent_role": manager_def.get("agent_role", ""),
+                "agent_goal": manager_def.get("agent_goal", ""),
+                "agent_instructions": mgr_instr_with_supervision,
+            }
+        ),
         "examples": mgr_examples,
         "agent_role": manager_def.get("agent_role", ""),
         "agent_goal": manager_def.get("agent_goal", ""),
@@ -306,10 +325,12 @@ def create_manager_with_roles(
         "temperature": manager_def.get("temperature", 0.3),
         "response_format": manager_def.get("response_format", {"type": "json"}),
     }
-    update_agent(client, manager_id, manager_updates)
+    await client.update_agent(manager_id, manager_updates)
 
     # 🤖 Friendly console output
-    print(f"🤖 Created manager agent {manager_renamed} [{manager_id} | {_timestamp_str()}] with {len(created_roles)} linked roles")
+    print(
+        f"🤖 Created manager agent {manager_renamed} [{manager_id} | {_timestamp_str()}] with {len(created_roles)} linked roles"
+    )
 
     return {
         "agent_id": manager_id,
