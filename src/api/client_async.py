@@ -1,7 +1,6 @@
 # src/api/client_async.py
 
 import os
-import json
 import httpx
 import asyncio
 import logging
@@ -44,6 +43,7 @@ class LyzrAPIClient:
     """
 
     def __init__(self, base_url: str | None = None, api_key: str | None = None, timeout: int = 30):
+        # ✅ Default to the production Studio API URL
         self.base_url = base_url or os.getenv("STUDIO_API_URL", "https://agent-prod.studio.lyzr.ai")
         self.api_key = api_key or os.getenv("STUDIO_API_KEY")
         self.timeout = timeout
@@ -185,7 +185,8 @@ class LyzrAPIClient:
     def _headers(self) -> dict:
         headers = {"Content-Type": "application/json"}
         if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
+            # ✅ Studio expects x-api-key, not Authorization
+            headers["x-api-key"] = self.api_key
         return headers
 
     def _normalize_url(self, path: str) -> str:
