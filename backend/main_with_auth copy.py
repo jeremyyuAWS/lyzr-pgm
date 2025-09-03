@@ -1,7 +1,11 @@
+# backend/main_with_auth.py
+
 import os
 import json
+import yaml
 import logging
 import uuid
+from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,10 +13,34 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from httpx import TimeoutException, RequestError
 
-from scripts.create_manager_with_roles import create_manager_with_roles
+from scripts.create_manager_with_roles import create_manager_with_roles  # noqa: F401
 from src.utils.normalize_output import normalize_inference_output
 from src.api.client_async import LyzrAPIClient
 from src.utils.auth import get_current_user
+
+# -----------------------------
+# Load JSON or YAML
+# -----------------------------
+def _load_yaml_or_json(text: str) -> dict:
+    """Try to parse input as YAML, fallback to JSON."""
+    try:
+        parsed = yaml.safe_load(text)
+        if isinstance(parsed, dict):
+            logger.info("📦 Parsed input as YAML")
+            return parsed
+    except Exception:
+        logger.warning("⚠️ YAML parse failed, trying JSON")
+
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            logger.info("📦 Parsed input as JSON")
+            return parsed
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML/JSON: {e}")
+
+    raise HTTPException(status_code=400, detail="Input is not valid YAML or JSON")
+
 
 # -----------------------------
 # Environment
@@ -184,19 +212,27 @@ class CreateAgentsPayload(BaseModel):
 @app.post("/create-agents/", response_class=JSONResponse)
 async def create_agents(
     request: Request,
-    payload: CreateAgentsPayload = Body(..., media_type="application/json"),  # ✅ Force JSON
+    payload: CreateAgentsPayload = Body(..., media_type="application/json"),  # ✅ Force JSON only
     user=Depends(get_current_user),
 ):
-    """Accepts raw JSON defining manager + roles (no FormData, no YAML)."""
+    """
+    Accepts raw JSON defining manager + roles (no FormData).
+    ❗ Explicitly enforces application/json content-type
+    """
+    # ✅ Explicit check to reject non-JSON submissions (multipart/form-data, text/plain, etc.)
     content_type = request.headers.get("content-type", "")
     if not content_type.startswith("application/json"):
-        raise HTTPException(status_code=415, detail="Content-Type must be application/json")
+        raise HTTPException(
+            status_code=415,
+            detail="Content-Type must be application/json",
+        )
 
     rid = get_request_id()
     trace("📥 Received /create-agents", {"tz": payload.tz_name, "user": safe_user_email(user), "rid": rid})
 
     try:
         parsed = payload.agent
+
         async with build_client_for_user(user) as client:
             result = await client.create_manager_with_roles(parsed)
 
@@ -217,12 +253,31 @@ async def create_agents(
         raise HTTPException(status_code=500, detail=f"Create agents failed: {e}")
 
 
-@app.post("/upload-manager-json/")
-async def upload_manager_json(file: UploadFile = File(...), user=Depends(get_current_user)):
-    """Upload JSON file defining manager + roles."""
+@app.post("/upload-yaml/")
+async def upload_yaml(file: UploadFile = File(...), user=Depends(get_current_user)):
     try:
         contents = await file.read()
-        parsed = json.loads(contents.decode("utf-8"))
+        text = contents.decode("utf-8")
+
+        async with build_client_for_user(user) as client:
+            resp = await client.create_agent_from_yaml(text, is_path=False)
+
+        if not resp.get("ok"):
+            raise HTTPException(status_code=502, detail=resp.get("data") or "Failed to create agent")
+
+        return {"ok": True, "agent": resp.get("data")}
+    except Exception as e:
+        logger.exception("❌ upload_yaml failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/upload-manager-yaml/")
+async def upload_manager_yaml(file: UploadFile = File(...), user=Depends(get_current_user)):
+    try:
+        contents = await file.read()
+        text = contents.decode("utf-8")
+
+        parsed = _load_yaml_or_json(text)
 
         async with build_client_for_user(user) as client:
             resp = await client.create_manager_with_roles(parsed)
@@ -232,7 +287,7 @@ async def upload_manager_json(file: UploadFile = File(...), user=Depends(get_cur
 
         return {"ok": True, "manager": resp.get("name"), "roles": resp.get("roles")}
     except Exception as e:
-        logger.exception("❌ upload_manager_json failed")
+        logger.exception("❌ upload_manager_yaml failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
