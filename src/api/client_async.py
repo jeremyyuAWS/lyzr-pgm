@@ -8,6 +8,26 @@ import argparse
 
 from src.utils.payload_normalizer import normalize_payload
 from src.utils.normalize_output import canonicalize_name
+from datetime import datetime
+import pytz
+
+
+def _tz() -> pytz.timezone:
+    tz_name = os.getenv("APP_TZ", "America/Los_Angeles")
+    try:
+        return pytz.timezone(tz_name)
+    except Exception:
+        return pytz.timezone("America/Los_Angeles")
+
+def _timestamp_str() -> str:
+    now = datetime.now(_tz())
+    return now.strftime("%d%b%Y-%I:%M%p %Z").upper()
+
+def _suffix_from_id(agent_id: str) -> str:
+    return (agent_id or "")[-6:] or "XXXXXX"
+
+def _rich_manager_name(base: str, agent_id: str) -> str:
+    return f"{base}_v1.0_{_suffix_from_id(agent_id)}_{_timestamp_str()}"
 
 
 class LyzrAPIClient:
@@ -135,8 +155,8 @@ class LyzrAPIClient:
     # -----------------
     async def link_agents(self, manager_id: str, role_id: str, role_name: str = None):
         """
-        Link a role agent to a manager agent by updating the manager's managed_agents list.
-        Mirrors the old update_agent behavior.
+        Link a role agent to a manager agent by updating the manager's managed_agents list,
+        and rename the manager with suffix + timestamp.
         """
         # Fetch current manager state
         mgr_resp = await self.get(f"/v3/agents/{manager_id}")
@@ -144,7 +164,10 @@ class LyzrAPIClient:
             return {"ok": False, "error": f"Failed to fetch manager: {mgr_resp}"}
 
         manager_data = mgr_resp["data"]
-        existing_roles = manager_data.get("managed_agents", [])
+        manager_base_name = manager_data.get("name", "MANAGER")
+
+        # Ensure list, even if Studio returns null
+        existing_roles = manager_data.get("managed_agents") or []
 
         # Append new role if not already present
         if not any(r.get("id") == role_id for r in existing_roles):
@@ -154,12 +177,24 @@ class LyzrAPIClient:
                 "usage_description": f"Manager delegates tasks to '{role_name or role_id}'."
             })
 
-        # Update manager with new managed_agents list
-        update_payload = {"managed_agents": existing_roles}
+        # Rename manager with suffix + timestamp
+        manager_renamed = _rich_manager_name(manager_base_name, manager_id)
+
+        # Update manager with new managed_agents + name
+        update_payload = {
+            "name": manager_renamed,
+            "managed_agents": existing_roles,
+        }
         upd_resp = await self.put(f"/v3/agents/{manager_id}", update_payload)
 
         if upd_resp.get("ok"):
-            return {"ok": True, "linked": True, "data": upd_resp.get("data")}
+            return {
+                "ok": True,
+                "linked": True,
+                "data": upd_resp.get("data"),
+                "renamed": manager_renamed,
+                "timestamp": _timestamp_str(),
+            }
         return {"ok": False, "linked": False, "error": upd_resp.get("error")}
 
     async def call_agent(self, agent_id_or_name: str, payload: dict):
